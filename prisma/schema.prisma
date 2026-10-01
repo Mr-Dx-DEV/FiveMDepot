@@ -3,7 +3,7 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "mysql"
   url      = env("DATABASE_URL")
 }
 
@@ -45,17 +45,17 @@ enum SellerStatus {
 }
 
 model Account {
-  id                String   @id @default(cuid())
+  id                String   @id @default(uuid())
   userId            String
   type              String
   provider          String
   providerAccountId String
-  refresh_token     String?  @db.Text
-  access_token      String?  @db.Text
+  refresh_token     String?  @db.LongText
+  access_token      String?  @db.LongText
   expires_at        Int?
   token_type        String?
   scope             String?
-  id_token          String?  @db.Text
+  id_token          String?  @db.LongText
   session_state     String?
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -64,7 +64,7 @@ model Account {
 }
 
 model Session {
-  id           String   @id @default(cuid())
+  id           String   @id @default(uuid())
   sessionToken String   @unique
   userId       String
   expires      DateTime
@@ -73,7 +73,7 @@ model Session {
 }
 
 model User {
-  id            String       @id @default(cuid())
+  id            String       @id @default(uuid())
   name          String?
   email         String       @unique
   emailVerified DateTime?
@@ -99,18 +99,18 @@ model User {
 }
 
 model Product {
-  id            String           @id @default(cuid())
+  id            String           @id @default(uuid())
   userId        String
   slug          String           @unique
   title         String
-  description   String           @db.Text
+  description   String           @db.LongText
   category      ProductCategory
   price         Float
-  screenshots   String[]
+  screenshots   String[]         @db.Json
   files         String
-  tags          String[]
+  tags          String[]         @db.Json
   version       String           @default("1.0.0")
-  compatibility String[]
+  compatibility String[]         @db.Json
   categoryId    String?
   status        ProductStatus    @default(DRAFT)
   downloads     Int              @default(0)
@@ -129,13 +129,13 @@ model Product {
 }
 
 model Order {
-  id             String        @id @default(cuid())
+  id             String        @id @default(uuid())
   userId         String
   productId      String
   status         OrderStatus   @default(PENDING)
   amount         Float
   paymentProof   String?
-  adminNote      String?       @db.Text
+  adminNote      String?       @db.LongText
   downloadCode   String?       @unique
   verifiedBy     String?
   verifiedAt     DateTime?
@@ -152,23 +152,23 @@ model Order {
 }
 
 model SellerProfile {
-  id         String       @id @default(cuid())
+  id         String       @id @default(uuid())
   userId     String       @unique
-  bio        String?      @db.Text
+  bio        String?      @db.LongText
   discordTag String?
   status     SellerStatus @default(PENDING)
   approvedAt DateTime?
-  payoutInfo String?      @db.Text
+  payoutInfo String?      @db.LongText
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model Review {
-  id        String     @id @default(cuid())
+  id        String     @id @default(uuid())
   userId    String
   productId String
   rating    Int
-  comment   String?    @db.Text
+  comment   String?    @db.LongText
   createdAt DateTime   @default(now())
 
   user    User    @relation("ReviewAuthor", fields: [userId], references: [id])
@@ -178,7 +178,7 @@ model Review {
 }
 
 model DownloadCode {
-  id        String   @id @default(cuid())
+  id        String   @id @default(uuid())
   orderId   String   @unique
   userId    String
   code      String   @unique
@@ -194,7 +194,7 @@ model DownloadCode {
 }
 
 model Category {
-  id     String  @id @default(cuid())
+  id     String  @id @default(uuid())
   name   String  @unique
   slug   String  @unique
   icon   String
