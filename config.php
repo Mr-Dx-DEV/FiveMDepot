@@ -7,10 +7,10 @@
  */
 
 // === Database (MariaDB) ===
-define('DB_HOST', 'localhost');
+define('DB_HOST', 'localhost:3306');
 define('DB_NAME', 'fivemdepot');
-define('DB_USER', 'root');       // Change to your database username
-define('DB_PASS', '');           // Change to your database password
+define('DB_USER', 'fivemdepot');       // Change to your database username
+define('DB_PASS', 'FIVVEM@22316');           // Change to your database password
 define('DB_CHARSET', 'utf8mb4');
 
 // === Site ===
