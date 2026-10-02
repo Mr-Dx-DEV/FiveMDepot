@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Panel — FiveMDepot</title>
+  <link rel="stylesheet" href="css/main.css">
+  <link rel="stylesheet" href="admin/css/admin.css">
+  <link rel="stylesheet" href="css/admin.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+</head>
+<body class="admin-body">
+  <!-- Sidebar -->
+  <aside class="admin-sidebar" id="adminSidebar">
+    <div class="sidebar-header">
+      <a href="index.html" class="sidebar-brand">
+        <svg width="32" height="32" viewBox="0 0 36 36" fill="none">
+          <defs>
+            <linearGradient id="adminLogoGrad" x1="0" y1="0" x2="36" y2="36" gradientUnits="userSpaceOnUse">
+              <stop offset="0" stop-color="#d4af37"/><stop offset="1" stop-color="#f0c75e"/>
+            </linearGradient>
+          </defs>
+          <rect x="2" y="2" width="32" height="32" rx="8" stroke="url(#adminLogoGrad)" stroke-width="2.5" fill="none"/>
+          <circle cx="18" cy="17" r="3" fill="url(#adminLogoGrad)"/>
+        </svg>
+        <span>Admin</span>
+      </a>
+    </div>
+
+    <div class="sidebar-user">
+      <div class="sidebar-user-avatar" id="adminAvatar">A</div>
+      <div class="sidebar-user-info">
+        <div class="sidebar-user-name" id="adminName">Loading...</div>
+        <div class="sidebar-user-role">Administrator</div>
+      </div>
+    </div>
+
+    <nav class="sidebar-nav">
+      <div class="nav-section">
+        <div class="nav-section-title">Main</div>
+        <a href="#" class="sidebar-link active" data-page="dashboard">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+          Dashboard
+        </a>
+        <a href="#" class="sidebar-link" data-page="analytics">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+          Analytics
+        </a>
+      </div>
+
+      <div class="nav-section">
+        <div class="nav-section-title">Marketplace</div>
+        <a href="#" class="sidebar-link" data-page="products">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+          Products
+          <span class="badge badge-warning" id="productsPendingBadge">0</span>
+        </a>
+        <a href="#" class="sidebar-link" data-page="categories">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+          Categories
+        </a>
+        <a href="#" class="sidebar-link" data-page="orders">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
+          Orders
+          <span class="badge badge-danger" id="ordersPendingBadge">0</span>
+        </a>
+      </div>
+
+      <div class="nav-section">
+        <div class="nav-section-title">Users</div>
+        <a href="#" class="sidebar-link" data-page="sellers">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><path d="M20 8v6"/><path d="M23 11h-6"/></svg>
+          Sellers
+          <span class="badge badge-warning" id="sellersPendingBadge">0</span>
+        </a>
+        <a href="#" class="sidebar-link" data-page="users">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          All Users
+        </a>
+        <a href="#" class="sidebar-link" data-page="withdrawals">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+          Withdrawals
+        </a>
+      </div>
+
+      <div class="nav-section">
+        <div class="nav-section-title">System</div>
+        <a href="#" class="sidebar-link" data-page="settings">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+          Settings
+        </a>
+        <a href="index.html" class="sidebar-link sidebar-view-site">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+          View Site
+        </a>
+        <a href="auth.html?action=logout" class="sidebar-link sidebar-logout">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+          Logout
+        </a>
+      </div>
+    </nav>
+  </aside>
+
+  <!-- Main Content -->
+  <main class="admin-main">
+    <!-- Top Bar -->
+    <div class="admin-topbar">
+      <button class="topbar-toggle" id="topbarToggle">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+      </button>
+      <div class="topbar-right">
+        <div class="topbar-search">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input type="text" placeholder="Search anything..." id="globalSearch">
+        </div>
+        <div class="topbar-notifications">
+          <button class="notification-btn" id="notifBtn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+            <span class="notif-dot" id="notifDot"></span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Pages Container -->
+    <div class="admin-pages">
+      <!-- Dashboard Page -->
+      <div class="admin-page active" id="page-dashboard">
+        <div class="page-header">
+          <div>
+            <h1 class="page-title">Dashboard</h1>
+            <p class="page-subtitle">Welcome back! Here's what's happening.</p>
+          </div>
+          <div class="page-date" id="currentDate"></div>
+        </div>
+
+        <!-- Stats Cards -->
+        <div class="stats-grid">
+          <div class="stat-card stat-gradient-blue">
+            <div class="stat-icon-wrap">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+            </div>
+            <div class="stat-info">
+              <div class="stat-value" id="dashUsers">0</div>
+              <div class="stat-label">Total Users</div>
+              <div class="stat-change stat-up">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/></svg>
+                <span id="dashUsersChange">+0%</span>
+              </div>
+            </div>
+          </div>
+          <div class="stat-card stat-gradient-gold">
+            <div class="stat-icon-wrap">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><path d="M20 8v6"/><path d="M23 11h-6"/></svg>
+            </div>
+            <div class="stat-info">
+              <div class="stat-value" id="dashSellers">0</div>
+              <div class="stat-label">Active Sellers</div>
+              <div class="stat-change stat-up">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/></svg>
+                <span id="dashSellersChange">+0%</span>
+              </div>
+            </div>
+          </div>
+          <div class="stat-card stat-gradient-cyan">
+            <div class="stat-icon-wrap">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+            </div>
+            <div class="stat-info">
+              <div class="stat-value" id="dashProducts">0</div>
+              <div class="stat-label">Published Products</div>
+              <div class="stat-change stat-up">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/></svg>
+                <span id="dashProductsChange">+0%</span>
+              </div>
+            </div>
+          </div>
+          <div class="stat-card stat-gradient-magenta">
+            <div class="stat-icon-wrap">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+            </div>
+            <div class="stat-info">
+              <div class="stat-value" id="dashRevenue">$0</div>
+              <div class="stat-label">Total Revenue</div>
+              <div class="stat-change stat-up">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/></svg>
+                <span id="dashRevenueChange">+0%</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Charts Row -->
+        <div class="charts-row">
+          <div class="chart-card">
+            <div class="chart-header">
+              <h3 class="chart-title">Revenue (30 Days)</h3>
+            </div>
+            <div class="chart-container" id="revenueChart">
+              <p class="chart-placeholder">Loading chart...</p>
+            </div>
+          </div>
+          <div class="chart-card chart-card-sm">
+            <div class="chart-header">
+              <h3 class="chart-title">By Category</h3>
+            </div>
+            <div class="category-pie" id="categoryPie">
+              <p class="chart-placeholder">Loading...</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Pending Items -->
+        <div class="pending-grid">
+          <div class="pending-card">
+            <div class="pending-header">
+              <h3 class="pending-title">Pending Sellers</h3>
+              <a href="#" class="pending-link" data-page="sellers">View All</a>
+            </div>
+            <div id="pendingSellers" class="pending-list">
+              <p class="text-center text-muted">Loading...</p>
+            </div>
+          </div>
+          <div class="pending-card">
+            <div class="pending-header">
+              <h3 class="pending-title">Pending Orders</h3>
+              <a href="#" class="pending-link" data-page="orders">View All</a>
+            </div>
+            <div id="pendingOrders" class="pending-list">
+              <p class="text-center text-muted">Loading...</p>
+            </div>
+          </div>
+          <div class="pending-card">
+            <div class="pending-header">
+              <h3 class="pending-title">Pending Products</h3>
+              <a href="#" class="pending-link" data-page="products">View All</a>
+            </div>
+            <div id="pendingProducts" class="pending-list">
+              <p class="text-center text-muted">Loading...</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Recent Orders -->
+        <div class="recent-section">
+          <div class="section-header">
+            <h3 class="section-title">Recent Orders</h3>
+            <a href="#" class="section-link" data-page="orders">View All</a>
+          </div>
+          <div class="recent-table" id="recentOrders">
+            <p class="text-center text-muted">Loading...</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Products Page -->
+      <div class="admin-page" id="page-products">
+        <div class="page-header">
+          <div>
+            <h1 class="page-title">Products</h1>
+            <p class="page-subtitle">Manage marketplace products</p>
+          </div>
+          <button class="btn btn-primary" id="addProductBtn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Add Product
+          </button>
+        </div>
+
+        <div class="filter-bar">
+          <div class="filter-tabs">
+            <button class="filter-tab active" data-filter="all">All</button>
+            <button class="filter-tab" data-filter="PUBLISHED">Published</button>
+            <button class="filter-tab" data-filter="PENDING">Pending</button>
+            <button class="filter-tab" data-filter="REJECTED">Rejected</button>
+          </div>
+          <div class="filter-search">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input type="text" placeholder="Search products..." id="productSearch">
+          </div>
+        </div>
+
+        <div class="products-grid" id="productsGrid">
+          <p class="text-center text-muted">Loading products...</p>
+        </div>
+      </div>
+
+      <!-- Categories Page -->
+      <div class="admin-page" id="page-categories">
+        <div class="page-header">
+          <div>
+            <h1 class="page-title">Categories</h1>
+            <p class="page-subtitle">Manage product categories</p>
+          </div>
+          <button class="btn btn-primary" id="addCategoryBtn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Add Category
+          </button>
+        </div>
+
+        <div class="categories-grid" id="categoriesGrid">
+          <p class="text-center text-muted">Loading categories...</p>
+        </div>
+      </div>
+
+      <!-- Orders Page -->
+      <div class="admin-page" id="page-orders">
+        <div class="page-header">
+          <div>
+            <h1 class="page-title">Orders</h1>
+            <p class="page-subtitle">Manage and verify payments</p>
+          </div>
+        </div>
+
+        <div class="filter-bar">
+          <div class="filter-tabs">
+            <button class="filter-tab active" data-filter="all">All</button>
+            <button class="filter-tab" data-filter="PENDING">Pending</button>
+            <button class="filter-tab" data-filter="VERIFIED">Verified</button>
+            <button class="filter-tab" data-filter="REJECTED">Rejected</button>
+          </div>
+        </div>
+
+        <div class="orders-list" id="ordersList">
+          <p class="text-center text-muted">Loading orders...</p>
+        </div>
+      </div>
+
+      <!-- Sellers Page -->
+      <div class="admin-page" id="page-sellers">
+        <div class="page-header">
+          <div>
+            <h1 class="page-title">Seller Applications</h1>
+            <p class="page-subtitle">Review seller requests</p>
+          </div>
+        </div>
+
+        <div class="filter-bar">
+          <div class="filter-tabs">
+            <button class="filter-tab active" data-filter="all">All</button>
+            <button class="filter-tab" data-filter="PENDING">Pending</button>
+            <button class="filter-tab" data-filter="APPROVED">Approved</button>
+            <button class="filter-tab" data-filter="REJECTED">Rejected</button>
+          </div>
+        </div>
+
+        <div class="sellers-list" id="sellersList">
+          <p class="text-center text-muted">Loading sellers...</p>
+        </div>
+      </div>
+
+      <!-- Users Page -->
+      <div class="admin-page" id="page-users">
+        <div class="page-header">
+          <div>
+            <h1 class="page-title">Users</h1>
+            <p class="page-subtitle">Manage all users</p>
+          </div>
+        </div>
+
+        <div class="filter-bar">
+          <div class="filter-tabs">
+            <button class="filter-tab active" data-filter="all">All</button>
+            <button class="filter-tab" data-filter="BUYER">Buyers</button>
+            <button class="filter-tab" data-filter="SELLER">Sellers</button>
+            <button class="filter-tab" data-filter="ADMIN">Admins</button>
+          </div>
+        </div>
+
+        <div class="users-list" id="usersList">
+          <p class="text-center text-muted">Loading users...</p>
+        </div>
+      </div>
+
+      <!-- Withdrawals Page -->
+      <div class="admin-page" id="page-withdrawals">
+        <div class="page-header">
+          <div>
+            <h1 class="page-title">Withdrawals</h1>
+            <p class="page-subtitle">Process seller withdrawal requests</p>
+          </div>
+        </div>
+
+        <div class="filter-bar">
+          <div class="filter-tabs">
+            <button class="filter-tab active" data-filter="all">All</button>
+            <button class="filter-tab" data-filter="PENDING">Pending</button>
+            <button class="filter-tab" data-filter="PAID">Paid</button>
+            <button class="filter-tab" data-filter="REJECTED">Rejected</button>
+          </div>
+        </div>
+
+        <div class="withdrawals-list" id="withdrawalsList">
+          <p class="text-center text-muted">Loading withdrawals...</p>
+        </div>
+      </div>
+
+      <!-- Analytics Page -->
+      <div class="admin-page" id="page-analytics">
+        <div class="page-header">
+          <div>
+            <h1 class="page-title">Analytics</h1>
+            <p class="page-subtitle">Detailed marketplace insights</p>
+          </div>
+        </div>
+
+        <div class="analytics-overview" id="analyticsOverview">
+          <p class="text-center text-muted">Loading analytics...</p>
+        </div>
+
+        <div class="charts-row">
+          <div class="chart-card">
+            <div class="chart-header">
+              <h3 class="chart-title">Revenue Trend</h3>
+            </div>
+            <div class="chart-container" id="analyticsRevenueChart"></div>
+          </div>
+          <div class="chart-card">
+            <div class="chart-header">
+              <h3 class="chart-title">Top Products</h3>
+            </div>
+            <div id="topProductsList"></div>
+          </div>
+        </div>
+
+        <div class="chart-card">
+          <div class="chart-header">
+            <h3 class="chart-title">Seller Earnings</h3>
+          </div>
+          <div id="sellerEarningsList"></div>
+        </div>
+      </div>
+
+      <!-- Settings Page -->
+      <div class="admin-page" id="page-settings">
+        <div class="page-header">
+          <div>
+            <h1 class="page-title">Settings</h1>
+            <p class="page-subtitle">Configure marketplace settings</p>
+          </div>
+        </div>
+
+        <div class="settings-grid">
+          <div class="settings-card">
+            <h3 class="settings-card-title">General</h3>
+            <form class="settings-form" id="generalSettingsForm">
+              <div class="form-group">
+                <label class="form-label">Site Name</label>
+                <input type="text" class="form-input" data-key="site_name">
+              </div>
+              <div class="form-group">
+                <label class="form-label">Tagline</label>
+                <input type="text" class="form-input" data-key="site_tagline">
+              </div>
+            </form>
+          </div>
+          <div class="settings-card">
+            <h3 class="settings-card-title">Payment Methods</h3>
+            <form class="settings-form" id="paymentSettingsForm">
+              <div class="form-group">
+                <label class="form-label">bKash Number</label>
+                <input type="text" class="form-input" data-key="bkash_number">
+              </div>
+              <div class="form-group">
+                <label class="form-label">Nagad Number</label>
+                <input type="text" class="form-input" data-key="nagad_number">
+              </div>
+              <div class="form-group">
+                <label class="form-label">Bank Name</label>
+                <input type="text" class="form-input" data-key="bank_name">
+              </div>
+              <div class="form-group">
+                <label class="form-label">Bank Account</label>
+                <input type="text" class="form-input" data-key="bank_account">
+              </div>
+              <div class="form-group">
+                <label class="form-label">Bank Branch</label>
+                <input type="text" class="form-input" data-key="bank_branch">
+              </div>
+            </form>
+          </div>
+          <div class="settings-card">
+            <h3 class="settings-card-title">Seller Settings</h3>
+            <form class="settings-form" id="sellerSettingsForm">
+              <div class="form-group form-group-checkbox">
+                <label class="form-label">
+                  <input type="checkbox" class="form-checkbox" data-key="seller_auto_approve">
+                  Auto-approve seller applications
+                </label>
+              </div>
+            </form>
+          </div>
+        </div>
+
+        <div class="form-actions">
+          <button class="btn btn-primary" id="saveSettingsBtn">Save All Settings</button>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Modal -->
+  <div class="admin-modal" id="adminModal">
+    <div class="modal-backdrop" id="modalBackdrop"></div>
+    <div class="modal-container">
+      <div class="modal-header">
+        <h3 class="modal-title" id="modalTitle">Modal</h3>
+        <button class="modal-close" id="modalClose">&times;</button>
+      </div>
+      <div class="modal-body" id="modalBody"></div>
+      <div class="modal-footer" id="modalFooter"></div>
+    </div>
+  </div>
+
+  <script src="../js/main.js"></script>
+  <script src="js/admin.js"></script>
+</body>
+</html>

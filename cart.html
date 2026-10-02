@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Shopping Cart — FiveMDepot</title>
+  <meta name="description" content="Your shopping cart at FiveMDepot marketplace.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/main.css">
+  <style>
+    .cart-item { display:flex;gap:16px;padding:20px;align-items:center; }
+    .cart-item-image { width:120px;height:75px;border-radius:var(--radius-sm);overflow:hidden;flex-shrink:0;background:var(--bg-tertiary);display:flex;align-items:center;justify-content:center;font-size:2rem;opacity:0.3; }
+    .cart-item-image img { width:100%;height:100%;object-fit:cover; }
+    .cart-item-info { flex:1;min-width:0; }
+    .cart-item-info h3 { font-family:var(--font-heading);font-size:1rem;font-weight:600;margin-bottom:4px; }
+    .cart-item-info p { font-size:0.875rem;color:var(--text-secondary); }
+    .cart-remove { color:var(--text-muted);transition:color var(--duration-fast);padding:8px; }
+    .cart-remove:hover { color:#ef4444; }
+    .checkout-summary { padding:24px; }
+    .checkout-summary h3 { font-family:var(--font-heading);font-size:1.125rem;font-weight:600;margin-bottom:16px; }
+    .checkout-line { display:flex;justify-content:space-between;padding:8px 0;font-size:0.9375rem;color:var(--text-secondary); }
+    .checkout-total { display:flex;justify-content:space-between;padding:16px 0 0;border-top:1px solid var(--border);margin-top:8px;font-weight:700;font-size:1.25rem; }
+    .checkout-total .amount { color:var(--gold); }
+  </style>
+</head>
+<body>
+
+  <nav class="navbar" id="navbar">
+    <div class="container navbar-inner">
+      <a href="/" class="navbar-logo">
+        <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" width="36" height="36">
+          <defs><linearGradient id="lb" x1="0" y1="0" x2="40" y2="40"><stop offset="0%" stop-color="#d4af37"/><stop offset="50%" stop-color="#f0c75e"/><stop offset="100%" stop-color="#d4af37"/></linearGradient></defs>
+          <rect x="2" y="2" width="36" height="36" rx="10" stroke="url(#lb)" stroke-width="2.5" fill="none"/>
+          <path d="M12 28V14l8 6 8-6v14" stroke="url(#lb)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+        </svg>
+        <span class="gradient-gold">FiveMDepot</span>
+      </a>
+      <div class="navbar-actions">
+        <a href="shop.html" class="btn btn-sm btn-outline-gold">Continue Shopping</a>
+      </div>
+    </div>
+  </nav>
+
+  <section style="padding-top:calc(var(--header-height) + 48px);padding-bottom:24px;">
+    <div class="container">
+      <h1 class="heading-lg reveal"><span class="gradient-gold">Shopping</span> Cart</h1>
+    </div>
+  </section>
+
+  <section class="section" style="padding-top:0;">
+    <div class="container">
+      <div id="cart-content" style="display:grid;grid-template-columns:1fr 380px;gap:32px;max-width:960px;margin:0 auto;">
+        <!-- Items -->
+        <div id="cart-items" style="display:flex;flex-direction:column;gap:12px;"></div>
+        <!-- Summary -->
+        <div id="cart-summary" style="display:none;">
+          <div class="card checkout-summary">
+            <h3>Order Summary</h3>
+            <div id="summary-lines"></div>
+            <div class="checkout-total">
+              <span>Total</span>
+              <span class="amount" id="cart-total">$0.00</span>
+            </div>
+            <a href="checkout.html" class="btn btn-primary" style="width:100%;margin-top:20px;">Proceed to Checkout</a>
+            <p style="text-align:center;font-size:0.75rem;color:var(--text-muted);margin-top:12px;">Secure checkout via bKash / Nagad / Bank Transfer</p>
+          </div>
+        </div>
+      </div>
+      <!-- Empty state -->
+      <div id="cart-empty" style="display:none;text-align:center;padding:60px 20px;">
+        <div style="font-size:4rem;margin-bottom:16px;opacity:0.2;">&#128722;</div>
+        <h3 class="heading-sm" style="margin-bottom:8px;">Your cart is empty</h3>
+        <p class="text-secondary" style="margin-bottom:24px;">Browse our marketplace and add assets to your cart.</p>
+        <a href="shop.html" class="btn btn-primary">Browse Assets</a>
+      </div>
+    </div>
+  </section>
+
+  <script src="js/main.js"></script>
+  <script>
+  (function(){
+    var items = window.FiveMDepotCart ? window.FiveMDepotCart.getItems() : [];
+    var itemsEl = document.getElementById('cart-items');
+    var summaryEl = document.getElementById('cart-summary');
+    var emptyEl = document.getElementById('cart-empty');
+    var summaryLines = document.getElementById('summary-lines');
+    var totalEl = document.getElementById('cart-total');
+
+    if(items.length === 0) {
+      itemsEl.style.display = 'none';
+      summaryEl.style.display = 'none';
+      emptyEl.style.display = 'block';
+    } else {
+      emptyEl.style.display = 'none';
+      itemsEl.style.display = 'flex';
+      summaryEl.style.display = 'block';
+
+      itemsEl.innerHTML = items.map(function(item){
+        return '<div class="card cart-item">' +
+          '<div class="cart-item-image">' + (item.image ? '<img src="'+item.image+'" alt="">': '&#128187;') + '</div>' +
+          '<div class="cart-item-info">' +
+            '<h3>' + item.title + '</h3>' +
+            '<p>by ' + item.seller.name + '</p>' +
+            '<span class="text-gold" style="font-weight:700;">$' + item.price.toFixed(2) + '</span>' +
+          '</div>' +
+          '<button class="cart-remove" onclick="removeItem(\''+item.id+'\')" aria-label="Remove '+item.title+'">&#10005;</button>' +
+        '</div>';
+      }).join('');
+
+      summaryLines.innerHTML = items.map(function(item){
+        return '<div class="checkout-line"><span class="truncate" style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + item.title + '</span><span>$' + item.price.toFixed(2) + '</span></div>';
+      }).join('');
+
+      var total = items.reduce(function(s,i){return s+i.price;},0);
+      totalEl.textContent = '$' + total.toFixed(2);
+    }
+
+    window.removeItem = function(id) {
+      if(window.FiveMDepotCart) window.FiveMDepotCart.removeItem(id);
+      location.reload();
+    };
+  })();
+  </script>
+</body>
+</html>
