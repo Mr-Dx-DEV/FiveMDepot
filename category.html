@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Store — FiveMDepot</title>
+  <meta name="description" content="Browse premium FiveM scripts, MLOs, vehicles, clothing and server packs.">
+  <meta name="theme-color" content="#0a0e17">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/store.css">
+  <script>try{if(localStorage.getItem('fivedepot_theme')==='light')document.documentElement.setAttribute('data-theme','light')}catch(e){}</script>
+</head>
+<body>
+  <div id="site-header"></div>
+
+  <section class="page-hero" id="cat-hero">
+    <div class="container"><div class="skeleton" style="height:22px;width:180px;margin-bottom:14px"></div><div class="skeleton" style="height:40px;width:320px"></div></div>
+  </section>
+
+  <main class="container shop">
+    <aside class="filters" id="filters" aria-label="Filters"></aside>
+    <section>
+      <div class="toolbar">
+        <div style="display:flex;gap:10px;align-items:center">
+          <button class="btn btn-sm btn-ghost filters-toggle" id="filters-toggle" type="button">Filters</button>
+          <span class="count" id="count" aria-live="polite"></span>
+        </div>
+        <div class="right">
+          <label for="sort" class="sr-only">Sort by</label>
+          <select class="input" id="sort" style="width:auto">
+            <option value="featured">Featured</option>
+            <option value="newest">Newest</option>
+            <option value="popular">Most popular</option>
+            <option value="rating">Top rated</option>
+            <option value="price-low">Price: low to high</option>
+            <option value="price-high">Price: high to low</option>
+          </select>
+        </div>
+      </div>
+      <div class="active-filters" id="active-filters"></div>
+      <div class="product-grid" id="grid"></div>
+      <nav class="pager" id="pager" aria-label="Pagination"></nav>
+    </section>
+  </main>
+
+  <div id="site-footer"></div>
+
+  <script src="js/store.js"></script>
+  <script src="js/category.js"></script>
+</body>
+</html>

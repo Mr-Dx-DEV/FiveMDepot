@@ -11,8 +11,8 @@
   --admin-border: #2a2a2a;
   --admin-text: #e4e4e4;
   --admin-text-muted: #888;
-  --admin-gold: #d4af37;
-  --admin-gold-light: #f0c75e;
+  --admin-gold: #f97316;
+  --admin-gold-light: #fb923c;
   --admin-cyan: #00f0ff;
   --admin-magenta: #ff00aa;
   --admin-blue: #3b82f6;
@@ -150,7 +150,7 @@
 }
 
 .sidebar-link.active {
-  background: linear-gradient(135deg, rgba(212, 175, 55, 0.15), rgba(240, 199, 94, 0.05));
+  background: linear-gradient(135deg, rgba(249, 115, 22, 0.15), rgba(240, 199, 94, 0.05));
   color: var(--admin-gold);
 }
 
@@ -375,8 +375,8 @@
 }
 
 .stat-gradient-gold {
-  background: linear-gradient(135deg, rgba(212, 175, 55, 0.1), var(--admin-surface));
-  border-color: rgba(212, 175, 55, 0.2);
+  background: linear-gradient(135deg, rgba(249, 115, 22, 0.1), var(--admin-surface));
+  border-color: rgba(249, 115, 22, 0.2);
 }
 
 .stat-gradient-cyan {
@@ -400,7 +400,7 @@
 }
 
 .stat-gradient-blue .stat-icon-wrap { background: rgba(59, 130, 246, 0.15); color: var(--admin-blue); }
-.stat-gradient-gold .stat-icon-wrap { background: rgba(212, 175, 55, 0.15); color: var(--admin-gold); }
+.stat-gradient-gold .stat-icon-wrap { background: rgba(249, 115, 22, 0.15); color: var(--admin-gold); }
 .stat-gradient-cyan .stat-icon-wrap { background: rgba(0, 240, 255, 0.15); color: var(--admin-cyan); }
 .stat-gradient-magenta .stat-icon-wrap { background: rgba(255, 0, 170, 0.15); color: var(--admin-magenta); }
 
@@ -747,7 +747,7 @@
 }
 
 .filter-tab.active {
-  background: linear-gradient(135deg, rgba(212, 175, 55, 0.15), rgba(240, 199, 94, 0.05));
+  background: linear-gradient(135deg, rgba(249, 115, 22, 0.15), rgba(240, 199, 94, 0.05));
   border-color: var(--admin-gold);
   color: var(--admin-gold);
 }
@@ -902,7 +902,7 @@
   width: 48px;
   height: 48px;
   border-radius: 12px;
-  background: linear-gradient(135deg, rgba(212, 175, 55, 0.15), rgba(240, 199, 94, 0.05));
+  background: linear-gradient(135deg, rgba(249, 115, 22, 0.15), rgba(240, 199, 94, 0.05));
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1438,7 +1438,7 @@
   font-family: var(--admin-mono);
   font-weight: 600;
   color: var(--gold);
-  background: rgba(212,175,55,0.1);
+  background: rgba(249, 115, 22,0.1);
   padding: 4px 8px;
   border-radius: 4px;
   display: inline-block;

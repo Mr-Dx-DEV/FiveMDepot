@@ -6,20 +6,20 @@
 /* === CSS Custom Properties === */
 :root {
   /* Colors */
-  --bg-primary: #0d0d0d;
-  --bg-secondary: #141414;
-  --bg-tertiary: #1a1a1a;
-  --bg-card: #181818;
-  --bg-card-hover: #1f1f1f;
-  --bg-input: #1e1e1e;
+  --bg-primary: #0a0e17;
+  --bg-secondary: #0f1522;
+  --bg-tertiary: #131a29;
+  --bg-card: #141c2b;
+  --bg-card-hover: #18223a;
+  --bg-input: #131a29;
   --bg-overlay: rgba(0, 0, 0, 0.7);
 
   /* Gold palette */
-  --gold: #d4af37;
-  --gold-light: #f0c75e;
-  --gold-dark: #b8860b;
-  --gold-glow: rgba(212, 175, 55, 0.3);
-  --gold-subtle: rgba(212, 175, 55, 0.1);
+  --gold: #f97316;
+  --gold-light: #fb923c;
+  --gold-dark: #ea580c;
+  --gold-glow: rgba(249, 115, 22, 0.3);
+  --gold-subtle: rgba(249, 115, 22, 0.1);
 
   /* Neon accents */
   --cyan: #00f0ff;
@@ -33,12 +33,12 @@
 
   /* Text */
   --text-primary: #ffffff;
-  --text-secondary: #a0a0a0;
-  --text-muted: #666666;
+  --text-secondary: #a3aec2;
+  --text-muted: #6b778c;
 
   /* Borders */
   --border: rgba(255, 255, 255, 0.06);
-  --border-gold: rgba(212, 175, 55, 0.2);
+  --border-gold: rgba(249, 115, 22, 0.25);
   --border-cyan: rgba(0, 240, 255, 0.2);
 
   /* Shadows */
@@ -46,7 +46,7 @@
   --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.4);
   --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.5);
   --shadow-xl: 0 16px 64px rgba(0, 0, 0, 0.6);
-  --shadow-gold: 0 0 30px rgba(212, 175, 55, 0.2);
+  --shadow-gold: 0 0 30px rgba(249, 115, 22, 0.2);
   --shadow-cyan: 0 0 30px rgba(0, 240, 255, 0.2);
 
   /* Typography */
@@ -83,11 +83,11 @@
   --bg-input: #f0f1f3;
   --bg-overlay: rgba(0, 0, 0, 0.4);
 
-  --gold: #b8860b;
-  --gold-light: #d4af37;
-  --gold-dark: #96700a;
-  --gold-glow: rgba(184, 134, 11, 0.2);
-  --gold-subtle: rgba(184, 134, 11, 0.08);
+  --gold: #ea580c;
+  --gold-light: #f97316;
+  --gold-dark: #c2410c;
+  --gold-glow: rgba(234, 88, 12, 0.2);
+  --gold-subtle: rgba(234, 88, 12, 0.08);
 
   --cyan: #0099cc;
   --cyan-dark: #0077aa;
@@ -104,14 +104,14 @@
   --text-muted: #999999;
 
   --border: rgba(0, 0, 0, 0.08);
-  --border-gold: rgba(184, 134, 11, 0.25);
+  --border-gold: rgba(234, 88, 12, 0.25);
   --border-cyan: rgba(0, 153, 204, 0.2);
 
   --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.06);
   --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.08);
   --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.1);
   --shadow-xl: 0 16px 64px rgba(0, 0, 0, 0.12);
-  --shadow-gold: 0 0 30px rgba(184, 134, 11, 0.1);
+  --shadow-gold: 0 0 30px rgba(234, 88, 12, 0.1);
   --shadow-cyan: 0 0 30px rgba(0, 153, 204, 0.1);
 }
 
@@ -346,7 +346,7 @@ html body *::after {
     box-shadow: 0 0 20px var(--gold-gold);
   }
   50% {
-    box-shadow: 0 0 40px var(--gold-gold), 0 0 60px rgba(212, 175, 55, 0.1);
+    box-shadow: 0 0 40px var(--gold-gold), 0 0 60px rgba(249, 115, 22, 0.1);
   }
 }
 
@@ -455,7 +455,7 @@ html body *::after {
 
 .btn-primary:hover {
   transform: translateY(-2px) scale(1.02);
-  box-shadow: 0 0 40px rgba(212, 175, 55, 0.4);
+  box-shadow: 0 0 40px rgba(249, 115, 22, 0.4);
 }
 
 .btn-primary:active {
@@ -563,7 +563,7 @@ html body *::after {
 
 .product-card:hover {
   transform: translateY(-6px);
-  box-shadow: var(--shadow-lg), 0 0 30px rgba(212, 175, 55, 0.1);
+  box-shadow: var(--shadow-lg), 0 0 30px rgba(249, 115, 22, 0.1);
 }
 
 .product-image {
@@ -722,7 +722,7 @@ html body *::after {
 .category-card:hover {
   transform: translateY(-6px);
   border-color: var(--border-gold);
-  box-shadow: var(--shadow-md), 0 0 30px rgba(212, 175, 55, 0.05);
+  box-shadow: var(--shadow-md), 0 0 30px rgba(249, 115, 22, 0.05);
 }
 
 .category-icon {
@@ -1057,7 +1057,7 @@ html body *::after {
 .hero-bg {
   position: absolute;
   inset: 0;
-  background: radial-gradient(ellipse at 50% 0%, rgba(212, 175, 55, 0.08) 0%, transparent 60%),
+  background: radial-gradient(ellipse at 50% 0%, rgba(249, 115, 22, 0.08) 0%, transparent 60%),
               radial-gradient(ellipse at 80% 50%, rgba(0, 240, 255, 0.04) 0%, transparent 50%),
               radial-gradient(ellipse at 20% 80%, rgba(255, 0, 170, 0.03) 0%, transparent 50%),
               var(--bg-primary);
@@ -1182,7 +1182,7 @@ html body *::after {
 
 /* === CTA Banner === */
 .cta-banner {
-  background: linear-gradient(135deg, rgba(212, 175, 55, 0.08), rgba(0, 240, 255, 0.05));
+  background: linear-gradient(135deg, rgba(249, 115, 22, 0.08), rgba(0, 240, 255, 0.05));
   border: 1px solid var(--border-gold);
   border-radius: var(--radius-xl);
   padding: 60px 40px;
@@ -1198,7 +1198,7 @@ html body *::after {
   left: -50%;
   width: 200%;
   height: 200%;
-  background: radial-gradient(circle at 30% 50%, rgba(212, 175, 55, 0.05) 0%, transparent 50%),
+  background: radial-gradient(circle at 30% 50%, rgba(249, 115, 22, 0.05) 0%, transparent 50%),
               radial-gradient(circle at 70% 50%, rgba(0, 240, 255, 0.03) 0%, transparent 50%);
   animation: gradient-shift 8s ease infinite;
   background-size: 200% 200%;
@@ -3011,7 +3011,7 @@ html body *::after {
   left: -100%;
   width: 100%;
   height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(212, 175, 55, 0.1), transparent);
+  background: linear-gradient(90deg, transparent, rgba(249, 115, 22, 0.1), transparent);
   transition: left 0.6s ease;
 }
 
@@ -3131,7 +3131,7 @@ html body *::after {
   z-index: 2;
   font-size: 1rem;
 }
-.wishlist-btn:hover { background: rgba(212,175,55,0.3); transform: scale(1.1); }
+.wishlist-btn:hover { background: rgba(249, 115, 22,0.3); transform: scale(1.1); }
 .wishlist-btn.active { color: #ef4444; }
 
 /* Framework Filter Chips */
@@ -3167,10 +3167,10 @@ html body *::after {
   font-size: 0.6875rem;
   font-weight: 600;
 }
-.reputation-badge.verified { background: rgba(212,175,55,0.2); color: var(--gold); }
+.reputation-badge.verified { background: rgba(249, 115, 22,0.2); color: var(--gold); }
 .reputation-badge.bronze { background: rgba(205,127,50,0.2); color: #cd7f32; }
 .reputation-badge.silver { background: rgba(192,192,192,0.2); color: #c0c0c0; }
-.reputation-badge.gold { background: rgba(212,175,55,0.2); color: var(--gold); }
+.reputation-badge.gold { background: rgba(249, 115, 22,0.2); color: var(--gold); }
 .reputation-badge.diamond { background: rgba(0,240,255,0.2); color: var(--cyan); }
 
 /* Chart Containers */
@@ -3289,7 +3289,7 @@ html body *::after {
 .newsletter-section {
   text-align: center;
   padding: 48px 24px;
-  background: linear-gradient(135deg, rgba(212,175,55,0.05), rgba(0,240,255,0.03));
+  background: linear-gradient(135deg, rgba(249, 115, 22,0.05), rgba(0,240,255,0.03));
   border-radius: var(--radius-xl);
   border: 1px solid var(--border);
 }
@@ -3378,7 +3378,7 @@ html body *::after {
 .doc-card:hover {
   border-color: var(--border-gold);
   transform: translateY(-4px);
-  box-shadow: 0 12px 32px rgba(212,175,55,0.1);
+  box-shadow: 0 12px 32px rgba(249, 115, 22,0.1);
 }
 .doc-card .doc-category {
   font-size: 0.75rem;
