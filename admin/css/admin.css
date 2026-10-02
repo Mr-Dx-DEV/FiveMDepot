@@ -1727,3 +1727,19 @@
     padding-left: 24px;
   }
 }
+
+/* Admin Sidebar Theme Toggle */
+.theme-toggle-sidebar {
+  color: var(--admin-text-secondary) !important;
+  border-top: 1px solid var(--admin-border);
+  margin-top: 4px;
+  padding-top: 12px !important;
+}
+.theme-toggle-sidebar:hover {
+  color: var(--gold) !important;
+  background: var(--gold-subtle) !important;
+}
+.theme-toggle-sidebar .icon-sun { display: none; }
+.theme-toggle-sidebar .icon-moon { display: block; }
+[data-theme="light"] .theme-toggle-sidebar .icon-moon { display: none; }
+[data-theme="light"] .theme-toggle-sidebar .icon-sun { display: block; }

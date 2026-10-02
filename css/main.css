@@ -71,6 +71,50 @@
   --duration-slow: 500ms;
 }
 
+/* ============================================
+   Light Theme Overrides
+   ============================================ */
+[data-theme="light"] {
+  --bg-primary: #f8f9fa;
+  --bg-secondary: #ffffff;
+  --bg-tertiary: #f0f1f3;
+  --bg-card: #ffffff;
+  --bg-card-hover: #f5f5f5;
+  --bg-input: #f0f1f3;
+  --bg-overlay: rgba(0, 0, 0, 0.4);
+
+  --gold: #b8860b;
+  --gold-light: #d4af37;
+  --gold-dark: #96700a;
+  --gold-glow: rgba(184, 134, 11, 0.2);
+  --gold-subtle: rgba(184, 134, 11, 0.08);
+
+  --cyan: #0099cc;
+  --cyan-dark: #0077aa;
+  --cyan-glow: rgba(0, 153, 204, 0.2);
+  --cyan-subtle: rgba(0, 153, 204, 0.08);
+
+  --magenta: #cc0088;
+  --magenta-dark: #990066;
+  --magenta-glow: rgba(204, 0, 136, 0.2);
+  --magenta-subtle: rgba(204, 0, 136, 0.08);
+
+  --text-primary: #1a1a1a;
+  --text-secondary: #555555;
+  --text-muted: #999999;
+
+  --border: rgba(0, 0, 0, 0.08);
+  --border-gold: rgba(184, 134, 11, 0.25);
+  --border-cyan: rgba(0, 153, 204, 0.2);
+
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.06);
+  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.08);
+  --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.1);
+  --shadow-xl: 0 16px 64px rgba(0, 0, 0, 0.12);
+  --shadow-gold: 0 0 30px rgba(184, 134, 11, 0.1);
+  --shadow-cyan: 0 0 30px rgba(0, 153, 204, 0.1);
+}
+
 /* === Reset & Base === */
 *, *::before, *::after {
   margin: 0;
@@ -125,6 +169,26 @@ ul, ol {
 ::selection {
   background: var(--gold-gold);
   color: var(--text-primary);
+}
+
+/* === Smooth Theme Transitions === */
+html,
+html body,
+html body *,
+html body *::before,
+html body *::after {
+  transition: background-color var(--duration-normal) var(--ease-out),
+              color var(--duration-normal) var(--ease-out),
+              border-color var(--duration-normal) var(--ease-out),
+              box-shadow var(--duration-normal) var(--ease-out);
+}
+
+/* Disable transition for elements that shouldn't animate */
+.no-transition,
+.no-transition *,
+.no-transition *::before,
+.no-transition *::after {
+  transition: none !important;
 }
 
 /* === Scrollbar === */
@@ -884,6 +948,44 @@ ul, ol {
   align-items: center;
   justify-content: center;
 }
+
+/* Theme Toggle Button */
+.theme-toggle {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-sm);
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all var(--duration-fast);
+  color: var(--text-secondary);
+  font-size: 1.125rem;
+}
+
+.theme-toggle:hover {
+  background: var(--gold-subtle);
+  color: var(--gold);
+  border-color: var(--border-gold);
+}
+
+.theme-toggle svg {
+  width: 20px;
+  height: 20px;
+  transition: transform var(--duration-normal) var(--ease-spring);
+}
+
+.theme-toggle:hover svg {
+  transform: rotate(15deg) scale(1.1);
+}
+
+[data-theme="light"] .theme-toggle .icon-moon { display: none; }
+[data-theme="light"] .theme-toggle .icon-sun { display: block; }
+[data-theme="dark"] .theme-toggle .icon-sun { display: none; }
+[data-theme="dark"] .theme-toggle .icon-moon { display: block; }
+.theme-toggle .icon-sun { display: none; }
 
 /* Mobile menu */
 .mobile-toggle {

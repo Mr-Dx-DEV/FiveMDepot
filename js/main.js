@@ -539,4 +539,32 @@
     }
   };
 
+  // ============================================
+  // Theme Toggle — Dark/Light Mode
+  // ============================================
+  window.ThemeToggle = {
+    STORAGE_KEY: 'fivedepot_theme',
+    init() {
+      const saved = localStorage.getItem(this.STORAGE_KEY);
+      if (saved === 'light') {
+        document.documentElement.setAttribute('data-theme', 'light');
+      } else {
+        document.documentElement.setAttribute('data-theme', 'dark');
+      }
+      this.bindEvents();
+    },
+    toggle() {
+      const current = document.documentElement.getAttribute('data-theme');
+      const next = current === 'light' ? 'dark' : 'light';
+      document.documentElement.setAttribute('data-theme', next);
+      localStorage.setItem(this.STORAGE_KEY, next);
+    },
+    bindEvents() {
+      const btn = document.getElementById('themeToggle');
+      if (btn) {
+        btn.addEventListener('click', () => this.toggle());
+      }
+    }
+  };
+
 })();
