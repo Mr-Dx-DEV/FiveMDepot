@@ -137,14 +137,21 @@
   <script src="js/main.js"></script>
   <script>
   (function(){
-    // CSRF tokens
-    function generateToken() {
-      var arr = new Uint32Array(16);
-      crypto.getRandomValues(arr);
-      return Array.from(arr, function(v){return v.toString(36);}).join('');
-    }
-    document.getElementById('login-csrf').value = generateToken();
-    document.getElementById('register-csrf').value = generateToken();
+    // Fetch CSRF token from server
+    fetch('api/auth.php?action=csrf')
+      .then(function(r){ return r.json(); })
+      .then(function(data){
+        document.getElementById('login-csrf').value = data.csrf_token;
+        document.getElementById('register-csrf').value = data.csrf_token;
+      })
+      .catch(function(){
+        // Fallback: generate local token if server is unavailable
+        var arr = new Uint32Array(16);
+        crypto.getRandomValues(arr);
+        var token = Array.from(arr, function(v){return v.toString(36);}).join('');
+        document.getElementById('login-csrf').value = token;
+        document.getElementById('register-csrf').value = token;
+      });
 
     // Tabs
     $$('.auth-tab').forEach(function(tab){
@@ -156,18 +163,83 @@
       });
     });
 
-    // Password match check on register
-    var regForm = document.getElementById('register-form');
+    // Login form submit handler
+    var loginForm = document.getElementById('login-form').querySelector('form');
+    if(loginForm) {
+      loginForm.addEventListener('submit', function(e){
+        e.preventDefault();
+        var err = document.getElementById('auth-error');
+        err.style.display = 'none';
+        err.textContent = '';
+        var btn = this.querySelector('button[type="submit"]');
+        btn.disabled = true;
+        btn.textContent = 'Signing in...';
+        var fd = new FormData(this);
+        fetch('api/auth.php?action=login', {
+          method: 'POST',
+          body: fd
+        })
+        .then(function(r){ return r.json(); })
+        .then(function(data){
+          if(data.success) {
+            window.location.href = data.redirect;
+          } else {
+            err.textContent = data.error || 'Login failed';
+            err.style.display = 'block';
+            btn.disabled = false;
+            btn.textContent = 'Sign In';
+          }
+        })
+        .catch(function(){
+          err.textContent = 'Network error. Please try again.';
+          err.style.display = 'block';
+          btn.disabled = false;
+          btn.textContent = 'Sign In';
+        });
+      });
+    }
+
+    // Register form submit handler
+    var regForm = document.getElementById('register-form').querySelector('form');
     if(regForm) {
       regForm.addEventListener('submit', function(e){
+        e.preventDefault();
         var p = document.getElementById('reg-password').value;
         var c = document.getElementById('reg-confirm').value;
         if(p !== c) {
-          e.preventDefault();
           var err = document.getElementById('auth-error');
           err.textContent = 'Passwords do not match';
           err.style.display = 'block';
+          return;
         }
+        var err = document.getElementById('auth-error');
+        err.style.display = 'none';
+        err.textContent = '';
+        var btn = this.querySelector('button[type="submit"]');
+        btn.disabled = true;
+        btn.textContent = 'Creating account...';
+        var fd = new FormData(this);
+        fetch('api/auth.php?action=register', {
+          method: 'POST',
+          body: fd
+        })
+        .then(function(r){ return r.json(); })
+        .then(function(data){
+          if(data.success) {
+            window.location.href = data.redirect;
+          } else {
+            err.textContent = data.error || 'Registration failed';
+            err.style.display = 'block';
+            btn.disabled = false;
+            btn.textContent = 'Create Account';
+          }
+        })
+        .catch(function(){
+          err.textContent = 'Network error. Please try again.';
+          err.style.display = 'block';
+          btn.disabled = false;
+          btn.textContent = 'Create Account';
+        });
       });
     }
   })();

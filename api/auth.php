@@ -40,6 +40,9 @@ switch($action) {
   case 'status':
     handleStatus();
     break;
+  case 'csrf':
+    handleCSRF();
+    break;
   default:
     http_response_code(400);
     echo json_encode(['error' => 'Invalid action']);
@@ -360,6 +363,16 @@ function handleStatus() {
   } else {
     echo json_encode(['authenticated' => false]);
   }
+}
+
+/**
+ * Generate CSRF token
+ */
+function handleCSRF() {
+  if (empty($_SESSION['csrf_token'])) {
+    $_SESSION['csrf_token'] = bin2hex(random_bytes(CSRF_TOKEN_LENGTH));
+  }
+  echo json_encode(['csrf_token' => $_SESSION['csrf_token']]);
 }
 
 // ============================================
