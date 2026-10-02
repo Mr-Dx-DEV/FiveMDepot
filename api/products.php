@@ -39,6 +39,12 @@ switch($action) {
   case 'reject':
     rejectProduct();
     break;
+  case 'free':
+    listFreeProducts();
+    break;
+  case 'categories':
+    listCategories();
+    break;
   default:
     // Default: list all products
     listProducts();
@@ -442,4 +448,49 @@ function logActivity($conn, $userId, $action, $entityType = null, $entityId = nu
   $ua = $_SERVER['HTTP_USER_AGENT'] ?? 'unknown';
   $stmt->bind_param('sssssss', $userId, $action, $entityType, $entityId, $details, $ip, $ua);
   $stmt->execute();
+}
+
+/**
+ * List free products
+ */
+function listFreeProducts() {
+  $conn = getDB();
+  $category = sanitizeInput($_GET['category'] ?? 'all');
+
+  $where = "status = 'PUBLISHED' AND price = 0";
+  $params = [];
+  $types = '';
+  if ($category !== 'all') {
+    $where .= " AND category = ?";
+    $params[] = $category;
+    $types .= 's';
+  }
+
+  $sql = "SELECT p.*, u.name as seller_name FROM products p LEFT JOIN users u ON p.user_id = u.id WHERE $where ORDER BY p.created_at DESC LIMIT 100";
+  $stmt = $conn->prepare($sql);
+  if (!empty($params)) $stmt->bind_param($types, ...$params);
+  $stmt->execute();
+  $result = $stmt->get_result();
+  $products = [];
+  while ($row = $result->fetch_assoc()) {
+    $products[] = [
+      'id' => $row['id'], 'slug' => $row['slug'], 'title' => $row['title'],
+      'price' => (float)$row['price'], 'screenshots' => $row['screenshots'],
+      'category' => $row['category'], 'seller' => $row['seller_name']
+    ];
+  }
+  echo json_encode(['products' => $products]);
+}
+
+/**
+ * List categories
+ */
+function listCategories() {
+  $conn = getDB();
+  $result = $conn->query("SELECT category, COUNT(*) as count FROM products WHERE status = 'PUBLISHED' GROUP BY category ORDER BY count DESC");
+  $categories = [];
+  while ($row = $result->fetch_assoc()) {
+    $categories[] = ['name' => $row['category'], 'count' => (int)$row['count']];
+  }
+  echo json_encode(['categories' => $categories]);
 }

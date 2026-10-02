@@ -494,6 +494,15 @@
           <a href="shop.html" class="btn btn-lg btn-primary">Browse Marketplace</a>
           <a href="register.html" class="btn btn-lg btn-outline-cyan">Start Selling Today</a>
         </div>
+        <div style="margin-top:32px;padding-top:24px;border-top:1px solid var(--border);">
+          <p style="color:var(--text-secondary);font-size:0.9375rem;margin-bottom:12px;">Subscribe to our newsletter for updates &amp; free assets</p>
+          <form id="newsletter-form" style="display:flex;gap:8px;max-width:400px;margin:0 auto;">
+            <input type="email" id="newsletter-email" placeholder="your@email.com" required style="flex:1;padding:12px 16px;border-radius:var(--radius-md);background:var(--bg-input);border:1px solid var(--border);color:var(--text-primary);font-size:0.9375rem;">
+            <button type="submit" class="btn btn-primary">Subscribe</button>
+          </form>
+          <p id="newsletter-msg" style="color:var(--cyan);font-size:0.8125rem;margin-top:8px;display:none;"></p>
+        </div>
+        </div>
       </div>
     </div>
   </section>
@@ -647,6 +656,8 @@
             <a href="shop.html?category=script">Scripts</a>
             <a href="shop.html?category=mlo">MLOs &amp; Maps</a>
             <a href="shop.html?category=vehicle">Vehicles</a>
+            <a href="free-assets.html">Free Assets</a>
+            <a href="documentation.html">Documentation</a>
           </div>
         </div>
 
@@ -655,6 +666,7 @@
           <h4>Support</h4>
           <div class="footer-links">
             <a href="auth.html">Login / Register</a>
+            <a href="documentation.html">Documentation</a>
             <a href="contact.html">Contact Support</a>
             <a href="legal.html">Legal Notice</a>
             <a href="privacy.html">Privacy Policy</a>
@@ -679,6 +691,46 @@
   <script>
     // Update current year
     document.getElementById('current-year').textContent = new Date().getFullYear();
+
+    // Newsletter subscription
+    var nForm = document.getElementById('newsletter-form');
+    if (nForm) {
+      nForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        var email = document.getElementById('newsletter-email').value;
+        var msg = document.getElementById('newsletter-msg');
+        if (email) {
+          fetch('api/newsletter.php?action=subscribe', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: email })
+          })
+          .then(function(r){ return r.json(); })
+          .then(function(data) {
+            if (data.success) {
+              msg.textContent = data.message || 'Subscribed successfully!';
+              msg.style.color = 'var(--cyan)';
+            } else {
+              msg.textContent = data.error || 'Subscription failed';
+              msg.style.color = '#ef4444';
+            }
+            msg.style.display = 'block';
+            setTimeout(function(){ msg.style.display = 'none'; }, 5000);
+          })
+          .catch(function(){
+            msg.textContent = 'Network error. Please try again.';
+            msg.style.color = '#ef4444';
+            msg.style.display = 'block';
+            setTimeout(function(){ msg.style.display = 'none'; }, 5000);
+          });
+        }
+      });
+    }
+
+    // Cookie Consent
+    if (typeof CookieConsent !== 'undefined') {
+      CookieConsent.init();
+    }
   </script>
 
 </body>

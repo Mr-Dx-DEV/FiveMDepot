@@ -343,4 +343,200 @@
     init();
   }
 
+  // ============================================
+  // Premium Feature Utilities
+  // ============================================
+
+  // Wishlist Manager
+  window.Wishlist = {
+    async toggle(productId) {
+      try {
+        const res = await fetch('api/wishlist.php?action=is_in_wishlist', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ product_id: productId })
+        });
+        const data = await res.json();
+        if (data.in_wishlist) {
+          await fetch('api/wishlist.php?action=remove', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ product_id: productId })
+          });
+          return false;
+        } else {
+          await fetch('api/wishlist.php?action=add', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ product_id: productId })
+          });
+          return true;
+        }
+      } catch (e) { console.error('Wishlist error:', e); return false; }
+    },
+    async check(productId) {
+      try {
+        const res = await fetch('api/wishlist.php?action=is_in_wishlist', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ product_id: productId })
+        });
+        const data = await res.json();
+        return data.in_wishlist || false;
+      } catch (e) { return false; }
+    }
+  };
+
+  // Promo Code Manager
+  window.PromoCode = {
+    async validate(code, total) {
+      try {
+        const res = await fetch('api/promos.php?action=validate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ code: code, total: total || 0 })
+        });
+        const data = await res.json();
+        return data;
+      } catch (e) { console.error('Promo error:', e); return { error: 'Validation failed' }; }
+    },
+    async apply(code) {
+      try {
+        const res = await fetch('api/promos.php?action=apply', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ code: code })
+        });
+        const data = await res.json();
+        return data;
+      } catch (e) { console.error('Promo error:', e); return { error: 'Apply failed' }; }
+    }
+  };
+
+  // Newsletter Manager
+  window.Newsletter = {
+    async subscribe(email) {
+      try {
+        const res = await fetch('api/newsletter.php?action=subscribe', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: email })
+        });
+        const data = await res.json();
+        return data;
+      } catch (e) { console.error('Newsletter error:', e); return { error: 'Subscription failed' }; }
+    }
+  };
+
+  // Cookie Consent
+  window.CookieConsent = {
+    accepted: false,
+    init() {
+      try {
+        this.accepted = localStorage.getItem('cookie_consent') === 'accepted';
+      } catch (e) { this.accepted = false; }
+      if (!this.accepted) this.show();
+    },
+    show() {
+      let banner = document.querySelector('.cookie-banner');
+      if (!banner) {
+        banner = document.createElement('div');
+        banner.className = 'cookie-banner';
+        banner.innerHTML = '<p>🍪 This site uses cookies to enhance your experience. <a href="/privacy.html">Learn more</a>.</p><button class="btn btn-sm btn-primary" onclick="CookieConsent.accept()">Accept</button>';
+        document.body.appendChild(banner);
+      }
+      banner.classList.remove('hidden');
+    },
+    accept() {
+      try { localStorage.setItem('cookie_consent', 'accepted'); } catch (e) {}
+      const banner = document.querySelector('.cookie-banner');
+      if (banner) banner.classList.add('hidden');
+    }
+  };
+
+  // Discord Widget
+  window.DiscordWidget = {
+    isOpen: false,
+    serverId: '',
+    memberCount: 0,
+    init(serverId) {
+      this.serverId = serverId;
+      this.fetchCount();
+      this.render();
+      this.bindEvents();
+    },
+    async fetchCount() {
+      if (!this.serverId) return;
+      try {
+        const res = await fetch('https://discord.com/api/guilds/' + this.serverId + '/widget.json');
+        const data = await res.json();
+        this.memberCount = data.presence_count || 0;
+      } catch (e) { console.error('Discord fetch failed:', e); }
+    },
+    render() {
+      let widget = document.querySelector('.discord-widget');
+      if (!widget) {
+        widget = document.createElement('div');
+        widget.className = 'discord-widget';
+        widget.innerHTML = '<button class="discord-widget-btn" aria-label="Join Discord">💬</button><div class="discord-widget-panel"><h4>Join Our Discord</h4><p class="member-count">' + this.memberCount + ' members online</p><a href="https://discord.gg/your-server" target="_blank" class="btn btn-sm btn-primary" style="margin-top:12px;width:100%;">Join Server</a></div>';
+        document.body.appendChild(widget);
+      }
+    },
+    bindEvents() {
+      const btn = document.querySelector('.discord-widget-btn');
+      const panel = document.querySelector('.discord-widget-panel');
+      if (btn && panel) {
+        btn.addEventListener('click', () => {
+          this.isOpen = !this.isOpen;
+          panel.classList.toggle('open', this.isOpen);
+        });
+        document.addEventListener('click', (e) => {
+          if (!panel.contains(e.target) && !btn.contains(e.target) && this.isOpen) {
+            this.isOpen = false;
+            panel.classList.remove('open');
+          }
+        });
+      }
+    }
+  };
+
+  // Chart.js Dark Theme Defaults
+  window.ChartDefaults = {
+    getConfig() {
+      return {
+        responsive: true,
+        maintainAspectRatio: true,
+        plugins: {
+          legend: { labels: { color: '#a0a0a0', font: { family: 'Inter', size: 12 } } },
+          tooltip: {
+            backgroundColor: '#1a1a1a',
+            titleColor: '#fff',
+            bodyColor: '#a0a0a0',
+            borderColor: 'rgba(212,175,55,0.3)',
+            borderWidth: 1,
+            cornerRadius: 8
+          }
+        },
+        scales: {
+          x: { ticks: { color: '#666' }, grid: { color: 'rgba(255,255,255,0.04)' } },
+          y: { ticks: { color: '#666' }, grid: { color: 'rgba(255,255,255,0.04)' } }
+        }
+      };
+    },
+    createLineChart(canvasId, labels, datasets) {
+      const ctx = document.getElementById(canvasId);
+      if (!ctx) return null;
+      const config = this.getConfig();
+      config.data = { labels: labels, datasets: datasets };
+      return new Chart(ctx, config);
+    },
+    createDonutChart(canvasId, labels, data, colors) {
+      const ctx = document.getElementById(canvasId);
+      if (!ctx) return null;
+      const config = this.getConfig();
+      config.data = { labels: labels, datasets: [{ data: data, backgroundColor: colors, borderWidth: 0 }] };
+      return new Chart(ctx, config);
+    }
+  };
+
 })();

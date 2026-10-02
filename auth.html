@@ -128,6 +128,10 @@
             <input type="checkbox" id="want-sell" name="want_seller">
             <label for="want-sell">I want to sell assets on FiveMDepot</label>
           </div>
+          <div class="seller-toggle">
+            <input type="checkbox" id="newsletter-opt" name="newsletter_opt_in">
+            <label for="newsletter-opt">Subscribe to our newsletter for updates &amp; free assets</label>
+          </div>
           <button type="submit" class="btn btn-primary" style="width:100%;">Create Account</button>
         </form>
       </div>
@@ -242,6 +246,9 @@
         });
       });
     }
+
+    // Cookie Consent
+    if (typeof CookieConsent !== 'undefined') CookieConsent.init();
   })();
   </script>
 </body>

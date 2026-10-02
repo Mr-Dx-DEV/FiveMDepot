@@ -55,6 +55,36 @@ switch($action) {
   case 'analytics':
     getAnalytics($conn);
     break;
+  case 'chart':
+    getChart($conn);
+    break;
+  case 'export':
+    exportCSV($conn);
+    break;
+  case 'health':
+    getHealth($conn);
+    break;
+  case 'leaderboard':
+    getLeaderboard($conn);
+    break;
+  case 'notifications':
+    getNotifications($conn);
+    break;
+  case 'banners':
+    handleBanners($conn);
+    break;
+  case 'audit-log':
+    getAuditLog($conn);
+    break;
+  case 'bulk-approve':
+    bulkApprove($conn);
+    break;
+  case 'bulk-reject':
+    bulkReject($conn);
+    break;
+  case 'reputation-recalculate':
+    recalculateReputation($conn);
+    break;
   default:
     http_response_code(400);
     echo json_encode(['error' => 'Invalid action']);
@@ -736,4 +766,304 @@ function logActivity($conn, $userId, $action, $entityType = null, $entityId = nu
   $ua = $_SERVER['HTTP_USER_AGENT'] ?? 'unknown';
   $stmt->bind_param('sssssss', $userId, $action, $entityType, $entityId, $details, $ip, $ua);
   $stmt->execute();
+}
+
+/**
+ * Chart data endpoints
+ */
+function getChart($conn) {
+  $type = sanitizeInput($_GET['type'] ?? 'revenue');
+  if ($type === 'revenue') {
+    // Last 30 days revenue
+    $stmt = $conn->prepare("SELECT DATE(created_at) as day, SUM(total_amount) as total FROM orders WHERE status = 'VERIFIED' AND created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY) GROUP BY DAY(created_at) ORDER BY day ASC");
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $labels = [];
+    $data = [];
+    while ($row = $result->fetch_assoc()) {
+      $labels[] = date('M j', strtotime($row['day']));
+      $data[] = (float)$row['total'];
+    }
+    echo json_encode(['labels' => $labels, 'data' => $data, 'type' => 'revenue']);
+  } elseif ($type === 'users') {
+    // Last 30 days new users
+    $stmt = $conn->prepare("SELECT DATE(created_at) as day, COUNT(*) as total FROM users WHERE created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY) GROUP BY DAY(created_at) ORDER BY day ASC");
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $labels = [];
+    $data = [];
+    while ($row = $result->fetch_assoc()) {
+      $labels[] = date('M j', strtotime($row['day']));
+      $data[] = (int)$row['total'];
+    }
+    echo json_encode(['labels' => $labels, 'data' => $data, 'type' => 'users']);
+  } elseif ($type === 'category-revenue') {
+    // Revenue by category
+    $sql = "SELECT p.category, SUM(op.quantity * op.price) as revenue
+      FROM order_products op JOIN products p ON op.product_id = p.id
+      JOIN orders o ON op.order_id = o.id
+      WHERE o.status = 'VERIFIED' AND o.created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)
+      GROUP BY p.category ORDER BY revenue DESC";
+    $result = $conn->query($sql);
+    $labels = [];
+    $data = [];
+    while ($row = $result->fetch_assoc()) {
+      $labels[] = $row['category'];
+      $data[] = (float)$row['revenue'];
+    }
+    echo json_encode(['labels' => $labels, 'data' => $data, 'type' => 'category-revenue']);
+  }
+}
+
+/**
+ * CSV Export
+ */
+function exportCSV($conn) {
+  $type = sanitizeInput($_GET['type'] ?? 'products');
+  header('Content-Type: text/csv');
+  header('Content-Disposition: attachment; filename="' . $type . '_export_' . date('Y-m-d') . '.csv"');
+  $out = fopen('php://output', 'w');
+
+  if ($type === 'products') {
+    fputcsv($out, ['ID', 'Title', 'Slug', 'Price', 'Category', 'Seller', 'Status', 'Downloads', 'Created']);
+    $result = $conn->query("SELECT p.*, u.name as seller_name FROM products p LEFT JOIN users u ON p.user_id = u.id ORDER BY p.created_at DESC");
+    while ($row = $result->fetch_assoc()) {
+      fputcsv($out, [$row['id'], $row['title'], $row['slug'], $row['price'], $row['category'], $row['seller_name'], $row['status'], $row['downloads'], $row['created_at']]);
+    }
+  } elseif ($type === 'orders') {
+    fputcsv($out, ['Order ID', 'User', 'Email', 'Total', 'Payment', 'Status', 'Created']);
+    $result = $conn->query("SELECT o.*, u.name, u.email FROM orders o LEFT JOIN users u ON o.user_id = u.id ORDER BY o.created_at DESC");
+    while ($row = $result->fetch_assoc()) {
+      fputcsv($out, [$row['id'], $row['name'], $row['email'], $row['total_amount'], $row['payment_method'], $row['status'], $row['created_at']]);
+    }
+  } elseif ($type === 'users') {
+    fputcsv($out, ['ID', 'Name', 'Email', 'Role', 'Wallet', 'Joined']);
+    $result = $conn->query("SELECT * FROM users ORDER BY created_at DESC");
+    while ($row = $result->fetch_assoc()) {
+      fputcsv($out, [$row['id'], $row['name'], $row['email'], $row['role'], $row['wallet_balance'], $row['created_at']]);
+    }
+  } elseif ($type === 'revenue') {
+    fputcsv($out, ['Date', 'Revenue']);
+    $stmt = $conn->prepare("SELECT DATE(created_at) as day, SUM(total_amount) as total FROM orders WHERE status = 'VERIFIED' GROUP BY DAY(created_at) ORDER BY day ASC");
+    $stmt->execute();
+    $result = $stmt->get_result();
+    while ($row = $result->fetch_assoc()) {
+      fputcsv($out, [$row['day'], $row['total']]);
+    }
+  }
+
+  fclose($out);
+}
+
+/**
+ * Site Health
+ */
+function getHealth($conn) {
+  $health = [
+    'database' => ['status' => 'ok', 'details' => 'Connected'],
+    'php_version' => phpversion(),
+    'server_time' => date('Y-m-d H:i:s'),
+    'disk_usage' => disk_total_bytes() > 0 ? round(disk_free_space() / (1024*1024*1024), 2) . ' GB free' : 'Unknown'
+  ];
+
+  // Check DB connection
+  try {
+    $conn->query("SELECT 1");
+  } catch (Exception $e) {
+    $health['database'] = ['status' => 'critical', 'details' => $e->getMessage()];
+  }
+
+  // Check recent errors
+  $stmt = $conn->prepare("SELECT COUNT(*) as count FROM activity_log WHERE action = 'error' AND created_at >= DATE_SUB(NOW(), INTERVAL 1 HOUR)");
+  $stmt->execute();
+  $errorCount = $stmt->get_result()->fetch_assoc()['count'];
+  $health['recent_errors'] = (int)$errorCount;
+
+  echo json_encode($health);
+}
+
+/**
+ * Top Seller Leaderboard
+ */
+function getLeaderboard($conn) {
+  $sql = "SELECT u.name, u.image, sr.total_sales, sr.total_earnings, sr.avg_rating, sr.verified_badge
+    FROM seller_reputation sr JOIN users u ON sr.user_id = u.id
+    WHERE sr.total_sales > 0
+    ORDER BY sr.total_earnings DESC LIMIT 10";
+  $result = $conn->query($sql);
+  $sellers = [];
+  $rank = 1;
+  while ($row = $result->fetch_assoc()) {
+    $row['rank'] = $rank++;
+    $sellers[] = $row;
+  }
+  echo json_encode(['sellers' => $sellers]);
+}
+
+/**
+ * Notifications
+ */
+function getNotifications($conn) {
+  $notifs = [];
+
+  // Pending seller applications
+  $stmt = $conn->prepare("SELECT COUNT(*) as count FROM seller_profiles WHERE status = 'PENDING'");
+  $stmt->execute();
+  $pending = $stmt->get_result()->fetch_assoc()['count'];
+  if ($pending > 0) $notifs[] = ['type' => 'warning', 'message' => $pending . ' pending seller applications', 'action' => 'pending-sellers'];
+
+  // Pending refunds
+  $stmt = $conn->prepare("SELECT COUNT(*) as count FROM refunds WHERE status = 'pending'");
+  $stmt->execute();
+  $refundCount = $stmt->get_result()->fetch_assoc()['count'];
+  if ($refundCount > 0) $notifs[] = ['type' => 'warning', 'message' => $refundCount . ' pending refund requests', 'action' => 'pending-refunds'];
+
+  // Recent orders
+  $stmt = $conn->prepare("SELECT id, created_at FROM orders WHERE status = 'VERIFIED' ORDER BY created_at DESC LIMIT 5");
+  $stmt->execute();
+  $result = $stmt->get_result();
+  $recentOrders = [];
+  while ($row = $result->fetch_assoc()) {
+    $recentOrders[] = ['id' => $row['id'], 'created_at' => $row['created_at']];
+  }
+  if (!empty($recentOrders)) $notifs[] = ['type' => 'info', 'message' => 'Recent orders available', 'action' => 'recent-orders', 'data' => $recentOrders];
+
+  echo json_encode(['notifications' => $notifs]);
+}
+
+/**
+ * Banner CRUD
+ */
+function handleBanners($conn) {
+  $action = sanitizeInput($_GET['action'] ?? $_POST['action'] ?? 'list');
+
+  if ($action === 'list') {
+    $result = $conn->query("SELECT * FROM banners ORDER BY position, created_at DESC");
+    $banners = [];
+    while ($row = $result->fetch_assoc()) $banners[] = $row;
+    echo json_encode(['banners' => $banners]);
+  } elseif ($action === 'create') {
+    $body = json_decode(file_get_contents('php://input'), true);
+    $id = bin2hex(random_bytes(16));
+    $id = sprintf('%s-%s-%s-%s-%s', substr($id,0,8), substr($id,8,4), '4'.substr($id,12,3), substr($id,16,4), substr($id,20,12));
+    $stmt = $conn->prepare("INSERT INTO banners (id, title, description, link, bg_color, text_color, position, is_active) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+    $stmt->bind_param('sssssssi', $id, $body['title'], $body['description'], $body['link'], $body['bg_color'], $body['text_color'], $body['position'], $body['is_active'] ?? 1);
+    $stmt->execute();
+    echo json_encode(['success' => true, 'id' => $id]);
+  } elseif ($action === 'update') {
+    $body = json_decode(file_get_contents('php://input'), true);
+    $stmt = $conn->prepare("UPDATE banners SET title=?, description=?, link=?, bg_color=?, text_color=?, position=?, is_active=? WHERE id=?");
+    $stmt->bind_param('sssssssi', $body['title'], $body['description'], $body['link'], $body['bg_color'], $body['text_color'], $body['position'], $body['is_active'] ?? 1, $body['id']);
+    $stmt->execute();
+    echo json_encode(['success' => true]);
+  } elseif ($action === 'delete') {
+    $body = json_decode(file_get_contents('php://input'), true);
+    $conn->prepare("DELETE FROM banners WHERE id=?")->bind_param('s', $body['id'])->execute();
+    echo json_encode(['success' => true]);
+  }
+}
+
+/**
+ * Audit Log
+ */
+function getAuditLog($conn) {
+  $page = max(1, intval($_GET['page'] ?? 1));
+  $limit = 50;
+  $offset = ($page - 1) * $limit;
+  $search = sanitizeInput($_GET['search'] ?? '');
+
+  $where = '1=1';
+  $params = [];
+  $types = '';
+  if ($search) {
+    $where .= " AND (action LIKE ? OR details LIKE ?)";
+    $params[] = '%'.$search.'%';
+    $params[] = '%'.$search.'%';
+    $types .= 'ss';
+  }
+
+  $stmt = $conn->prepare("SELECT al.*, u.name as user_name FROM activity_log al LEFT JOIN users u ON al.user_id = u.id WHERE $where ORDER BY al.created_at DESC LIMIT $limit OFFSET $offset");
+  if (!empty($params)) $stmt->bind_param($types, ...$params);
+  $stmt->execute();
+  $result = $stmt->get_result();
+  $logs = [];
+  while ($row = $result->fetch_assoc()) $logs[] = $row;
+
+  $countStmt = $conn->prepare("SELECT COUNT(*) as count FROM activity_log WHERE $where");
+  if (!empty($params)) $countStmt->bind_param($types, ...$params);
+  $countStmt->execute();
+  $total = $countStmt->get_result()->fetch_assoc()['count'];
+
+  echo json_encode(['logs' => $logs, 'total' => (int)$total, 'page' => $page, 'pages' => (int)ceil($total / $limit)]);
+}
+
+/**
+ * Bulk Approve Products
+ */
+function bulkApprove($conn) {
+  $admin = requireAdmin();
+  $body = json_decode(file_get_contents('php://input'), true);
+  $ids = $body['ids'] ?? [];
+  if (empty($ids)) { http_response_code(400); echo json_encode(['error' => 'No products selected']); return; }
+
+  $placeholders = implode(',', array_fill(0, count($ids), '?'));
+  $stmt = $conn->prepare("UPDATE products SET status = 'PUBLISHED' WHERE id IN ($placeholders)");
+  $types = str_repeat('s', count($ids));
+  $stmt->bind_param($types, ...$ids);
+  $stmt->execute();
+
+  logActivity($conn, $admin['id'], 'bulk_approve', 'product', null, 'Approved ' . count($ids) . ' products');
+  echo json_encode(['success' => true, 'count' => $stmt->affected_rows]);
+}
+
+/**
+ * Bulk Reject Products
+ */
+function bulkReject($conn) {
+  $admin = requireAdmin();
+  $body = json_decode(file_get_contents('php://input'), true);
+  $ids = $body['ids'] ?? [];
+  if (empty($ids)) { http_response_code(400); echo json_encode(['error' => 'No products selected']); return; }
+
+  $placeholders = implode(',', array_fill(0, count($ids), '?'));
+  $stmt = $conn->prepare("UPDATE products SET status = 'REJECTED' WHERE id IN ($placeholders)");
+  $types = str_repeat('s', count($ids));
+  $stmt->bind_param($types, ...$ids);
+  $stmt->execute();
+
+  logActivity($conn, $admin['id'], 'bulk_reject', 'product', null, 'Rejected ' . count($ids) . ' products');
+  echo json_encode(['success' => true, 'count' => $stmt->affected_rows]);
+}
+
+/**
+ * Recalculate Seller Reputation
+ */
+function recalculateReputation($conn) {
+  $result = $conn->query("SELECT DISTINCT user_id FROM seller_profiles WHERE status = 'APPROVED'");
+  $count = 0;
+  while ($row = $result->fetch_assoc()) {
+    $userId = $row['user_id'];
+
+    // Calculate from orders
+    $stmt = $conn->prepare("SELECT COUNT(DISTINCT op.order_id) as sales, COALESCE(SUM(op.price * op.quantity), 0) as earnings
+      FROM order_products op JOIN products p ON op.product_id = p.id
+      WHERE p.user_id = ? AND op.order_id IN (SELECT id FROM orders WHERE status = 'VERIFIED')");
+    $stmt->bind_param('s', $userId);
+    $stmt->execute();
+    $stats = $stmt->get_result()->fetch_assoc();
+
+    // Get avg rating
+    $stmt2 = $conn->prepare("SELECT AVG(rating) as avg_r FROM product_reviews WHERE product_id IN (SELECT id FROM products WHERE user_id = ?)");
+    $stmt2->bind_param('s', $userId);
+    $stmt2->execute();
+    $avgRating = $stmt2->get_result()->fetch_assoc()['avg_r'] ?? 0;
+
+    $stmt3 = $conn->prepare("INSERT INTO seller_reputation (user_id, total_sales, total_earnings, avg_rating, verified_badge, joined_at)
+      VALUES (?, ?, ?, ?, (SELECT verified_badge FROM seller_profiles WHERE user_id = ?), (SELECT created_at FROM users WHERE id = ?))
+      ON DUPLICATE KEY UPDATE total_sales=VALUES(total_sales), total_earnings=VALUES(total_earnings), avg_rating=VALUES(avg_rating)");
+    $stmt3->bind_param('ssdsss', $userId, $stats['sales'], $stats['earnings'], $avgRating, $userId, $userId);
+    $stmt3->execute();
+    $count++;
+  }
+  echo json_encode(['success' => true, 'recalculated' => $count]);
 }

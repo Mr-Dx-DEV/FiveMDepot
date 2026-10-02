@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My Wishlist — FiveMDepot</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/main.css">
+  <style>
+    .wishlist-container { max-width: 1200px; margin: 120px auto 60px; padding: 0 24px; }
+    .wishlist-header { margin-bottom: 40px; }
+    .wishlist-header h1 { font-size: 2rem; margin-bottom: 8px; }
+    .wishlist-header p { color: var(--text-secondary); }
+    .wishlist-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 24px; margin-bottom: 40px; }
+    .wishlist-empty { text-align: center; padding: 80px 20px; background: var(--bg-card); border-radius: var(--radius-lg); border: 2px dashed var(--border); }
+    .wishlist-empty svg { width: 64px; height: 64px; margin-bottom: 20px; opacity: 0.4; }
+    .wishlist-empty h3 { margin-bottom: 12px; color: var(--text-secondary); }
+    .wishlist-empty a { color: var(--gold); }
+    .wishlist-item { position: relative; background: var(--bg-card); border-radius: var(--radius-lg); overflow: hidden; border: 1px solid var(--border); transition: all var(--duration-fast); }
+    .wishlist-item:hover { border-color: var(--gold); transform: translateY(-4px); box-shadow: 0 12px 32px rgba(212,175,55,0.1); }
+    .wishlist-item-img { width: 100%; height: 180px; object-fit: cover; background: var(--bg-input); }
+    .wishlist-item-body { padding: 20px; }
+    .wishlist-item-category { font-size: 0.75rem; color: var(--gold); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; }
+    .wishlist-item-title { font-size: 1.0625rem; font-weight: 600; margin-bottom: 12px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+    .wishlist-item-title a { color: var(--text-primary); text-decoration: none; }
+    .wishlist-item-title a:hover { color: var(--gold); }
+    .wishlist-item-price { font-size: 1.25rem; font-weight: 700; color: var(--gold); margin-bottom: 16px; }
+    .wishlist-item-actions { display: flex; gap: 8px; }
+    .wishlist-item-actions .btn { flex: 1; }
+    .wishlist-remove { position: absolute; top: 12px; right: 12px; width: 36px; height: 36px; border-radius: 50%; background: rgba(0,0,0,0.6); border: none; color: #fff; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all var(--duration-fast); z-index: 2; }
+    .wishlist-remove:hover { background: #ef4444; }
+    .wishlist-count { display: inline-block; background: var(--gold); color: #000; padding: 4px 12px; border-radius: 20px; font-size: 0.875rem; font-weight: 600; margin-left: 12px; }
+    .loading-state { text-align: center; padding: 60px; }
+    .loading-spinner { width: 48px; height: 48px; border: 4px solid var(--border); border-top-color: var(--gold); border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 20px; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+  <nav class="navbar" id="navbar">
+    <div class="container navbar-inner">
+      <a href="/" class="navbar-logo">
+        <svg viewBox="0 0 40 40" fill="none" width="36" height="36"><defs><linearGradient id="la" x1="0" y1="0" x2="40" y2="40"><stop offset="0%" stop-color="#d4af37"/><stop offset="50%" stop-color="#f0c75e"/><stop offset="100%" stop-color="#d4af37"/></linearGradient></defs><rect x="2" y="2" width="36" height="36" rx="10" stroke="url(#la)" stroke-width="2.5" fill="none"/><path d="M12 28V14l8 6 8-6v14" stroke="url(#la)" stroke-width="2.5" fill="none"/></svg>
+        <span class="gradient-gold">FiveMDepot</span>
+      </a>
+      <div class="navbar-actions">
+        <a href="shop.html" class="btn btn-sm btn-outline-gold">Browse Shop</a>
+      </div>
+    </div>
+  </nav>
+
+  <div class="wishlist-container">
+    <div class="wishlist-header">
+      <h1>My Wishlist <span class="wishlist-count" id="wishlist-count">0</span></h1>
+      <p>Save your favorite assets for later</p>
+    </div>
+    <div id="wishlist-content">
+      <div class="loading-state">
+        <div class="loading-spinner"></div>
+        <p>Loading your wishlist...</p>
+      </div>
+    </div>
+  </div>
+
+  <footer class="footer">
+    <div class="container">
+      <p>&copy; 2026 FiveMDepot. All rights reserved.</p>
+    </div>
+  </footer>
+
+  <script src="js/main.js"></script>
+  <script>
+  (function(){
+    const content = document.getElementById('wishlist-content');
+    const countEl = document.getElementById('wishlist-count');
+
+    function showError(msg) {
+      content.innerHTML = '<div class="wishlist-empty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg><h3>Something went wrong</h3><p>'+msg+'</p><a href="shop.html">Browse Shop</a></div>';
+    }
+
+    function renderEmpty() {
+      content.innerHTML = '<div class="wishlist-empty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg><h3>Your wishlist is empty</h3><p>Start adding assets you love!</p><a href="shop.html">Browse Shop</a></div>';
+    }
+
+    function renderWishlist(items) {
+      if (!items || items.length === 0) { renderEmpty(); return; }
+      countEl.textContent = items.length;
+      let html = '<div class="wishlist-grid">';
+      items.forEach(function(item) {
+        const img = item.image ? '<img class="wishlist-item-img" src="'+item.image+'" alt="'+item.title+'">' : '<div class="wishlist-item-img" style="display:flex;align-items:center;justify-content:center;color:var(--text-muted)">No preview</div>';
+        html += '<div class="wishlist-item" data-id="'+item.id+'">'+img+'<button class="wishlist-remove" data-id="'+item.id+'" title="Remove">&times;</button><div class="wishlist-item-body"><div class="wishlist-item-category">'+(item.category||'Asset')+'</div><div class="wishlist-item-title"><a href="product.html?slug='+encodeURIComponent(item.slug)+'">'+item.title+'</a></div><div class="wishlist-item-price">$'+item.price.toFixed(2)+'</div><div class="wishlist-item-actions"><button class="btn btn-sm btn-primary add-cart-btn" data-id="'+item.id+'" data-slug="'+item.slug+'" data-title="'+item.title+'" data-price="'+item.price+'" data-image="'+(item.image||'')+'">Add to Cart</button><button class="btn btn-sm btn-outline-gold wishlist-remove-btn" data-id="'+item.id+'">Remove</button></div></div></div>';
+      });
+      html += '</div>';
+      content.innerHTML = html;
+
+      content.querySelectorAll('.add-cart-btn').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+          const item = {
+            id: this.dataset.id,
+            slug: this.dataset.slug,
+            title: this.dataset.title,
+            price: parseFloat(this.dataset.price),
+            image: this.dataset.image
+          };
+          addToCart(item);
+          this.textContent = 'Added!';
+          this.classList.remove('btn-primary');
+          this.classList.add('btn-success');
+          setTimeout(() => { this.textContent = 'Add to Cart'; this.classList.remove('btn-success'); this.classList.add('btn-primary'); }, 1500);
+        });
+      });
+
+      content.querySelectorAll('.wishlist-remove-btn').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+          const id = this.dataset.id;
+          fetch('api/wishlist.php?action=remove', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ product_id: id })
+          }).then(function(r) { return r.json(); }).then(function(data) {
+            if (data.success) {
+              const el = content.querySelector('.wishlist-item[data-id="'+id+'"]');
+              if (el) { el.style.opacity = '0'; setTimeout(() => el.remove(), 300); }
+              countEl.textContent = Math.max(0, parseInt(countEl.textContent) - 1);
+            }
+          });
+        });
+      });
+    }
+
+    fetch('api/wishlist.php?action=list')
+      .then(function(r) { return r.json(); })
+      .then(function(data) { renderWishlist(data.wishlist || []); })
+      .catch(function() { showError('Failed to load wishlist'); });
+  })();
+  </script>
+</body>
+</html>

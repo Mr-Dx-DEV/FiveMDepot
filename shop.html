@@ -77,6 +77,15 @@
             <a href="shop.html?category=vehicle" class="btn btn-sm filter-tab" data-category="vehicle">Vehicles</a>
           </div>
 
+          <!-- Framework Filters -->
+          <div class="framework-filter" id="framework-filters">
+            <button class="framework-chip active" data-framework="all">All Frameworks</button>
+            <button class="framework-chip" data-framework="ESX">ESX</button>
+            <button class="framework-chip" data-framework="QBCore">QBCore</button>
+            <button class="framework-chip" data-framework="QBox">QBox</button>
+            <button class="framework-chip" data-framework="Stand-Alone">Stand-Alone</button>
+          </div>
+
           <!-- Search -->
           <div style="flex:1;min-width:200px;max-width:320px;margin-left:auto;">
             <input type="text" id="search-input" placeholder="Search assets..." class="input-field" style="width:100%;padding:10px 16px;border-radius:var(--radius-md);background:var(--bg-input);border:1px solid var(--border);color:var(--text-primary);font-size:0.9375rem;transition:border-color var(--duration-fast);">
@@ -219,11 +228,12 @@
         var stars = '';
         for(var s=1;s<=5;s++) stars += s <= p.rating ? '&#9733;' : '&#9734;';
 
-        return '<div class="product-card reveal stagger-' + ((i%5)+1) + '" style="transition-delay:' + (i*0.1) + 's;">' +
+        return '<div class="product-card reveal stagger-' + ((i%5)+1) + '" style="transition-delay:' + (i*0.1) + 's;" data-id="' + p.id + '" data-framework="' + (p.framework||'') + '">' +
           '<div style="position:relative;">' +
             '<img src="' + p.image + '" alt="' + p.title + '" class="product-image" style="background:linear-gradient(135deg,#1a1a2e,#16213e);">' +
             badgeHTML +
             '<span class="product-category-icon" style="color:' + (categoryColors[p.category]||'var(--gold)') + ';">' + (categoryIcons[p.category]||'&#128187;') + '</span>' +
+            '<button class="wishlist-btn" data-product-id="' + p.id + '" title="Add to Wishlist">&#9829;</button>' +
           '</div>' +
           '<div class="product-body">' +
             '<h3 class="product-title">' + p.title + '</h3>' +
@@ -305,6 +315,63 @@
 
     // Initial render
     applyFilters();
+
+    // Framework filters
+    var currentFramework = 'all';
+    var fwContainer = document.getElementById('framework-filters');
+    if (fwContainer) {
+      fwContainer.querySelectorAll('.framework-chip').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+          fwContainer.querySelectorAll('.framework-chip').forEach(function(b) { b.classList.remove('active'); });
+          this.classList.add('active');
+          currentFramework = this.dataset.framework;
+          applyFilters();
+        });
+      });
+    }
+
+    // Override applyFilters to include framework filter
+    var originalApplyFilters = applyFilters;
+    applyFilters = function() {
+      var filtered = products.slice();
+
+      if (currentCategory !== 'all') {
+        filtered = filtered.filter(function(p){ return p.category === currentCategory; });
+      }
+      if (currentFramework !== 'all') {
+        filtered = filtered.filter(function(p){ return (p.framework||'').indexOf(currentFramework) !== -1; });
+      }
+      if (searchQuery) {
+        var q = searchQuery.toLowerCase();
+        filtered = filtered.filter(function(p){
+          return p.title.toLowerCase().indexOf(q) !== -1 || (p.seller||'').toLowerCase().indexOf(q) !== -1;
+        });
+      }
+
+      switch(sortBy) {
+        case 'featured': filtered.sort(function(a,b){ return (b.featured?1:0) - (a.featured?1:0); }); break;
+        case 'newest': filtered.sort(function(a,b){ return b.id - a.id; }); break;
+        case 'price-low': filtered.sort(function(a,b){ return a.price - b.price; }); break;
+        case 'price-high': filtered.sort(function(a,b){ return b.price - a.price; }); break;
+        case 'popular': filtered.sort(function(a,b){ return b.downloads - a.downloads; }); break;
+        default: filtered.sort(function(a,b){ return (b.featured?1:0) - (a.featured?1:0); });
+      }
+
+      renderProducts(filtered);
+    };
+
+    // Wishlist buttons
+    document.querySelectorAll('.wishlist-btn').forEach(function(btn) {
+      btn.addEventListener('click', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        var productId = this.dataset.productId;
+        Wishlist.toggle(productId).then(function(isNowWishlisted) {
+          this.style.color = isNowWishlisted ? '#ef4444' : '#fff';
+          this.innerHTML = isNowWishlisted ? '&#9829;' : '&#9825;';
+        }.bind(this));
+      });
+    });
 
     // Year
     document.getElementById('current-year').textContent = new Date().getFullYear();

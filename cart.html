@@ -59,6 +59,14 @@
           <div class="card checkout-summary">
             <h3>Order Summary</h3>
             <div id="summary-lines"></div>
+            <!-- Promo Code -->
+            <div id="promo-section" style="margin-top:16px;">
+              <div class="promo-input-group">
+                <input type="text" id="promo-code-input" placeholder="Promo code" style="padding:10px 14px;border-radius:var(--radius-md);background:var(--bg-input);border:1px solid var(--border);color:var(--text-primary);font-size:0.875rem;">
+                <button type="button" id="promo-apply-btn" class="btn btn-sm btn-outline-gold">Apply</button>
+              </div>
+              <div id="promo-message" style="font-size:0.8125rem;margin-top:6px;"></div>
+            </div>
             <div class="checkout-total">
               <span>Total</span>
               <span class="amount" id="cart-total">$0.00</span>
@@ -121,6 +129,37 @@
       if(window.FiveMDepotCart) window.FiveMDepotCart.removeItem(id);
       location.reload();
     };
+
+    // Promo code apply
+    var promoBtn = document.getElementById('promo-apply-btn');
+    var promoInput = document.getElementById('promo-code-input');
+    var promoMsg = document.getElementById('promo-message');
+    if (promoBtn && promoInput) {
+      promoBtn.addEventListener('click', function() {
+        var code = promoInput.value.trim();
+        if (!code) { promoMsg.textContent = 'Please enter a promo code'; promoMsg.style.color = '#ef4444'; return; }
+        fetch('api/promos.php?action=validate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ code: code, total: parseFloat(totalEl.textContent.replace('$','')) })
+        })
+        .then(function(r){ return r.json(); })
+        .then(function(data) {
+          if (data.valid) {
+            promoMsg.textContent = '✓ Code applied! Discount: $' + data.discount.toFixed(2);
+            promoMsg.style.color = 'var(--cyan)';
+            // Update total with discount
+            var originalTotal = parseFloat(totalEl.textContent.replace('$',''));
+            var discounted = originalTotal - data.discount;
+            totalEl.textContent = '$' + discounted.toFixed(2);
+          } else {
+            promoMsg.textContent = data.error || 'Invalid code';
+            promoMsg.style.color = '#ef4444';
+          }
+        })
+        .catch(function(){ promoMsg.textContent = 'Validation failed'; promoMsg.style.color = '#ef4444'; });
+      });
+    }
   })();
   </script>
 </body>

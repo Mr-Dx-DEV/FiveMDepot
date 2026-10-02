@@ -134,6 +134,14 @@
           <div class="card checkout-summary" style="position:sticky;top:calc(var(--header-height) + 24px);">
             <h3>Order Summary</h3>
             <div id="checkout-lines"></div>
+            <!-- Promo Code -->
+            <div style="margin-top:16px;">
+              <div class="promo-input-group">
+                <input type="text" id="checkout-promo-input" placeholder="Promo code" style="padding:10px 14px;border-radius:var(--radius-md);background:var(--bg-input);border:1px solid var(--border);color:var(--text-primary);font-size:0.875rem;">
+                <button type="button" id="checkout-promo-btn" class="btn btn-sm btn-outline-gold">Apply</button>
+              </div>
+              <div id="checkout-promo-msg" style="font-size:0.8125rem;margin-top:6px;"></div>
+            </div>
             <div class="checkout-total">
               <span>Total</span>
               <span class="amount" id="checkout-total">$0.00</span>
@@ -185,6 +193,42 @@
         content.innerHTML = '<p style="color:var(--gold);">Bank: DBBL</p><p style="color:var(--gold);">Account: 0000000000000</p><p style="color:var(--text-secondary);font-family:var(--font-body);font-size:0.8125rem;">Branch: Dhaka | Title: FiveMDepot</p>';
       }
     };
+
+    // Checkout promo code
+    var cpBtn = document.getElementById('checkout-promo-btn');
+    var cpInput = document.getElementById('checkout-promo-input');
+    var cpMsg = document.getElementById('checkout-promo-msg');
+    if (cpBtn && cpInput) {
+      cpBtn.addEventListener('click', function() {
+        var code = cpInput.value.trim();
+        if (!code) { cpMsg.textContent = 'Please enter a promo code'; cpMsg.style.color = '#ef4444'; return; }
+        fetch('api/promos.php?action=validate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ code: code, total: parseFloat(document.getElementById('checkout-total').textContent.replace('$','')) })
+        })
+        .then(function(r){ return r.json(); })
+        .then(function(data) {
+          if (data.valid) {
+            // Apply promo
+            fetch('api/promos.php?action=apply', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ code: code })
+            });
+            cpMsg.textContent = '✓ Code applied! Discount: $' + data.discount.toFixed(2);
+            cpMsg.style.color = 'var(--cyan)';
+            var originalTotal = parseFloat(document.getElementById('checkout-total').textContent.replace('$',''));
+            var discounted = originalTotal - data.discount;
+            document.getElementById('checkout-total').textContent = '$' + discounted.toFixed(2);
+          } else {
+            cpMsg.textContent = data.error || 'Invalid code';
+            cpMsg.style.color = '#ef4444';
+          }
+        })
+        .catch(function(){ cpMsg.textContent = 'Validation failed'; cpMsg.style.color = '#ef4444'; });
+      });
+    }
   })();
   </script>
 </body>

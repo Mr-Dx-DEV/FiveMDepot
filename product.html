@@ -109,16 +109,18 @@
 
           <!-- Seller Info -->
           <div class="seller-info-card" id="sellerInfo">
-            <div class="seller-avatar">
-              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-                <circle cx="12" cy="7" r="4"/>
-              </svg>
-            </div>
-            <div class="seller-details">
-              <span class="seller-name" id="sellerName">Unknown Seller</span>
-              <span class="seller-label">Seller</span>
-            </div>
+            <a href="#" id="sellerProfileLink" class="seller-info-link" style="display:flex;align-items:center;gap:12px;text-decoration:none;color:inherit;">
+              <div class="seller-avatar">
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                  <circle cx="12" cy="7" r="4"/>
+                </svg>
+              </div>
+              <div class="seller-details">
+                <span class="seller-name" id="sellerName">Unknown Seller</span>
+                <span class="seller-label">View Profile</span>
+              </div>
+            </a>
           </div>
 
           <!-- Product Details -->
@@ -158,6 +160,7 @@
             <button class="btn btn-outline-gold btn-lg" id="buyNowBtn">
               Buy Now
             </button>
+            <button class="wishlist-btn" id="wishlistToggle" style="position:static;width:48px;height:48px;font-size:1.25rem;flex-shrink:0;" title="Add to Wishlist">&#9825;</button>
           </div>
         </div>
       </div>
@@ -173,6 +176,26 @@
       <div class="content-card" id="fullDescription">
         <p>Loading full description...</p>
       </div>
+    </div>
+  </section>
+
+  <!-- Video Preview -->
+  <section class="section" id="videoSection" style="display:none;">
+    <div class="container">
+      <div class="section-header">
+        <h2 class="section-title">Video Preview</h2>
+      </div>
+      <div class="video-preview" id="videoPreview"></div>
+    </div>
+  </section>
+
+  <!-- Changelog -->
+  <section class="section" id="changelogSection" style="display:none;">
+    <div class="container">
+      <div class="section-header">
+        <h2 class="section-title">Version History</h2>
+      </div>
+      <div class="changelog-accordion" id="changelogAccordion"></div>
     </div>
   </section>
 
@@ -429,6 +452,92 @@
             });
             window.location.href = 'checkout.html';
           });
+
+          // ============================================
+          // Premium Features: Video, Changelog, Wishlist, Seller Profile
+          // ============================================
+
+          // Video preview toggle
+          const videoSection = document.getElementById('videoSection');
+          const videoPreview = document.getElementById('videoPreview');
+          if (productData.video_url && videoSection) {
+            videoSection.style.display = 'block';
+            if (productData.video_url.match(/\.(youtube|youtu\.be)/i)) {
+              // YouTube embed
+              const videoId = productData.video_url.split('v=')[1] || productData.video_url.split('/').pop();
+              const amp = videoId.includes('&') ? '&' : '?';
+              videoPreview.innerHTML = `<iframe width="100%" height="480" src="https://www.youtube.com/embed/${videoId}${amp}rel=0&modestbranding=1" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen style="border-radius:var(--radius-lg);"></iframe>`;
+            } else {
+              videoPreview.innerHTML = `<video width="100%" height="480" controls style="border-radius:var(--radius-lg);"><source src="${productData.video_url}" type="video/mp4">Your browser does not support the video tag.</video>`;
+            }
+          }
+
+          // Changelog accordion
+          const changelogSection = document.getElementById('changelogSection');
+          const changelogAccordion = document.getElementById('changelogAccordion');
+          if (productData.changelog && changelogSection) {
+            changelogSection.style.display = 'block';
+            const entries = typeof productData.changelog === 'string' ? productData.changelog.split('\n').filter(e => e.trim()) : [];
+            if (entries.length > 0) {
+              changelogAccordion.innerHTML = entries.map((entry, i) => {
+                const parts = entry.split(':');
+                const version = parts[0] || 'v' + (i + 1);
+                const details = parts.slice(1).join(':').trim() || 'Updates and improvements';
+                return `
+                  <div class="changelog-entry">
+                    <div class="changelog-header" onclick="this.parentElement.querySelector('.changelog-body').classList.toggle('open')">
+                      <span class="changelog-version">${version.trim()}</span>
+                      <svg class="changelog-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+                    </div>
+                    <div class="changelog-body">${details}</div>
+                  </div>
+                `;
+              }).join('');
+            } else {
+              changelogAccordion.innerHTML = '<p class="text-muted">No version history available.</p>';
+            }
+          }
+
+          // Wishlist toggle button
+          const wishlistBtn = document.getElementById('wishlistToggle');
+          if (wishlistBtn) {
+            // Check if product is in wishlist
+            function checkWishlist() {
+              fetch('api/wishlist.php?action=is_in_wishlist&product_id=' + productData.id)
+                .then(r => r.json())
+                .then(data => {
+                  wishlistBtn.classList.toggle('active', data.in_wishlist);
+                  wishlistBtn.innerHTML = data.in_wishlist
+                    ? '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg> In Wishlist'
+                    : '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg> Add to Wishlist';
+                })
+                .catch(() => {});
+            }
+            checkWishlist();
+
+            wishlistBtn.addEventListener('click', function() {
+              const isInWishlist = this.classList.contains('active');
+              if (isInWishlist) {
+                fetch('api/wishlist.php?action=remove', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ product_id: productData.id })
+                }).then(() => checkWishlist());
+              } else {
+                fetch('api/wishlist.php?action=add', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ product_id: productData.id })
+                }).then(() => checkWishlist());
+              }
+            });
+          }
+
+          // Seller profile link
+          const sellerLink = document.getElementById('sellerProfileLink');
+          if (sellerLink && productData.seller) {
+            sellerLink.href = 'seller-profile.html?email=' + encodeURIComponent(productData.seller.email || '');
+          }
         })
         .catch(err => {
           console.error('Failed to load product:', err);

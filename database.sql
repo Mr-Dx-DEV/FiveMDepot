@@ -313,4 +313,175 @@ INSERT INTO `site_settings` (`id`, `key`, `value`, `description`) VALUES
 ('s0000000-0000-0000-0000-000000000005', 'bank_name', 'DBBL', 'Bank name'),
 ('s0000000-0000-0000-0000-000000000006', 'bank_account', '0000000000000', 'Bank account number'),
 ('s0000000-0000-0000-0000-000000000007', 'bank_branch', 'Dhaka', 'Bank branch'),
-('s0000000-0000-0000-0000-000000000008', 'seller_auto_approve', '0', 'Auto-approve seller applications (0=off, 1=on)');
+('s0000000-0000-0000-0000-000000000008', 'seller_auto_approve', '0', 'Auto-approve seller applications (0=off, 1=on)'),
+('s0000000-0000-0000-0000-000000000009', 'newsletter_enabled', '0', 'Enable newsletter subscription'),
+('s0000000-0000-0000-0000-000000000010', 'cookie_consent_text', 'This site uses cookies to enhance your experience.', 'Cookie consent banner text'),
+('s0000000-0000-0000-0000-000000000011', 'discord_widget_server_id', '', 'Discord server ID for widget'),
+('s0000000-0000-0000-0000-000000000012', 'free_assets_enabled', '1', 'Enable free assets section');
+
+-- ============================================
+-- Premium Feature Extensions
+-- ============================================
+
+-- ============================================
+-- Wishlist
+-- ============================================
+CREATE TABLE IF NOT EXISTS `wishlist` (
+  `id` VARCHAR(36) NOT NULL,
+  `user_id` VARCHAR(36) NOT NULL,
+  `product_id` VARCHAR(36) NOT NULL,
+  `added_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `unique_user_product` (`user_id`, `product_id`),
+  KEY `idx_user` (`user_id`),
+  KEY `idx_product` (`product_id`),
+  FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE CASCADE,
+  FOREIGN KEY (`product_id`) REFERENCES `products`(`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ============================================
+-- Seller Reputation
+-- ============================================
+CREATE TABLE IF NOT EXISTS `seller_reputation` (
+  `id` VARCHAR(36) NOT NULL,
+  `user_id` VARCHAR(36) NOT NULL,
+  `total_sales` INT NOT NULL DEFAULT '0',
+  `total_earnings` DECIMAL(10,2) NOT NULL DEFAULT '0.00',
+  `avg_rating` DECIMAL(3,2) NOT NULL DEFAULT '0.00',
+  `response_hours` DECIMAL(5,2) NOT NULL DEFAULT '24.00',
+  `verified_badge` TINYINT(1) NOT NULL DEFAULT '0',
+  `joined_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `unique_user` (`user_id`),
+  KEY `idx_verified` (`verified_badge`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ============================================
+-- Promos / Discount Codes
+-- ============================================
+CREATE TABLE IF NOT EXISTS `promos` (
+  `id` VARCHAR(36) NOT NULL,
+  `code` VARCHAR(50) NOT NULL,
+  `type` ENUM('percent','fixed') NOT NULL DEFAULT 'percent',
+  `value` DECIMAL(10,2) NOT NULL DEFAULT '0.00',
+  `min_amount` DECIMAL(10,2) NOT NULL DEFAULT '0.00',
+  `max_uses` INT NOT NULL DEFAULT '0',
+  `uses_count` INT NOT NULL DEFAULT '0',
+  `expires_at` DATETIME DEFAULT NULL,
+  `is_active` TINYINT(1) NOT NULL DEFAULT '1',
+  `created_by` VARCHAR(36) DEFAULT NULL,
+  `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `unique_code` (`code`),
+  KEY `idx_active` (`is_active`),
+  KEY `idx_expires` (`expires_at`),
+  FOREIGN KEY (`created_by`) REFERENCES `users`(`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ============================================
+-- Banners / Homepage Promos
+-- ============================================
+CREATE TABLE IF NOT EXISTS `banners` (
+  `id` VARCHAR(36) NOT NULL,
+  `title` VARCHAR(200) NOT NULL,
+  `description` TEXT DEFAULT NULL,
+  `link` VARCHAR(500) DEFAULT NULL,
+  `bg_color` VARCHAR(20) DEFAULT '#1a1a2e',
+  `text_color` VARCHAR(20) DEFAULT '#ffffff',
+  `position` ENUM('hero','topbar') NOT NULL DEFAULT 'hero',
+  `is_active` TINYINT(1) NOT NULL DEFAULT '1',
+  `start_date` DATETIME DEFAULT NULL,
+  `end_date` DATETIME DEFAULT NULL,
+  `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_active` (`is_active`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ============================================
+-- Documentation / Tutorials
+-- ============================================
+CREATE TABLE IF NOT EXISTS `documentation` (
+  `id` VARCHAR(36) NOT NULL,
+  `title` VARCHAR(200) NOT NULL,
+  `slug` VARCHAR(200) NOT NULL,
+  `category` VARCHAR(100) NOT NULL DEFAULT 'general',
+  `content` LONGTEXT DEFAULT NULL,
+  `thumbnail` VARCHAR(500) DEFAULT NULL,
+  `author_id` VARCHAR(36) DEFAULT NULL,
+  `views` INT NOT NULL DEFAULT '0',
+  `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `unique_slug` (`slug`),
+  KEY `idx_category` (`category`),
+  KEY `idx_author` (`author_id`),
+  FOREIGN KEY (`author_id`) REFERENCES `users`(`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ============================================
+-- Messages (Buyer/Seller)
+-- ============================================
+CREATE TABLE IF NOT EXISTS `messages` (
+  `id` VARCHAR(36) NOT NULL,
+  `sender_id` VARCHAR(36) NOT NULL,
+  `receiver_id` VARCHAR(36) NOT NULL,
+  `product_id` VARCHAR(36) DEFAULT NULL,
+  `subject` VARCHAR(255) DEFAULT NULL,
+  `body` TEXT NOT NULL,
+  `is_read` TINYINT(1) NOT NULL DEFAULT '0',
+  `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_sender` (`sender_id`),
+  KEY `idx_receiver` (`receiver_id`),
+  KEY `idx_product` (`product_id`),
+  KEY `idx_created` (`created_at`),
+  FOREIGN KEY (`sender_id`) REFERENCES `users`(`id`) ON DELETE CASCADE,
+  FOREIGN KEY (`receiver_id`) REFERENCES `users`(`id`) ON DELETE CASCADE,
+  FOREIGN KEY (`product_id`) REFERENCES `products`(`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ============================================
+-- Refund Requests
+-- ============================================
+CREATE TABLE IF NOT EXISTS `refunds` (
+  `id` VARCHAR(36) NOT NULL,
+  `order_id` VARCHAR(36) NOT NULL,
+  `user_id` VARCHAR(36) NOT NULL,
+  `reason` TEXT NOT NULL,
+  `status` ENUM('pending','approved','rejected') NOT NULL DEFAULT 'pending',
+  `admin_note` TEXT DEFAULT NULL,
+  `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `resolved_at` DATETIME DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `idx_order` (`order_id`),
+  KEY `idx_user` (`user_id`),
+  KEY `idx_status` (`status`),
+  FOREIGN KEY (`order_id`) REFERENCES `orders`(`id`) ON DELETE CASCADE,
+  FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ============================================
+-- Newsletter Subscribers
+-- ============================================
+CREATE TABLE IF NOT EXISTS `newsletter_subscribers` (
+  `id` VARCHAR(36) NOT NULL,
+  `email` VARCHAR(255) NOT NULL,
+  `subscribed_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `unsubscribed_at` DATETIME DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `unique_email` (`email`),
+  KEY `idx_subscribed` (`subscribed_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ============================================
+-- New Columns for Existing Tables
+-- ============================================
+
+-- products: video_url, changelog
+ALTER TABLE `products` ADD COLUMN `video_url` TEXT DEFAULT NULL AFTER `files`;
+ALTER TABLE `products` ADD COLUMN `changelog` TEXT DEFAULT NULL AFTER `video_url`;
+
+-- users: newsletter_opt_in
+ALTER TABLE `users` ADD COLUMN `newsletter_opt_in` TINYINT(1) NOT NULL DEFAULT '0' AFTER `role`;

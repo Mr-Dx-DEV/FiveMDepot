@@ -1361,3 +1361,369 @@
     align-items: flex-end;
   }
 }
+
+/* ============================================
+   Premium Admin Features
+   ============================================ */
+
+/* Banners Grid */
+.banners-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 20px;
+}
+.banner-card {
+  border-radius: var(--admin-radius);
+  overflow: hidden;
+  border: 1px solid var(--admin-border);
+  background: var(--admin-card);
+}
+.banner-preview {
+  height: 140px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  text-align: center;
+  position: relative;
+}
+.banner-preview .banner-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: inherit;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.3);
+}
+.banner-body {
+  padding: 16px;
+}
+.banner-body h4 {
+  margin: 0 0 8px;
+  font-size: 0.9375rem;
+}
+.banner-body p {
+  margin: 0 0 12px;
+  font-size: 0.8125rem;
+  color: var(--admin-text-secondary);
+}
+.banner-actions {
+  display: flex;
+  gap: 8px;
+}
+
+/* Promo Codes Table */
+.promos-table {
+  border-radius: var(--admin-radius);
+  overflow: hidden;
+  border: 1px solid var(--admin-border);
+}
+.promo-row {
+  display: grid;
+  grid-template-columns: 140px 80px 80px 120px 100px 100px 80px;
+  gap: 12px;
+  align-items: center;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--admin-border);
+  font-size: 0.875rem;
+}
+.promo-row:last-child { border-bottom: none; }
+.promo-row-header {
+  background: var(--admin-tertiary);
+  font-weight: 600;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--admin-text-muted);
+}
+.promo-code {
+  font-family: var(--admin-mono);
+  font-weight: 600;
+  color: var(--gold);
+  background: rgba(212,175,55,0.1);
+  padding: 4px 8px;
+  border-radius: 4px;
+  display: inline-block;
+}
+
+/* Leaderboard List */
+.leaderboard-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.leaderboard-item {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 20px;
+  border-radius: var(--admin-radius);
+  border: 1px solid var(--admin-border);
+  background: var(--admin-card);
+  transition: all var(--admin-fast);
+}
+.leaderboard-item:hover {
+  border-color: var(--gold);
+  transform: translateY(-1px);
+}
+.leaderboard-rank {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: var(--gold);
+  min-width: 40px;
+  text-align: center;
+}
+.leaderboard-avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid var(--gold);
+}
+.leaderboard-info { flex: 1; }
+.leaderboard-info h4 { margin: 0 0 4px; font-size: 1rem; }
+.leaderboard-info p { margin: 0; font-size: 0.8125rem; color: var(--admin-text-secondary); }
+.leaderboard-stats {
+  display: flex;
+  gap: 24px;
+  text-align: right;
+}
+.leaderboard-stats .stat-val {
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: var(--gold);
+}
+.leaderboard-stats .stat-lbl {
+  font-size: 0.6875rem;
+  color: var(--admin-text-muted);
+  text-transform: uppercase;
+}
+
+/* Audit Timeline */
+.audit-timeline {
+  position: relative;
+  padding-left: 32px;
+}
+.audit-timeline::before {
+  content: '';
+  position: absolute;
+  left: 12px;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: var(--admin-border);
+}
+.audit-item {
+  position: relative;
+  padding: 16px 20px;
+  margin-bottom: 12px;
+  border-radius: var(--admin-radius);
+  border: 1px solid var(--admin-border);
+  background: var(--admin-card);
+}
+.audit-item::before {
+  content: '';
+  position: absolute;
+  left: -26px;
+  top: 22px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--gold);
+  border: 2px solid var(--admin-bg);
+}
+.audit-item-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+.audit-user {
+  font-weight: 600;
+  font-size: 0.9375rem;
+}
+.audit-time {
+  font-size: 0.75rem;
+  color: var(--admin-text-muted);
+}
+.audit-action {
+  font-size: 0.8125rem;
+  color: var(--admin-text-secondary);
+  margin-bottom: 4px;
+}
+.audit-details {
+  font-size: 0.75rem;
+  color: var(--admin-text-muted);
+  font-family: var(--admin-mono);
+}
+
+/* Health Monitor Grid */
+.health-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 20px;
+}
+.health-card {
+  border-radius: var(--admin-radius);
+  border: 1px solid var(--admin-border);
+  background: var(--admin-card);
+  padding: 20px;
+}
+.health-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+.health-card-header h3 {
+  margin: 0;
+  font-size: 0.9375rem;
+  font-weight: 600;
+}
+.health-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+.health-status .dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+.health-status.healthy .dot { background: #22c55e; }
+.health-status.healthy { color: #22c55e; }
+.health-status.warning .dot { background: #fbbf24; }
+.health-status.warning { color: #fbbf24; }
+.health-status.error .dot { background: #ef4444; }
+.health-status.error { color: #ef4444; }
+.health-detail {
+  display: flex;
+  justify-content: space-between;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--admin-border);
+  font-size: 0.8125rem;
+}
+.health-detail:last-child { border-bottom: none; }
+.health-detail-label { color: var(--admin-text-muted); }
+.health-detail-value { font-weight: 500; font-family: var(--admin-mono); }
+
+/* Bulk Actions Bar */
+.bulk-actions-bar {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--admin-card);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius);
+  padding: 12px 24px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  backdrop-filter: blur(12px);
+}
+.bulk-actions-bar span {
+  font-weight: 600;
+  font-size: 0.875rem;
+}
+
+/* Product Checkbox */
+.product-checkbox {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  width: 20px;
+  height: 20px;
+  accent-color: var(--gold);
+  cursor: pointer;
+  z-index: 2;
+}
+.product-card { position: relative; }
+
+/* Order Checkbox */
+.order-checkbox {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--gold);
+  cursor: pointer;
+}
+
+/* Pagination */
+.pagination {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 24px;
+}
+.pagination button {
+  padding: 8px 14px;
+  border-radius: var(--admin-radius-sm);
+  border: 1px solid var(--admin-border);
+  background: var(--admin-card);
+  color: var(--admin-text-primary);
+  cursor: pointer;
+  font-size: 0.8125rem;
+  transition: all var(--admin-fast);
+}
+.pagination button:hover {
+  border-color: var(--gold);
+}
+.pagination button.active {
+  background: var(--gold);
+  color: #000;
+  border-color: var(--gold);
+}
+
+/* Export Buttons */
+.export-bar {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+  .promo-row {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .leaderboard-stats {
+    flex-direction: column;
+    gap: 8px;
+  }
+}
+
+@media (max-width: 768px) {
+  .banners-grid {
+    grid-template-columns: 1fr;
+  }
+  .promo-row {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+  .health-grid {
+    grid-template-columns: 1fr;
+  }
+  .bulk-actions-bar {
+    left: 16px;
+    right: 16px;
+    transform: none;
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .bulk-actions-bar > div {
+    flex-direction: column;
+    gap: 12px;
+  }
+  .leaderboard-item {
+    flex-direction: column;
+    text-align: center;
+  }
+  .leaderboard-stats {
+    justify-content: center;
+  }
+  .audit-timeline {
+    padding-left: 24px;
+  }
+}
