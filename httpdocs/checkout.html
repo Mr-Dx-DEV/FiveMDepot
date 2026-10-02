@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Checkout — FiveMDepot</title>
+  <meta name="description" content="Complete your purchase securely at FiveMDepot.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/main.css">
+  <style>
+    .payment-option { padding:16px;border-radius:var(--radius-md);background:var(--bg-input);border:2px solid var(--border);cursor:pointer;transition:all var(--duration-fast);display:flex;align-items:center;gap:16px;margin-bottom:12px; }
+    .payment-option:hover { border-color:var(--text-muted); }
+    .payment-option.selected { border-color:var(--gold);background:var(--gold-subtle); }
+    .payment-radio { width:20px;height:20px;border-radius:50%;border:2px solid var(--text-muted);flex-shrink:0;position:relative;transition:all var(--duration-fast); }
+    .payment-option.selected .payment-radio { border-color:var(--gold); }
+    .payment-option.selected .payment-radio::after { content:'';position:absolute;inset:3px;border-radius:50%;background:var(--gold); }
+    .payment-info h4 { font-family:var(--font-heading);font-size:1rem;font-weight:600;margin-bottom:4px; }
+    .payment-info p { font-size:0.8125rem;color:var(--text-secondary); }
+    .payment-icon { font-size:1.5rem; }
+    .payment-details { margin-top:16px;padding:16px;border-radius:var(--radius-md);background:rgba(212,175,55,0.05);border:1px solid var(--border-gold);display:none; }
+    .payment-details.show { display:block;animation:fadeIn var(--duration-normal) var(--ease-out); }
+    .payment-details p { font-family:var(--font-mono);font-size:0.875rem;color:var(--gold);margin-bottom:4px; }
+    .checkout-grid { display:grid;grid-template-columns:1fr 400px;gap:32px;max-width:960px;margin:0 auto; }
+    @media(max-width:768px){ .checkout-grid { grid-template-columns:1fr; } }
+  </style>
+</head>
+<body>
+
+  <nav class="navbar" id="navbar">
+    <div class="container navbar-inner">
+      <a href="/" class="navbar-logo">
+        <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" width="36" height="36">
+          <defs><linearGradient id="lc" x1="0" y1="0" x2="40" y2="40"><stop offset="0%" stop-color="#d4af37"/><stop offset="50%" stop-color="#f0c75e"/><stop offset="100%" stop-color="#d4af37"/></linearGradient></defs>
+          <rect x="2" y="2" width="36" height="36" rx="10" stroke="url(#lc)" stroke-width="2.5" fill="none"/>
+          <path d="M12 28V14l8 6 8-6v14" stroke="url(#lc)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+        </svg>
+        <span class="gradient-gold">FiveMDepot</span>
+      </a>
+      <div class="navbar-actions">
+        <a href="cart.html" class="btn btn-sm btn-outline-gold">Back to Cart</a>
+      </div>
+    </div>
+  </nav>
+
+  <section style="padding-top:calc(var(--header-height) + 48px);padding-bottom:24px;">
+    <div class="container">
+      <h1 class="heading-lg reveal"><span class="gradient-gold">Checkout</span></h1>
+      <p class="text-secondary">Complete your payment to unlock your assets</p>
+    </div>
+  </section>
+
+  <section class="section" style="padding-top:0;">
+    <div class="container">
+      <div class="checkout-grid">
+        <!-- Left: Payment & Form -->
+        <div>
+          <!-- Payment Method -->
+          <div class="card" style="padding:24px;margin-bottom:24px;">
+            <h3 class="heading-sm" style="margin-bottom:20px;">Payment Method</h3>
+
+            <div class="payment-option selected" data-method="bkash" onclick="selectPayment(this)">
+              <div class="payment-radio"></div>
+              <span class="payment-icon">⚡</span>
+              <div class="payment-info">
+                <h4>bKash</h4>
+                <p>Personal payment</p>
+              </div>
+            </div>
+
+            <div class="payment-option" data-method="nagad" onclick="selectPayment(this)">
+              <div class="payment-radio"></div>
+              <span class="payment-icon">&#128176;</span>
+              <div class="payment-info">
+                <h4>Nagad</h4>
+                <p>Personal payment</p>
+              </div>
+            </div>
+
+            <div class="payment-option" data-method="bank" onclick="selectPayment(this)">
+              <div class="payment-radio"></div>
+              <span class="payment-icon">&#127963;</span>
+              <div class="payment-info">
+                <h4>Bank Transfer</h4>
+                <p>Direct bank transfer</p>
+              </div>
+            </div>
+
+            <!-- Payment Details -->
+            <div class="payment-details show" id="payment-details">
+              <p style="font-family:var(--font-body);color:var(--text-secondary);font-size:0.8125rem;margin-bottom:8px;">Send payment to:</p>
+              <div id="payment-info-content">
+                <p style="color:var(--gold);">bKash Number: 01XXXXXXXXX</p>
+                <p style="color:var(--text-secondary);font-family:var(--font-body);font-size:0.8125rem;">App: bKash | Type: Personal</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Upload Proof -->
+          <div class="card" style="padding:24px;">
+            <h3 class="heading-sm" style="margin-bottom:20px;">Upload Payment Proof</h3>
+            <form id="checkout-form" action="api/orders.php?action=submit" method="POST" enctype="multipart/form-data">
+              <input type="hidden" name="csrf_token" id="checkout-csrf" value="">
+              <input type="hidden" name="payment_method" id="payment-method-input" value="bkash">
+              <input type="hidden" name="items" id="items-input">
+              <input type="hidden" name="total" id="total-input">
+
+              <div class="form-group">
+                <label for="check-name">Your Name</label>
+                <input type="text" id="check-name" name="name" placeholder="Your full name" required>
+              </div>
+              <div class="form-group">
+                <label for="check-email">Your Email</label>
+                <input type="email" id="check-email" name="email" placeholder="you@example.com" required>
+              </div>
+              <div class="form-group">
+                <label for="check-transaction">Transaction ID / Reference Number</label>
+                <input type="text" id="check-transaction" name="transaction_id" placeholder="e.g., 8A1B2C3D4E" required>
+              </div>
+              <div class="form-group">
+                <label for="check-proof">Payment Screenshot</label>
+                <input type="file" id="check-proof" name="proof" accept="image/*" required style="padding:10px;">
+              </div>
+
+              <button type="submit" class="btn btn-primary" style="width:100%;" id="submit-btn">Submit Payment Proof</button>
+              <p style="text-align:center;font-size:0.75rem;color:var(--text-muted);margin-top:12px;">Your order will be reviewed by our admin team. You'll receive download links after approval.</p>
+            </form>
+          </div>
+        </div>
+
+        <!-- Right: Summary -->
+        <div>
+          <div class="card checkout-summary" style="position:sticky;top:calc(var(--header-height) + 24px);">
+            <h3>Order Summary</h3>
+            <div id="checkout-lines"></div>
+            <div class="checkout-total">
+              <span>Total</span>
+              <span class="amount" id="checkout-total">$0.00</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <script src="js/main.js"></script>
+  <script>
+  (function(){
+    var items = window.FiveMDepotCart ? window.FiveMDepotCart.getItems() : [];
+    var linesEl = document.getElementById('checkout-lines');
+    var totalEl = document.getElementById('checkout-total');
+
+    if(items.length === 0) {
+      location.href = 'cart.html';
+      return;
+    }
+
+    linesEl.innerHTML = items.map(function(item){
+      return '<div class="checkout-line"><span style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + item.title + '</span><span>$' + item.price.toFixed(2) + '</span></div>';
+    }).join('');
+
+    var total = items.reduce(function(s,i){return s+i.price;},0);
+    totalEl.textContent = '$' + total.toFixed(2);
+
+    document.getElementById('items-input').value = JSON.stringify(items);
+    document.getElementById('total-input').value = total;
+
+    // CSRF
+    function gen(){var a=new Uint32Array(16);crypto.getRandomValues(a);return Array.from(a,function(v){return v.toString(36);}).join('');}
+    document.getElementById('checkout-csrf').value = gen();
+
+    // Payment selection
+    window.selectPayment = function(el){
+      $$('.payment-option').forEach(function(o){o.classList.remove('selected');});
+      el.classList.add('selected');
+      var method = el.dataset.method;
+      document.getElementById('payment-method-input').value = method;
+      var content = document.getElementById('payment-info-content');
+      if(method === 'bkash') {
+        content.innerHTML = '<p style="color:var(--gold);">bKash Number: 01XXXXXXXXX</p><p style="color:var(--text-secondary);font-family:var(--font-body);font-size:0.8125rem;">App: bKash | Type: Personal</p>';
+      } else if(method === 'nagad') {
+        content.innerHTML = '<p style="color:var(--gold);">Nagad Number: 01XXXXXXXXX</p><p style="color:var(--text-secondary);font-family:var(--font-body);font-size:0.8125rem;">App: Nagad | Type: Personal</p>';
+      } else {
+        content.innerHTML = '<p style="color:var(--gold);">Bank: DBBL</p><p style="color:var(--gold);">Account: 0000000000000</p><p style="color:var(--text-secondary);font-family:var(--font-body);font-size:0.8125rem;">Branch: Dhaka | Title: FiveMDepot</p>';
+      }
+    };
+  })();
+  </script>
+</body>
+</html>
