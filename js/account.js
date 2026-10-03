@@ -68,7 +68,7 @@
   nav.addEventListener('click', function (e) {
     var t = e.target.closest('[data-tab]');
     if (t) show(t.dataset.tab);
-    if (e.target.closest('[data-logout]')) S.v1('POST', 'auth/logout', {}).finally(function () { location.href = 'index.html'; });
+    // Log out is handled by the shared handler in store.js ([data-logout])
   });
 
   // ---------- Library ----------

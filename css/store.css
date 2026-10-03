@@ -742,3 +742,18 @@ body.cd-lock { overflow: hidden; }
 .pc-claim:active { transform: translateY(1px); }
 .pc-claim.done { background: var(--surface-2); color: var(--success); box-shadow: none; }
 @media (prefers-reduced-motion: reduce) { .cd, .cd-scrim, .cd-line { transition: none; animation: none; } .cart-btn.bump, .cart-btn.bump .badge-count { animation: none; } }
+
+/* ---------- Account menu ---------- */
+.acct-wrap { position: relative; }
+.acct-avatar { border-radius: 50%; background: linear-gradient(135deg, var(--accent), var(--accent-3)); color: #fff !important; font-weight: 800; font-size: 15px; }
+.acct-avatar:hover { filter: brightness(1.1); background: linear-gradient(135deg, var(--accent), var(--accent-3)); }
+.acct-menu { position: absolute; right: 0; top: calc(100% + 10px); width: 240px; z-index: 120; display: grid; padding: 8px;
+  background: var(--surface); border: 1px solid var(--border-strong); border-radius: 14px; box-shadow: var(--shadow); animation: tin .18s var(--ease); }
+.acct-menu .acct-who { padding: 8px 10px 10px; border-bottom: 1px solid var(--border); margin-bottom: 6px; display: grid; }
+.acct-menu .acct-who small { color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.acct-menu a, .acct-menu button { text-align: left; padding: 9px 10px; border-radius: 8px; font-size: 14px; color: var(--text-2); }
+.acct-menu a:hover, .acct-menu button:hover { background: var(--accent-soft); color: var(--accent); }
+.acct-menu .acct-logout { border-top: 1px solid var(--border); border-radius: 0 0 8px 8px; margin-top: 6px; color: var(--danger); }
+.acct-menu .acct-logout:hover { background: rgba(239,68,68,.1); color: var(--danger); }
+.drawer-who { display: block; padding: 14px 12px 6px; margin-top: 8px; border-top: 1px solid var(--border); font-size: 12px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+#drawerAcct [data-logout] { color: var(--danger); }

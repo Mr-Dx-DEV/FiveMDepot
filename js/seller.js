@@ -19,7 +19,8 @@
       [['overview', 'Overview'], ['products', 'My products'], ['new', '+ New product'], ['withdrawals', 'Withdrawals'], ['profile', 'Seller profile']].map(function (t) {
         return '<button data-tab="' + t[0] + '" class="' + (active === t[0] ? 'on' : '') + '">' + t[1] + '</button>';
       }).join('') +
-      '<a href="seller-profile.html?id=' + encodeURIComponent(user.id) + '">Public page ↗</a><a href="dashboard/buyer.html">My purchases</a>';
+      '<a href="seller-profile.html?id=' + encodeURIComponent(user.id) + '">Public page ↗</a><a href="dashboard/buyer.html">My purchases</a>' +
+      '<button data-logout>Log out</button>';
   }
 
   function show(tab, arg) {

@@ -482,7 +482,7 @@
       (c.children || []).forEach(function (k) { drawerLinks += '<a class="sub" href="' + catUrl(k.slug) + '">' + esc(k.name) + '</a>'; });
     });
     STATIC_LINKS.forEach(function (l) { drawerLinks += '<a href="' + l.href + '">' + l.name + '</a>'; });
-    drawerLinks += '<a href="wishlist.html">Wishlist</a><a href="auth.html">Account</a>';
+    drawerLinks += '<div id="drawerAcct"><a href="auth.html">Log in</a><a href="auth.html?mode=register">Create account</a></div>';
 
     var name = (data.settings && data.settings.site_name) || 'FiveMDepot';
 
@@ -496,7 +496,7 @@
           '<button class="icon-btn" id="searchBtn" aria-label="Search (press /)" aria-haspopup="dialog">' + I.search + '</button>' +
           '<button class="icon-btn theme-btn" id="themeBtn" aria-label="Toggle light/dark theme">' + I.moon + I.sun + '</button>' +
           '<a class="icon-btn cart-btn" href="cart.html" data-open-cart aria-label="Cart">' + I.cart + '<span class="badge-count" data-cart-count></span></a>' +
-          '<a class="icon-btn hide-sm" href="auth.html" id="accountBtn" aria-label="Account">' + I.user + '</a>' +
+          '<div class="acct-wrap hide-sm"><a class="icon-btn" href="auth.html" id="accountBtn" aria-label="Log in">' + I.user + '</a><div class="acct-menu" id="acctMenu" hidden></div></div>' +
           '<div class="socials">' + socialLinks(data.settings || {}) + '</div>' +
           '<button class="icon-btn menu-btn" id="menuBtn" aria-label="Open menu" aria-expanded="false">' + I.menu + '</button>' +
         '</div>' +
@@ -571,8 +571,7 @@
     me().then(function (user) {
       if (!user) return;
       Store.user = user;
-      var a = document.getElementById('accountBtn');
-      if (a) { a.href = user.dashboard; a.setAttribute('aria-label', 'My account'); a.classList.add('is-in'); }
+      accountMenu(user);
       document.querySelectorAll('[data-wish]').forEach(function (b) { b.hidden = false; });
       syncWishlist();
       var pending = null;
@@ -581,6 +580,42 @@
       document.dispatchEvent(new CustomEvent('store:user', { detail: user }));
     });
   }
+
+  // ---------- Account menu (header + mobile drawer) ----------
+  function accountMenu(user) {
+    var links = [
+      ['dashboard/buyer.html', 'My library'], ['dashboard/buyer.html?tab=orders', 'Orders'],
+      ['dashboard/buyer.html?tab=wishlist', 'Wishlist'], ['dashboard/buyer.html?tab=settings', 'Account settings']
+    ];
+    if (user.role === 'SELLER') links.splice(0, 0, ['dashboard/seller.html', 'Seller dashboard']);
+    if (user.role === 'ADMIN') links.splice(0, 0, ['admin/', 'Admin panel']);
+    var items = links.map(function (l) { return '<a href="' + ROOT + l[0] + '">' + esc(l[1]) + '</a>'; }).join('');
+    var initial = esc((user.name || user.email || '?').charAt(0).toUpperCase());
+
+    var btn = document.getElementById('accountBtn'), menu = document.getElementById('acctMenu');
+    if (btn && menu) {
+      btn.outerHTML = '<button class="icon-btn acct-avatar" id="accountBtn" aria-haspopup="true" aria-expanded="false" aria-label="My account">' + initial + '</button>';
+      btn = document.getElementById('accountBtn');
+      menu.innerHTML = '<div class="acct-who"><b>' + esc(user.name || '') + '</b><small>' + esc(user.email || '') + '</small></div>' + items +
+        '<button type="button" class="acct-logout" data-logout>Log out</button>';
+      var open = function (v) { menu.hidden = !v; btn.setAttribute('aria-expanded', String(v)); };
+      btn.addEventListener('click', function (e) { e.stopPropagation(); open(menu.hidden); });
+      document.addEventListener('click', function (e) { if (!menu.hidden && !e.target.closest('.acct-wrap')) open(false); });
+      document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !menu.hidden) { open(false); btn.focus(); } });
+    }
+    var d = document.getElementById('drawerAcct');
+    if (d) d.innerHTML = '<span class="drawer-who">' + esc(user.name || user.email) + '</span>' + items + '<a href="#" data-logout>Log out</a>';
+  }
+
+  function logout() {
+    v1('POST', 'auth/logout', {}).catch(function () {}).then(function () {
+      try { sessionStorage.removeItem(CLAIM_KEY); } catch (e) {}
+      location.href = ROOT + 'index.html';
+    });
+  }
+  document.addEventListener('click', function (e) {
+    if (e.target.closest('[data-logout]')) { e.preventDefault(); logout(); }
+  });
 
   // ---------- Footer ----------
   function renderFooter(data) {
@@ -633,6 +668,6 @@
     api: api, nav: nav, esc: esc, icon: icon, money: money, qs: qs,
     catUrl: catUrl, productUrl: productUrl, icons: I, catIcon: catIcon, catArt: catArt,
     productCard: productCard, cart: Cart, toast: toast, reveal: reveal, user: null,
-    v1: v1, me: me, loginUrl: loginUrl, syncWishlist: syncWishlist, claim: claim, drawer: Drawer
+    v1: v1, me: me, loginUrl: loginUrl, syncWishlist: syncWishlist, claim: claim, drawer: Drawer, logout: logout
   };
 })();
