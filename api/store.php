@@ -19,7 +19,7 @@ require_once __DIR__ . '/../core/Db.php';
 require_once __DIR__ . '/../core/catalog.php';
 
 header('Content-Type: application/json; charset=utf-8');
-header('Cache-Control: public, max-age=60');
+header('Cache-Control: no-cache'); // always revalidate so admin changes show immediately
 
 try {
   switch ($_GET['r'] ?? '') {

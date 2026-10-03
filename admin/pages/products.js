@@ -282,7 +282,7 @@
   function editor(el, params) {
     var isNew = !params.id;
     A.loading(el);
-    var load = isNew ? Promise.resolve({ data: { title: '', slug: '', description: '', install_guide: '', price: 0, sale_price: null, type: 'standard', status: 'DRAFT', featured: false,
+    var load = isNew ? Promise.resolve({ data: { title: '', slug: '', description: '', install_guide: '', price: 0, sale_price: null, type: 'standard', status: 'PUBLISHED', featured: false,
       version: '1.0.0', video_url: '', changelog: '', features: [], compatibility: ['QBCore'], screenshots: [], seo_title: '', seo_description: '', tag_ids: [], pack_meta: {}, has_file: false } })
       : A.get('admin/products/' + encodeURIComponent(params.id));
 
@@ -302,6 +302,7 @@
           (!isNew ? '<button type="button" class="btn btn-sm btn-ghost" id="delBtn">Delete</button>' : '') +
           '<button class="btn btn-sm btn-primary" id="saveBtn" type="submit">' + (isNew ? 'Create product' : 'Save changes') + '</button>' +
         '</div>' +
+        '<div class="vis-note" id="visNote" hidden></div>' +
         '<div class="grid g-main">' +
           '<div class="stack">' +
             '<div class="panel panel-pad form-grid">' +
@@ -361,15 +362,24 @@
       var tagIds = (p.tag_ids || []).slice();
 
       var appear = el.querySelector('#appear');
+      var catCount = (p.categories || []).length;
+      function visibility() {
+        var note = el.querySelector('#visNote'), st = form.status.value, msg = '';
+        if (st !== 'PUBLISHED') msg = '👁 <b>Not visible on the store</b> — status is <b>' + st.charAt(0) + st.slice(1).toLowerCase() + '</b>. Set Status to <b>Published</b> and save to show it.';
+        else if (!catCount) msg = '⚠️ <b>Published, but not in any category</b> — it only shows in search and “All products”. Add a tag that belongs to a category (e.g. Script, Vehicle, MLO).';
+        note.innerHTML = msg; note.hidden = !msg;
+      }
       function preview() {
-        if (!tagIds.length) { appear.innerHTML = '<p class="small down">No categories yet — add a tag that belongs to a category.</p>'; return; }
+        if (!tagIds.length) { catCount = 0; visibility(); appear.innerHTML = '<p class="small down">No categories yet — add a tag that belongs to a category.</p>'; return; }
         A.get('admin/catalog/categories-for-tags&tag_ids=' + tagIds.map(encodeURIComponent).join(',')).then(function (b2) {
+          catCount = b2.data.length; visibility();
           appear.innerHTML = b2.data.length ? b2.data.map(function (c) {
             return '<div class="appear-item' + (c.direct ? ' direct' : '') + '"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7h6l2 2h10v10H3z"/></svg>' + h(c.path) + '</div>';
           }).join('') : '<p class="small down">These tags aren’t linked to any category yet. <a class="link" href="#/categories" target="_blank">Link them ↗</a></p>';
         }).catch(A.fail);
       }
       A.tagPicker(el.querySelector('#tags'), { selected: tagIds, allowCreate: true, onChange: function (ids) { tagIds = ids; markDirty(); preview(); } });
+      visibility();
       preview();
 
       function counters() {
@@ -381,6 +391,7 @@
       form.addEventListener('change', function (e) {
         markDirty();
         if (e.target.name === 'type') el.querySelector('#packPanel').hidden = e.target.value !== 'server_pack';
+        if (e.target.name === 'status') visibility();
       });
 
       // product file upload
