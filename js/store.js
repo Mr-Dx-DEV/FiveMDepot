@@ -58,8 +58,8 @@
     box: svg('<path d="m21 8-9-5-9 5v8l9 5 9-5z"/><path d="m3 8 9 5 9-5M12 13v8"/>')
   };
   var ICON_RULES = [
-    [/server|pack|bundle/, 'server'], [/vehicle|car|bike|heli|boat/, 'car'], [/mlo|interior|building/, 'building'],
-    [/map/, 'map'], [/cloth|eup|outfit|wear/, 'shirt'], [/free|gift/, 'gift'], [/hud|ui|menu|inventory/, 'ui'],
+    [/ui|hud|menu|inventory/, 'ui'], [/server|packs?|bundle/, 'server'], [/vehicle|cars?|bike|heli|boat/, 'car'],
+    [/mlo|interior|building/, 'building'], [/maps?/, 'map'], [/cloth|eup|outfit|wear/, 'shirt'], [/free|gift/, 'gift'],
     [/job|police|ems|polic|gang/, 'job'], [/weapon|gun/, 'weapon'], [/script|code|system|tool/, 'code']
   ];
   function catKey(c) {
@@ -372,12 +372,14 @@
   }
 
   function checkAuth() {
-    fetch('api/auth.php?action=status', { credentials: 'same-origin' })
+    fetch('api/v1.php?r=auth/me', { credentials: 'same-origin' })
       .then(function (r) { return r.json(); })
-      .then(function (d) {
-        if (!d || !d.authenticated) return;
+      .then(function (j) {
+        var d = j && j.data;
+        if (!d || !d.user) return;
         Store.user = d.user;
-        var dash = { ADMIN: 'dashboard/admin.html', SELLER: 'dashboard/seller.html' }[d.user.role] || 'dashboard/buyer.html';
+        Store.csrf = d.csrf;
+        var dash = d.user.dashboard;
         var a = document.getElementById('accountBtn');
         if (a) { a.href = dash; a.setAttribute('aria-label', 'My dashboard'); }
         document.querySelectorAll('[data-wish]').forEach(function (b) { b.hidden = false; });

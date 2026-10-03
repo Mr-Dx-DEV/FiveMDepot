@@ -14,8 +14,6 @@ ini_set('session.cookie_samesite', 'Lax');
 session_name(SESSION_NAME);
 session_start();
 
-// Set charset
-mysqli_set_charset($GLOBALS['___mysqli_stash'] ?? new mysqli(), DB_CHARSET);
 
 header('Content-Type: application/json; charset=utf-8');
 
