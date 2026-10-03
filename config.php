@@ -7,10 +7,14 @@
  */
 
 // === Database (MariaDB) ===
-define('DB_HOST', 'localhost:3306');
-define('DB_NAME', 'fivemdepot');
-define('DB_USER', 'fivemdepot');       // Change to your database username
-define('DB_PASS', 'FIVVEM@22316');           // Change to your database password
+// Real credentials live in config.local.php (not in git). Copy config.local.example.php to create it.
+if (is_file(__DIR__ . '/config.local.php')) {
+  require_once __DIR__ . '/config.local.php';
+}
+defined('DB_HOST') || define('DB_HOST', 'localhost:3306');
+defined('DB_NAME') || define('DB_NAME', 'fivemdepot');
+defined('DB_USER') || define('DB_USER', 'fivemdepot');
+defined('DB_PASS') || define('DB_PASS', '');
 define('DB_CHARSET', 'utf8mb4');
 
 // === Site ===
@@ -35,7 +39,7 @@ define('ALLOWED_UPLOAD_TYPES', ['image/jpeg','image/png','image/webp','applicati
 
 // === Security ===
 define('CSRF_TOKEN_LENGTH', 32);
-define('PASSWORD_MIN_LENGTH', 6);
+define('PASSWORD_MIN_LENGTH', 8);
 define('MAX_LOGIN_ATTEMPTS', 5);
 define('LOGIN_LOCKOUT_TIME', 900); // 15 minutes
 

@@ -290,7 +290,7 @@ CREATE TABLE `activity_log` (
 -- Password: Admin@123 (CHANGE IMMEDIATELY!)
 -- ============================================
 INSERT INTO `users` (`id`, `name`, `email`, `password`, `role`) VALUES
-('a0000000-0000-0000-0000-000000000001', 'Admin', 'admin@fivemdepot.com', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'ADMIN');
+('a0000000-0000-0000-0000-000000000001', 'Admin', 'admin@fivemdepot.com', '$2y$10$epncPeSKPFsMmd3qcH7fCOF4iV6.w7XtPEyIgFCGeaqOsmsVQRob.', 'ADMIN');
 
 -- ============================================
 -- Seed Data — Default Categories
