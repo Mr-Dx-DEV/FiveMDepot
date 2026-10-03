@@ -4,7 +4,7 @@
   var S = window.Store, esc = S.esc, I = S.icons;
   var root = document.getElementById('product');
   var slug = new URLSearchParams(location.search).get('slug') || new URLSearchParams(location.search).get('product') || '';
-  var p = null, owned = false;
+  var p = null, owned = false, staff = false;
 
   function stars(r) { var f = Math.round(r || 0); return '<span class="stars">' + '★★★★★'.slice(0, f) + '<span style="opacity:.3">' + '★★★★★'.slice(0, 5 - f) + '</span></span>'; }
   function date(s) { var d = new Date(String(s || '').replace(' ', 'T')); return isNaN(d) ? '' : d.toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }); }
@@ -86,6 +86,7 @@
         '<button class="wish-btn" data-wishbtn aria-label="Save to wishlist">' + I.heart + '</button></div>' +
       (!owned && price > 0 ? '<button class="btn btn-ghost btn-block" data-add>' + (S.cart.has(p.id) ? 'In your cart ✓' : 'Add to cart') + '</button>' : '') +
       (owned ? '<p class="small up" style="margin:0">✓ You own this — downloads and updates are in <a class="link-more" href="dashboard/buyer.html">your library</a></p>' : '') +
+      (staff && !owned ? '<p class="small muted" style="margin:0">👁 You see the customer view. <a class="link-more" href="api/v1.php?r=account/download/' + encodeURIComponent(p.id) + '">⬇ Download (admin)</a></p>' : '') +
       '<div class="facts"><div><small>Version</small><b>' + esc(p.version) + '</b></div><div><small>Updated</small><b>' + date(p.updated_at) + '</b></div>' +
         '<div><small>Category</small><b>' + (p.categories[0] ? '<a href="' + S.catUrl(p.categories[0].slug) + '">' + esc(p.categories[0].name) + '</a>' : '—') + '</b></div>' +
         '<div><small>Type</small><b>' + (p.type === 'server_pack' ? 'Server pack' : esc((p.badge && p.badge.name) || 'Resource')) + '</b></div></div>' +
@@ -201,7 +202,8 @@
       return S.me().then(function (user) {
         if (!user) return;
         return S.v1('GET', 'account/status&ids=' + encodeURIComponent(p.id)).then(function (st) {
-          owned = st.owned.indexOf(p.id) !== -1 || user.role === 'ADMIN';
+          owned = st.owned.indexOf(p.id) !== -1;
+          staff = user.role === 'ADMIN' || (p.seller_info && p.seller_info.id === user.id);
           wished = st.wishlist.indexOf(p.id) !== -1;
         }).catch(function () {});
       });
