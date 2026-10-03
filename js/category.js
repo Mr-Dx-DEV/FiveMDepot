@@ -76,14 +76,16 @@
     });
 
     var subs = d.children.map(function (k) {
-      return '<a class="subcat" href="' + S.catUrl(k.slug) + '">' + esc(k.name) + '<small>' + k.product_count + '</small></a>';
+      return '<a class="subcat" href="' + S.catUrl(k.slug) + '"><span class="di">' + S.catIcon(k) + '</span>' + esc(k.name) + '<small>' + k.product_count + '</small></a>';
     }).join('');
 
-    hero.className = 'page-hero' + (c.banner_url ? ' has-banner' : '');
+    hero.className = 'page-hero' + (c.banner_url ? ' has-banner' : (c.slug === 'all' ? '' : ' has-art'));
+    // absolute URL: a relative url() inside a custom property resolves against the stylesheet
+    hero.style.setProperty('--art', 'url("' + new URL(S.catArt(c), location.href).href.replace(/"/g, '') + '")');
     hero.style.backgroundImage = c.banner_url ? 'url("' + c.banner_url.replace(/"/g, '') + '")' : '';
     hero.innerHTML = '<div class="container">' +
       '<nav class="crumbs" aria-label="Breadcrumb">' + crumbs + '</nav>' +
-      '<h1>' + (c.icon ? '<span>' + S.icon(c.icon) + '</span>' : '') + esc(c.name) + '</h1>' +
+      '<h1><span class="di di-lg">' + S.catIcon(c) + '</span>' + esc(c.name) + '</h1>' +
       (c.description ? '<p>' + esc(c.description) + '</p>' : '') +
       (subs ? '<div class="subcats">' + subs + '</div>' : '') +
     '</div>';

@@ -42,6 +42,46 @@
     youtube: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M23.5 6.2a3 3 0 0 0-2.1-2.1C19.5 3.6 12 3.6 12 3.6s-7.5 0-9.4.5A3 3 0 0 0 .5 6.2 31 31 0 0 0 0 12a31 31 0 0 0 .5 5.8 3 3 0 0 0 2.1 2.1c1.9.5 9.4.5 9.4.5s7.5 0 9.4-.5a3 3 0 0 0 2.1-2.1A31 31 0 0 0 24 12a31 31 0 0 0-.5-5.8zM9.6 15.6V8.4l6.3 3.6-6.3 3.6z"/></svg>'
   };
 
+  // ---------- Category icons + artwork ----------
+  var svg = function (d) { return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">' + d + '</svg>'; };
+  var CAT_ICONS = {
+    server: svg('<rect x="3" y="3" width="18" height="7" rx="2"/><rect x="3" y="14" width="18" height="7" rx="2"/><path d="M7 6.5h.01M7 17.5h.01M11 6.5h6M11 17.5h6"/>'),
+    code: svg('<path d="m8 8-4 4 4 4M16 8l4 4-4 4M13.5 5l-3 14"/>'),
+    car: svg('<path d="M5 16H3v-4l2-5h11l3 5h2v4h-2"/><circle cx="7.5" cy="16.5" r="2"/><circle cx="16.5" cy="16.5" r="2"/><path d="M9.5 16.5h5M6 12h13"/>'),
+    building: svg('<path d="M4 21V5l8-3v19M12 8l8 3v10M2 21h20M7 8h2M7 12h2M7 16h2M15 13h2M15 17h2"/>'),
+    map: svg('<path d="M12 21s-6-5.6-6-11a6 6 0 0 1 12 0c0 5.4-6 11-6 11z"/><circle cx="12" cy="10" r="2.2"/>'),
+    shirt: svg('<path d="M8 3 3 6l2 5 2-1v11h10V10l2 1 2-5-5-3a4 4 0 0 1-8 0z"/>'),
+    gift: svg('<rect x="3" y="8" width="18" height="4" rx="1"/><path d="M5 12v9h14v-9M12 8v13M12 8S10.5 3 8 3a2.5 2.5 0 0 0 0 5M12 8s1.5-5 4-5a2.5 2.5 0 0 1 0 5"/>'),
+    ui: svg('<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M9 9v11"/>'),
+    job: svg('<path d="M12 2 4 5v6c0 5 3.4 9.4 8 11 4.6-1.6 8-6 8-11V5z"/><path d="m9 12 2 2 4-4"/>'),
+    weapon: svg('<circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M1 12h4M19 12h4"/>'),
+    box: svg('<path d="m21 8-9-5-9 5v8l9 5 9-5z"/><path d="m3 8 9 5 9-5M12 13v8"/>')
+  };
+  var ICON_RULES = [
+    [/server|pack|bundle/, 'server'], [/vehicle|car|bike|heli|boat/, 'car'], [/mlo|interior|building/, 'building'],
+    [/map/, 'map'], [/cloth|eup|outfit|wear/, 'shirt'], [/free|gift/, 'gift'], [/hud|ui|menu|inventory/, 'ui'],
+    [/job|police|ems|polic|gang/, 'job'], [/weapon|gun/, 'weapon'], [/script|code|system|tool/, 'code']
+  ];
+  function catKey(c) {
+    var s = ((c && c.slug) || '') + ' ' + ((c && c.name) || '');
+    s = s.toLowerCase();
+    for (var i = 0; i < ICON_RULES.length; i++) if (ICON_RULES[i][0].test(s)) return ICON_RULES[i][1];
+    return 'box';
+  }
+  function catIcon(c) { return CAT_ICONS[catKey(c)]; }
+  var ART = { server: 'server-packs', car: 'vehicles', building: 'mlos-maps', map: 'mlos-maps', shirt: 'clothing', gift: 'free-assets', code: 'scripts', ui: 'scripts', job: 'scripts', weapon: 'scripts', box: 'default' };
+  function catArt(c) { return (c && c.banner_url) || 'images/store/cat-' + ART[catKey(c)] + '.svg'; }
+  function productArt(p) {
+    var b = (p.badge && p.badge.slug) || (p.type === 'server_pack' ? 'server-pack' : '');
+    return 'images/store/cat-' + ART[catKey({ slug: b })] + '.svg';
+  }
+
+  function logoHtml(name) {
+    return '<span class="logo-mark" aria-hidden="true"><span class="logo-ring"></span>' +
+      '<svg viewBox="0 0 40 40"><path d="M11 29V12l9 7 9-7v17" fill="none" stroke="#fff" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/></svg></span>' +
+      '<span class="logo-text">' + esc(name) + '</span>';
+  }
+
   // Used when the store API is unreachable (e.g. migration not yet run)
   var FALLBACK_NAV = [
     { name: 'Complete Server Pack', slug: 'server-packs', show_in_nav: true, children: [] },
@@ -165,9 +205,8 @@
     var fw = (p.frameworks || []).slice(0, 3).map(function (t) {
       return '<span class="chip"><i style="background:' + esc(t.color || 'var(--accent)') + '"></i>' + esc(t.name) + '</span>';
     }).join('');
-    var media = p.image
-      ? '<img src="' + esc(p.image) + '" alt="' + esc(p.title) + '" loading="lazy" onerror="this.replaceWith(Object.assign(document.createElement(\'div\'),{className:\'ph\',innerHTML:\'&#128230;\'}))">'
-      : '<div class="ph">&#128230;</div>';
+    var art = productArt(p);
+    var media = '<img src="' + esc(p.image || art) + '" alt="' + esc(p.title) + '" loading="lazy" data-fallback="' + esc(art) + '">';
     return '' +
       '<article class="product-card">' +
         '<div class="pc-media">' +
@@ -188,6 +227,14 @@
         '</div>' +
       '</article>';
   }
+
+  // Broken product images → category artwork (error events don't bubble, so capture)
+  document.addEventListener('error', function (e) {
+    var img = e.target;
+    if (img.tagName === 'IMG' && img.dataset.fallback && img.getAttribute('src') !== img.dataset.fallback) {
+      img.src = img.dataset.fallback;
+    }
+  }, true);
 
   // Delegated clicks for cards anywhere on the page
   document.addEventListener('click', function (e) {
@@ -224,9 +271,9 @@
       links += '<div class="nav-item"><a class="nav-link' + (active ? ' active' : '') + '" href="' + catUrl(c.slug) + '">' +
         esc(c.name) + (kids.length ? I.caret : '') + '</a>';
       if (kids.length) {
-        links += '<div class="nav-drop"><a href="' + catUrl(c.slug) + '"><span>All ' + esc(c.name) + '</span><span class="count">' + (c.product_count || '') + '</span></a>' +
+        links += '<div class="nav-drop"><a href="' + catUrl(c.slug) + '"><span class="dl"><span class="di">' + catIcon(c) + '</span>All ' + esc(c.name) + '</span><span class="count">' + (c.product_count || '') + '</span></a>' +
           kids.map(function (k) {
-            return '<a href="' + catUrl(k.slug) + '"><span>' + esc(k.name) + '</span><span class="count">' + (k.product_count || '') + '</span></a>';
+            return '<a href="' + catUrl(k.slug) + '"><span class="dl"><span class="di">' + catIcon(k) + '</span>' + esc(k.name) + '</span><span class="count">' + (k.product_count || '') + '</span></a>';
           }).join('') + '</div>';
       }
       links += '</div>';
@@ -247,11 +294,10 @@
 
     el.innerHTML =
       '<header class="header"><div class="container header-inner">' +
-        '<a class="logo" href="index.html" aria-label="' + esc(name) + ' home"><span class="logo-mark">F</span><span>' + esc(name) + '</span></a>' +
+        '<a class="logo" href="index.html" aria-label="' + esc(name) + ' home">' + logoHtml(name) + '</a>' +
         '<nav class="nav" aria-label="Main">' + links + '</nav>' +
         '<div class="header-actions">' +
-          '<form class="header-search" action="category.html" role="search">' + I.search +
-            '<input type="hidden" name="c" value="all"><input name="q" placeholder="Search resources…" aria-label="Search"></form>' +
+          '<button class="icon-btn" id="searchBtn" aria-label="Search (press /)" aria-haspopup="dialog">' + I.search + '</button>' +
           '<button class="icon-btn theme-btn" id="themeBtn" aria-label="Toggle light/dark theme">' + I.moon + I.sun + '</button>' +
           '<a class="icon-btn" href="cart.html" aria-label="Cart">' + I.cart + '<span class="badge-count" data-cart-count></span></a>' +
           '<a class="icon-btn hide-sm" href="auth.html" id="accountBtn" aria-label="Account">' + I.user + '</a>' +
@@ -261,16 +307,30 @@
       '</div></header>' +
       '<div class="drawer-backdrop" id="drawerBackdrop"></div>' +
       '<aside class="drawer" id="drawer" aria-label="Menu">' +
-        '<div class="drawer-head"><a class="logo" href="index.html"><span class="logo-mark">F</span><span>' + esc(name) + '</span></a>' +
+        '<div class="drawer-head"><a class="logo" href="index.html">' + logoHtml(name) + '</a>' +
           '<button class="icon-btn" id="drawerClose" aria-label="Close menu">' + I.close + '</button></div>' +
         '<form class="header-search drawer-search" action="category.html" role="search">' + I.search +
           '<input type="hidden" name="c" value="all"><input name="q" placeholder="Search resources…" aria-label="Search"></form>' +
         drawerLinks +
-      '</aside>';
+      '</aside>' +
+      '<div class="search-overlay" id="searchOverlay" role="dialog" aria-modal="true" aria-label="Search the store" hidden>' +
+        '<div class="search-panel">' +
+          '<form class="search-form" action="category.html" role="search">' + I.search +
+            '<input type="hidden" name="c" value="all">' +
+            '<input name="q" id="searchInput" placeholder="Search scripts, MLOs, vehicles, server packs…" autocomplete="off" aria-label="Search">' +
+            '<button type="button" class="search-esc" id="searchClose" aria-label="Close search">Esc</button></form>' +
+          '<div class="search-cats"><span>Browse categories</span><div>' +
+            data.categories.map(function (c) {
+              return '<a class="search-chip" href="' + catUrl(c.slug) + '"><span class="di">' + catIcon(c) + '</span>' + esc(c.name) + '</a>';
+            }).join('') +
+          '</div></div>' +
+        '</div>' +
+      '</div>';
 
     if (!el.querySelector('.socials').innerHTML) el.querySelector('.socials').remove();
 
     document.getElementById('themeBtn').addEventListener('click', toggleTheme);
+    initSearch();
     var open = function (v) {
       document.body.classList.toggle('drawer-open', v);
       document.getElementById('menuBtn').setAttribute('aria-expanded', String(v));
@@ -284,6 +344,31 @@
 
     Cart.renderCount();
     checkAuth();
+  }
+
+  function initSearch() {
+    var ov = document.getElementById('searchOverlay');
+    var input = document.getElementById('searchInput');
+    var lastFocus = null;
+    function show(v) {
+      if (v) {
+        lastFocus = document.activeElement;
+        ov.hidden = false;
+        requestAnimationFrame(function () { ov.classList.add('open'); input.focus(); });
+      } else {
+        ov.classList.remove('open');
+        setTimeout(function () { ov.hidden = true; }, 180);
+        if (lastFocus) lastFocus.focus();
+      }
+    }
+    document.getElementById('searchBtn').addEventListener('click', function () { show(true); });
+    document.getElementById('searchClose').addEventListener('click', function () { show(false); });
+    ov.addEventListener('click', function (e) { if (e.target === ov) show(false); });
+    document.addEventListener('keydown', function (e) {
+      var typing = /INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName) || document.activeElement.isContentEditable;
+      if (e.key === 'Escape' && !ov.hidden) show(false);
+      else if (!typing && (e.key === '/' || ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k'))) { e.preventDefault(); show(true); }
+    });
   }
 
   function checkAuth() {
@@ -312,7 +397,7 @@
     el.innerHTML =
       '<footer class="footer"><div class="container">' +
         '<div class="footer-grid">' +
-          '<div class="footer-brand"><a class="logo" href="index.html"><span class="logo-mark">F</span><span>' + esc(name) + '</span></a>' +
+          '<div class="footer-brand"><a class="logo" href="index.html">' + logoHtml(name) + '</a>' +
             '<p>' + esc(s.site_tagline || 'Premium FiveM scripts, MLOs, vehicles, clothing and complete server packs.') + '</p>' +
             '<div style="display:flex;gap:4px">' + socialLinks(s) + '</div></div>' +
           '<div><h4>Products</h4><ul>' + cats + '<li><a href="category.html?c=all">All Products</a></li></ul></div>' +
@@ -348,7 +433,7 @@
 
   var Store = window.Store = {
     api: api, nav: nav, esc: esc, icon: icon, money: money, qs: qs,
-    catUrl: catUrl, productUrl: productUrl, icons: I,
+    catUrl: catUrl, productUrl: productUrl, icons: I, catIcon: catIcon, catArt: catArt,
     productCard: productCard, cart: Cart, toast: toast, reveal: reveal, user: null
   };
 })();

@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 360" width="640" height="360" preserveAspectRatio="xMidYMid slice">
+<defs>
+  <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#0d1322"/><stop offset="1" stop-color="#161028"/></linearGradient>
+  <radialGradient id="glow" cx="0.72" cy="0.35" r="0.6"><stop offset="0" stop-color="#f97316" stop-opacity=".45"/><stop offset="1" stop-color="#f97316" stop-opacity="0"/></radialGradient>
+  <linearGradient id="ac" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f97316"/><stop offset="1" stop-color="#fbbf24"/></linearGradient>
+  <pattern id="grid" width="32" height="32" patternUnits="userSpaceOnUse"><path d="M32 0H0V32" fill="none" stroke="#94a3b8" stroke-opacity=".07"/></pattern>
+</defs>
+<style></style>
+<rect width="640" height="360" fill="url(#bg)"/>
+<rect width="640" height="360" fill="url(#grid)"/>
+<rect width="640" height="360" fill="url(#glow)"/>
+
+<g transform="translate(0,0)">
+  <rect x="240" y="88" width="330" height="220" rx="14" fill="#0b1020" stroke="#f97316" stroke-opacity=".5"/>
+  <rect x="240" y="88" width="330" height="30" rx="14" fill="#141c2b"/>
+  <circle cx="262" cy="103" r="5" fill="#ef4444"/><circle cx="280" cy="103" r="5" fill="#fbbf24"/><circle cx="298" cy="103" r="5" fill="#22c55e"/>
+  <rect x="262" y="132" width="59" height="8" rx="4" fill="#94a3b8" opacity=".85"/><rect x="329" y="132" width="30" height="8" rx="4" fill="#60a5fa" opacity=".85"/><rect x="276" y="152" width="52" height="8" rx="4" fill="#22c55e" opacity=".85"/><rect x="336" y="152" width="59" height="8" rx="4" fill="#f97316" opacity=".85"/><rect x="403" y="152" width="60" height="8" rx="4" fill="#f97316" opacity=".85"/><rect x="471" y="152" width="52" height="8" rx="4" fill="#60a5fa" opacity=".85"/><rect x="290" y="172" width="36" height="8" rx="4" fill="#fbbf24" opacity=".85"/><rect x="334" y="172" width="67" height="8" rx="4" fill="#a78bfa" opacity=".85"/><rect x="409" y="172" width="56" height="8" rx="4" fill="#94a3b8" opacity=".85"/><rect x="473" y="172" width="52" height="8" rx="4" fill="#a78bfa" opacity=".85"/><rect x="262" y="192" width="31" height="8" rx="4" fill="#fbbf24" opacity=".85"/><rect x="301" y="192" width="62" height="8" rx="4" fill="#fbbf24" opacity=".85"/><rect x="371" y="192" width="55" height="8" rx="4" fill="#a78bfa" opacity=".85"/><rect x="434" y="192" width="69" height="8" rx="4" fill="#f97316" opacity=".85"/><rect x="276" y="212" width="26" height="8" rx="4" fill="#fbbf24" opacity=".85"/><rect x="310" y="212" width="70" height="8" rx="4" fill="#94a3b8" opacity=".85"/><rect x="388" y="212" width="24" height="8" rx="4" fill="#60a5fa" opacity=".85"/><rect x="420" y="212" width="23" height="8" rx="4" fill="#60a5fa" opacity=".85"/><rect x="290" y="232" width="60" height="8" rx="4" fill="#22c55e" opacity=".85"/><rect x="358" y="232" width="46" height="8" rx="4" fill="#22c55e" opacity=".85"/><rect x="412" y="232" width="49" height="8" rx="4" fill="#a78bfa" opacity=".85"/><rect x="262" y="252" width="58" height="8" rx="4" fill="#a78bfa" opacity=".85"/><rect x="328" y="252" width="30" height="8" rx="4" fill="#60a5fa" opacity=".85"/><rect x="366" y="252" width="28" height="8" rx="4" fill="#f97316" opacity=".85"/><rect x="402" y="252" width="30" height="8" rx="4" fill="#a78bfa" opacity=".85"/><rect x="276" y="272" width="38" height="8" rx="4" fill="#22c55e" opacity=".85"/><rect x="322" y="272" width="49" height="8" rx="4" fill="#22c55e" opacity=".85"/>
+  <rect x="300" y="292" width="10" height="3" fill="#f97316"><animate attributeName="opacity" values="1;0;1" dur="1s" repeatCount="indefinite"/></rect>
+</g>
+<g transform="translate(150 230)" fill="none" stroke="url(#ac)" stroke-width="10">
+  <circle r="34"/><g stroke-linecap="round">
+  <path d="M0-54v14M0 40v14M-54 0h14M40 0h14M-38-38l10 10M28 28l10 10M-38 38l10-10M28-28l10-10"/></g>
+  <animateTransform attributeName="transform" type="rotate" from="0 0 0" to="360 0 0" dur="12s" repeatCount="indefinite" additive="sum"/>
+</g>
+<text x="70" y="96" font-family="monospace" font-size="38" font-weight="700" fill="url(#ac)">&lt;/&gt;</text>
+</svg>

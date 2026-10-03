@@ -38,11 +38,18 @@
   // ---------- Section renderers ----------
   var R = {
     hero: function (c, d, nav) {
-      var cats = nav.categories.slice(0, 6).map(function (k) {
-        return '<a class="hero-cat" href="' + S.catUrl(k.slug) + '"><span class="ico">' + S.icon(k.icon) + '</span>' +
-          '<span><b>' + esc(k.name) + '</b><small>' + (k.product_count != null ? k.product_count + ' items' : 'Browse') + '</small></span></a>';
+      // Floating showcase: featured product images, topped up with category artwork
+      var shots = (d.featured || []).concat(d.packs || []).filter(function (p) { return p.image; }).slice(0, 3).map(function (p) {
+        return { img: p.image, title: p.title, sub: p.badge ? p.badge.name : '', href: S.productUrl(p.slug) };
+      });
+      nav.categories.forEach(function (k) {
+        if (shots.length < 3) shots.push({ img: S.catArt(k), title: k.name, sub: (k.product_count != null ? k.product_count + ' products' : 'Browse'), href: S.catUrl(k.slug) });
+      });
+      var visual = shots.map(function (s, i) {
+        return '<a class="hv-card hv-' + (i + 1) + '" href="' + esc(s.href) + '"><img src="' + esc(s.img) + '" alt="" data-fallback="images/store/cat-default.svg">' +
+          '<span class="hv-label"><b>' + esc(s.title) + '</b><small>' + esc(s.sub) + '</small></span></a>';
       }).join('');
-      return '<section class="hero"><div class="container hero-inner">' +
+      return '<section class="hero"><div class="hero-art" aria-hidden="true"></div><div class="container hero-inner">' +
         '<div>' +
           (c.badge ? '<span class="hero-badge"><span class="dot">NEW</span>' + esc(c.badge) + '</span>' : '') +
           '<h1>' + headline(c.headline) + '</h1>' +
@@ -54,9 +61,28 @@
           '<div class="hero-trustline">' +
             '<span>' + I.check + 'Instant download</span><span>' + I.check + 'QBCore / ESX / QBox</span><span>' + I.check + 'Free updates</span>' +
           '</div>' +
+          '<div class="hero-quick">' + nav.categories.slice(0, 6).map(function (k) {
+            return '<a class="search-chip" href="' + S.catUrl(k.slug) + '"><span class="di">' + S.catIcon(k) + '</span>' + esc(k.name) + '</a>';
+          }).join('') + '</div>' +
         '</div>' +
-        (cats ? '<div class="hero-card"><h3>Browse categories</h3><div class="hero-cats">' + cats + '</div></div>' : '') +
+        (visual ? '<div class="hero-visual">' + visual + '</div>' : '') +
       '</div></section>';
+    },
+
+    showcase: function (c, d, nav) {
+      var items = nav.categories.map(function (k) {
+        return { img: S.catArt(k), title: k.name, sub: k.product_count != null ? k.product_count + ' products' : '', href: S.catUrl(k.slug), icon: S.catIcon(k) };
+      }).concat((d.new || []).filter(function (p) { return p.image; }).map(function (p) {
+        return { img: p.image, title: p.title, sub: p.badge ? p.badge.name : '', href: S.productUrl(p.slug), icon: '' };
+      }));
+      if (items.length < 3) return '';
+      var row = items.map(function (it) {
+        return '<a class="mq-item" href="' + esc(it.href) + '"><img src="' + esc(it.img) + '" alt="" loading="lazy" data-fallback="images/store/cat-default.svg">' +
+          '<span class="mq-label">' + (it.icon ? '<span class="di">' + it.icon + '</span>' : '') + '<span><b>' + esc(it.title) + '</b><small>' + esc(it.sub) + '</small></span></span></a>';
+      }).join('');
+      // The row appears twice so the -50% loop is seamless; the copy is hidden from screen readers
+      return '<section class="marquee" aria-label="Showcase"><div class="mq-track"><div class="mq-row">' + row + '</div>' +
+        '<div class="mq-row" aria-hidden="true">' + row.replace(/<a /g, '<a tabindex="-1" ') + '</div></div></section>';
     },
 
     trust: function (c, d) {
@@ -75,12 +101,16 @@
     categories: function (c, d, nav) {
       if (!nav.categories.length) return '';
       var cards = nav.categories.map(function (k) {
-        var banner = k.banner_url ? ' has-banner" style="background-image:url(\'' + esc(k.banner_url) + '\')' : '';
-        return '<a class="cat-card reveal' + banner + '" href="' + S.catUrl(k.slug) + '">' +
-          '<span class="ico">' + S.icon(k.icon) + '</span>' +
-          '<h3>' + esc(k.name) + '</h3>' +
-          '<p>' + esc(k.description || '') + '</p>' +
-          '<div class="meta"><span>' + (k.product_count != null ? k.product_count + ' products' : '') + '</span><span class="go">Browse →</span></div>' +
+        var kids = (k.children || []).slice(0, 3).map(function (x) { return '<span class="chip">' + esc(x.name) + '</span>'; }).join('');
+        return '<a class="cat-card reveal" href="' + S.catUrl(k.slug) + '">' +
+          '<span class="cat-media"><img src="' + esc(S.catArt(k)) + '" alt="" loading="lazy" data-fallback="images/store/cat-default.svg"></span>' +
+          '<span class="cat-body">' +
+            '<span class="ico">' + S.catIcon(k) + '</span>' +
+            '<h3>' + esc(k.name) + '</h3>' +
+            '<p>' + esc(k.description || '') + '</p>' +
+            (kids ? '<span class="pc-fw">' + kids + '</span>' : '') +
+            '<span class="meta"><span>' + (k.product_count != null ? k.product_count + ' products' : '') + '</span><span class="go">Browse →</span></span>' +
+          '</span>' +
         '</a>';
       }).join('');
       return '<section class="section" id="categories"><div class="container">' +
@@ -166,9 +196,13 @@
   }
 
   function render(data, nav) {
+    var hasTrust = data.sections.some(function (x) { return x.key === 'trust'; });
     var html = data.sections.map(function (s) {
       var fn = R[s.key];
-      return fn ? fn(s.content || {}, data, nav) : '';
+      var out = fn ? fn(s.content || {}, data, nav) : '';
+      // Image showcase strip follows the trust stats (or the hero when trust is disabled)
+      if (s.key === 'trust' || (s.key === 'hero' && !hasTrust)) out += R.showcase({}, data, nav);
+      return out;
     }).join('') + ctaBand();
     var main = document.getElementById('home');
     main.innerHTML = html;

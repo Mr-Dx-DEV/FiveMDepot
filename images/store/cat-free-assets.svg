@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 360" width="640" height="360" preserveAspectRatio="xMidYMid slice">
+<defs>
+  <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#0d1322"/><stop offset="1" stop-color="#161028"/></linearGradient>
+  <radialGradient id="glow" cx="0.72" cy="0.35" r="0.6"><stop offset="0" stop-color="#22c55e" stop-opacity=".45"/><stop offset="1" stop-color="#22c55e" stop-opacity="0"/></radialGradient>
+  <linearGradient id="ac" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#22c55e"/><stop offset="1" stop-color="#fbbf24"/></linearGradient>
+  <pattern id="grid" width="32" height="32" patternUnits="userSpaceOnUse"><path d="M32 0H0V32" fill="none" stroke="#94a3b8" stroke-opacity=".07"/></pattern>
+</defs>
+<style></style>
+<rect width="640" height="360" fill="url(#bg)"/>
+<rect width="640" height="360" fill="url(#grid)"/>
+<rect width="640" height="360" fill="url(#glow)"/>
+
+<g transform="translate(320 200)">
+  <rect x="-110" y="-30" width="220" height="130" rx="10" fill="url(#ac)"/>
+  <rect x="-124" y="-70" width="248" height="46" rx="10" fill="#fb923c"/>
+  <rect x="-16" y="-70" width="32" height="170" fill="#0b1020" opacity=".35"/>
+  <path d="M0-70c-30-50-90-40-70-10 10 14 50 10 70 10zM0-70c30-50 90-40 70-10-10 14-50 10-70 10z" fill="none" stroke="#fbbf24" stroke-width="10" stroke-linejoin="round"/>
+  <animateTransform attributeName="transform" type="translate" values="320 200;320 190;320 200" dur="2s" repeatCount="indefinite"/>
+</g>
+<g fill="#fbbf24"><circle cx="150" cy="90" r="5"><animate attributeName="r" values="2;6;2" dur="1.6s" repeatCount="indefinite"/></circle>
+<circle cx="500" cy="80" r="4"><animate attributeName="r" values="5;2;5" dur="1.3s" repeatCount="indefinite"/></circle>
+<circle cx="520" cy="280" r="4"><animate attributeName="r" values="2;5;2" dur="1.9s" repeatCount="indefinite"/></circle></g>
+<text x="40" y="96" font-family="Arial, sans-serif" font-weight="900" font-size="56" fill="#22c55e" opacity=".9">FREE</text>
+</svg>
