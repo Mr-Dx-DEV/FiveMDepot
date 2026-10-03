@@ -6,11 +6,11 @@
   // Same content as the seeded homepage_sections — used until the API answers or if it fails.
   var DEFAULTS = {
     sections: [
-      { key: 'hero', content: { badge: 'Premium Marketplace Now Live', headline: 'The Trusted FiveM Marketplace', subtitle: 'Premium scripts, MLOs, vehicles, clothing and complete server packs for QBCore, ESX and QBox.', primary_text: 'Explore Marketplace', primary_link: 'category.html?c=all', secondary_text: 'View Server Packs', secondary_link: 'category.html?c=server-packs' } },
+      { key: 'hero', content: { badge: 'Premium Marketplace Now Live', headline: 'The Trusted FiveM Marketplace', subtitle: 'Premium scripts, MLOs, vehicles, clothing and complete server packs for QBCore, ESX and QBox.', primary_text: 'Explore Marketplace', primary_link: 'category.html?c=all', secondary_text: 'View Server Packs', secondary_link: 'server-packs.html' } },
       { key: 'trust', content: { items: [{ value: '4.9/5', label: 'Customer rating' }, { value: '10K+', label: 'Discord members' }, { value: '98%', label: 'Satisfaction rate' }, { value: '500+', label: 'Premium resources' }] } },
       { key: 'categories', content: { heading: 'Shop by Category', subheading: 'Everything you need to build your server' } },
       { key: 'featured', content: { heading: 'Featured Resources' } },
-      { key: 'server_pack', content: { heading: 'Complete Server Packs', subheading: 'Launch a full server in minutes', stats: [{ value: '400+', label: 'Systems included' }, { value: '0.4-0.6ms', label: 'Idle resmon' }], benefits: ['Lifetime Access', 'No Hidden Fees', 'Free Updates', 'Setup Support'], cta_text: 'View Server Packs', cta_link: 'category.html?c=server-packs' } },
+      { key: 'server_pack', content: { heading: 'Complete Server Packs', subheading: 'Launch a full server in minutes', stats: [{ value: '400+', label: 'Systems included' }, { value: '0.4-0.6ms', label: 'Idle resmon' }], benefits: ['Lifetime Access', 'No Hidden Fees', 'Free Updates', 'Setup Support'], cta_text: 'View Server Packs', cta_link: 'server-packs.html' } },
       { key: 'new', content: { heading: 'New Releases' } },
       { key: 'free', content: { heading: 'Free Assets' } },
       { key: 'about', content: { heading: 'About FiveMDepot', body: 'FiveMDepot serves FiveM server owners running QBCore, ESX, QBox or hybrid setups, with complete server packs, job and economy scripts, MLO interiors, vehicle packs and clothing.' } },
@@ -133,7 +133,7 @@
             '<h2>' + esc(c.heading || 'Complete Server Packs') + '</h2>' +
             '<p class="pack-sub">' + esc(c.subheading || '') + '</p>' +
             '<div class="pack-stats">' + stats + '</div>' +
-            '<a class="btn btn-primary btn-lg" href="' + esc(link(c.cta_link || 'category.html?c=server-packs')) + '">' + esc(c.cta_text || 'View Server Packs') + '</a>' +
+            '<a class="btn btn-primary btn-lg" href="' + esc(link(c.cta_link || 'server-packs.html')) + '">' + esc(c.cta_text || 'View Server Packs') + '</a>' +
           '</div>' +
           '<div class="pack-benefits">' + benefits + '</div>' +
         '</div>' + packs +

@@ -116,6 +116,33 @@ route('POST', 'admin/categories/{id}', function ($p) {
   ok(['id' => $p['id'], 'slug' => $d['slug']]);
 });
 
+// Product screenshots inside a category (and its sub-categories) — to pick a banner from
+route('GET', 'admin/categories/{id}/images', function ($p) {
+  require_role('ADMIN');
+  $cats = cat_all();
+  if (!isset($cats[$p['id']])) fail(404, 'Category not found');
+  $ids = [$p['id']];
+  for ($i = 0; $i < count($ids); $i++) foreach ($cats as $c) if ($c['parent_id'] === $ids[$i]) $ids[] = $c['id'];
+  $tagIds = [];
+  foreach ($ids as $cid) $tagIds = array_merge($tagIds, $cats[$cid]['tag_ids']);
+  $tagIds = array_values(array_unique($tagIds));
+  if (!$tagIds) ok(['auto' => null, 'images' => []]);
+  $rows = Db::all("SELECT p.id, p.title, p.screenshots FROM products p
+                   WHERE p.status = 'PUBLISHED' AND p.screenshots IS NOT NULL
+                     AND EXISTS (SELECT 1 FROM product_tags pt WHERE pt.product_id = p.id AND pt.tag_id IN (" . Db::in($tagIds) . "))
+                   ORDER BY p.featured DESC, p.updated_at DESC LIMIT 30", $tagIds);
+  $images = [];
+  foreach ($rows as $r) {
+    foreach (array_slice(json_col($r['screenshots']), 0, 3) as $img) {
+      if (is_string($img) && $img !== '') $images[] = ['url' => $img, 'product' => $r['title']];
+    }
+  }
+  // "auto" = what the store shows when no banner is set (first image of the top product)
+  $auto = null;
+  foreach ($rows as $r) { $first = json_col($r['screenshots'])[0] ?? null; if ($first) { $auto = $first; break; } }
+  ok(['auto' => $auto, 'images' => array_slice($images, 0, 36)]);
+});
+
 route('POST', 'admin/categories/{id}/delete', function ($p) {
   require_role('ADMIN');
   $name = Db::value("SELECT name FROM categories WHERE id = ?", [$p['id']]);

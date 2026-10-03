@@ -22,7 +22,8 @@
     return Object.keys(obj).filter(function (k) { return obj[k] !== '' && obj[k] != null; })
       .map(function (k) { return encodeURIComponent(k) + '=' + encodeURIComponent(obj[k]); }).join('&');
   };
-  var catUrl = function (slug) { return 'category.html?c=' + encodeURIComponent(slug); };
+  // The server pack category has its own landing page
+  var catUrl = function (slug) { return slug === 'server-packs' ? 'server-packs.html' : 'category.html?c=' + encodeURIComponent(slug); };
   var productUrl = function (slug) { return 'product.html?slug=' + encodeURIComponent(slug); };
 
   var I = {
@@ -58,8 +59,8 @@
     box: svg('<path d="m21 8-9-5-9 5v8l9 5 9-5z"/><path d="m3 8 9 5 9-5M12 13v8"/>')
   };
   var ICON_RULES = [
-    [/ui|hud|menu|inventory/, 'ui'], [/server|packs?|bundle/, 'server'], [/vehicle|cars?|bike|heli|boat/, 'car'],
-    [/mlo|interior|building/, 'building'], [/maps?/, 'map'], [/cloth|eup|outfit|wear/, 'shirt'], [/free|gift/, 'gift'],
+    [/\bui\b|hud|menu|inventory/, 'ui'], [/server|\bpacks?\b|bundle/, 'server'], [/vehicle|\bcars?\b|bike|heli|boat/, 'car'],
+    [/mlo|interior|building/, 'building'], [/\bmaps?\b/, 'map'], [/cloth|eup|outfit|wear/, 'shirt'], [/free|gift/, 'gift'],
     [/job|police|ems|polic|gang/, 'job'], [/weapon|gun/, 'weapon'], [/script|code|system|tool/, 'code']
   ];
   function catKey(c) {
@@ -70,7 +71,8 @@
   }
   function catIcon(c) { return CAT_ICONS[catKey(c)]; }
   var ART = { server: 'server-packs', car: 'vehicles', building: 'mlos-maps', map: 'mlos-maps', shirt: 'clothing', gift: 'free-assets', code: 'scripts', ui: 'scripts', job: 'scripts', weapon: 'scripts', box: 'default' };
-  function catArt(c) { return (c && c.banner_url) || 'images/store/cat-' + ART[catKey(c)] + '.svg'; }
+  // Banner set by admin → newest featured product image in the category → drawn artwork
+  function catArt(c) { return (c && (c.banner_url || c.cover_url)) || 'images/store/cat-' + ART[catKey(c)] + '.svg'; }
   function productArt(p) {
     var b = (p.badge && p.badge.slug) || (p.type === 'server_pack' ? 'server-pack' : '');
     return 'images/store/cat-' + ART[catKey({ slug: b })] + '.svg';

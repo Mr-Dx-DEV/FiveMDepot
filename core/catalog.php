@@ -137,10 +137,17 @@ function clean_html(string $html): string
         $attr = $child->attributes->item($a);
         $name = strtolower($attr->name);
         $val = trim($attr->value);
-        $safeUrl = !in_array($name, ['href', 'src'], true) || preg_match('#^(https?://|/|uploads/|images/|\#|mailto:)#i', $val);
+        // allow http(s), mailto (links only) and relative URLs with no scheme at all (blocks javascript:, data:, etc.)
+        $safeUrl = !in_array($name, ['href', 'src'], true)
+          || preg_match('#^https?://#i', $val)
+          || ($name === 'href' && preg_match('#^mailto:#i', $val))
+          || ($val !== '' && !preg_match('#^[^/?\#]*:#', $val) && strpos($val, '//') !== 0);
         if (!in_array($name, $keep, true) || !$safeUrl) $child->removeAttribute($attr->name);
       }
-      if ($tag === 'a') { $child->setAttribute('rel', 'noopener nofollow'); $child->setAttribute('target', '_blank'); }
+      if ($tag === 'a' && preg_match('#^https?://#i', $child->getAttribute('href'))) {
+        $child->setAttribute('rel', 'noopener nofollow'); // external links open in a new tab
+        $child->setAttribute('target', '_blank');
+      }
     }
   };
   $walk($root);

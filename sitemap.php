@@ -12,6 +12,7 @@ $base = rtrim(SITE_URL, '/') . '/';
 $urls = [
   ['index.html', 'daily', '1.0', null],
   ['category.html?c=all', 'daily', '0.9', null],
+  ['server-packs.html', 'weekly', '0.9', null],
   ['documentation.html?type=blog', 'weekly', '0.5', null],
   ['documentation.html?type=tutorial', 'weekly', '0.5', null],
   ['documentation.html?type=tool', 'weekly', '0.5', null],

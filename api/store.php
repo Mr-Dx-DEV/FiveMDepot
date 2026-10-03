@@ -29,6 +29,7 @@ try {
     case 'product':  $data = routeProduct(); break;
     case 'seller':   $data = routeSeller(); break;
     case 'docs':     $data = routeDocs(); break;
+    case 'packs':    $data = routePacks(); break;
     default:
       respondError(404, 'Unknown route');
   }
@@ -201,6 +202,16 @@ function categoryTree(): array
     $tagProducts[$r['tag_id']][] = $r['product_id'];
   }
 
+  // product_id → [cover image, rank] — rank: featured first, then most recently updated.
+  // Used to give categories without a banner a real product image automatically.
+  $productImage = [];
+  $rank = 0;
+  foreach (Db::all("SELECT id, screenshots FROM products WHERE status = 'PUBLISHED' AND screenshots IS NOT NULL
+                    ORDER BY featured DESC, updated_at DESC LIMIT 2000") as $r) {
+    $img = json_col($r['screenshots'])[0] ?? null;
+    if (is_string($img) && $img !== '') $productImage[$r['id']] = [$img, $rank++];
+  }
+
   $nodes = [];
   foreach ($rows as $r) {
     $r['show_in_nav'] = (bool)$r['show_in_nav'];
@@ -215,7 +226,7 @@ function categoryTree(): array
     }
   }
 
-  $build = function (?string $parentId, array $path) use (&$build, $nodes, $ownTags, $tagProducts): array {
+  $build = function (?string $parentId, array $path) use (&$build, $nodes, $ownTags, $tagProducts, $productImage): array {
     $out = [];
     foreach ($nodes as $n) {
       if ($n['parent_id'] !== $parentId) continue;
@@ -234,6 +245,12 @@ function categoryTree(): array
         foreach ($tagProducts[$t] ?? [] as $pid) $products[$pid] = true;
       }
       $node['product_count'] = count($products);
+
+      $best = null;
+      foreach (array_keys($products) as $pid) {
+        if (isset($productImage[$pid]) && ($best === null || $productImage[$pid][1] < $best[1])) $best = $productImage[$pid];
+      }
+      $node['cover_url'] = $best[0] ?? null;
       $out[] = $node;
     }
     return $out;
@@ -261,6 +278,7 @@ function publicCategory(array $c): array
     'icon'            => $c['icon'],
     'description'     => $c['description'],
     'banner_url'      => $c['banner_url'],
+    'cover_url'       => $c['cover_url'],
     'seo_title'       => $c['seo_title'],
     'seo_description' => $c['seo_description'],
     'show_in_nav'     => $c['show_in_nav'],
@@ -469,6 +487,31 @@ function routeSeller(): array
                  'bio' => $u['bio'], 'discord' => $u['discord_tag'], 'rating' => round((float)$rating['a'], 1), 'reviews' => (int)$rating['c']],
     'products' => productRows('p.user_id = ?', [$id], 'popular', 60),
   ];
+}
+
+/** Server pack landing page: every published pack with its full details. */
+function routePacks(): array
+{
+  $cards = productRows("p.type = 'server_pack'", [], 'price-low', 12);
+  if (!$cards) return ['packs' => [], 'totals' => ['resources' => 0, 'packs' => 0]];
+  $ids = array_column($cards, 'id');
+  $extra = [];
+  foreach (Db::all("SELECT id, pack_meta, features, compatibility, screenshots, downloads FROM products WHERE id IN (" . Db::in($ids) . ")", $ids) as $r) {
+    $extra[$r['id']] = [
+      'pack' => json_col($r['pack_meta']) ?: new stdClass(),
+      'features' => json_col($r['features']),
+      'compatibility' => json_col($r['compatibility']),
+      'screenshots' => json_col($r['screenshots']),
+      'downloads' => (int)$r['downloads'],
+    ];
+  }
+  $max = 0;
+  foreach ($cards as &$c) {
+    $c += $extra[$c['id']];
+    $res = ((array)$c['pack'])['resources'] ?? 0;
+    $max = max($max, (int)$res);
+  }
+  return ['packs' => $cards, 'totals' => ['resources' => $max, 'packs' => count($cards)]];
 }
 
 function routeDocs(): array

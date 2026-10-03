@@ -433,6 +433,7 @@
       });
     });
   }
+  A.rte = rte; // shared with the Articles editor (site.js)
   A.page('/products/new', function (el) { return editor(el, {}); });
   A.page('/products/:id', editor);
 

@@ -17,11 +17,15 @@
     weapon: '<circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/>',
     box: '<path d="m21 8-9-5-9 5v8l9 5 9-5z"/><path d="m3 8 9 5 9-5M12 13v8"/>'
   };
-  var RULES = [[/ui|hud|menu|inventory/, 'ui'], [/server|packs?|bundle/, 'server'], [/vehicle|cars?|bike|heli|boat/, 'car'],
-    [/mlo|interior|building/, 'building'], [/maps?/, 'map'], [/cloth|eup|outfit|wear/, 'shirt'], [/free|gift/, 'gift'], [/job|police|ems|gang/, 'job'], [/weapon|gun/, 'weapon'], [/script|code|system|tool/, 'code']];
+  var RULES = [[/\bui\b|hud|menu|inventory/, 'ui'], [/server|\bpacks?\b|bundle/, 'server'], [/vehicle|\bcars?\b|bike|heli|boat/, 'car'],
+    [/mlo|interior|building/, 'building'], [/\bmaps?\b/, 'map'], [/cloth|eup|outfit|wear/, 'shirt'], [/free|gift/, 'gift'], [/job|police|ems|gang/, 'job'], [/weapon|gun/, 'weapon'], [/script|code|system|tool/, 'code']];
+  function iconKey(c) {
+    var s = ((c.slug || '') + ' ' + (c.name || '')).toLowerCase();
+    for (var i = 0; i < RULES.length; i++) if (RULES[i][0].test(s)) return RULES[i][1];
+    return 'box';
+  }
   function catIcon(c) {
-    var s = ((c.slug || '') + ' ' + (c.name || '')).toLowerCase(), k = 'box';
-    for (var i = 0; i < RULES.length; i++) if (RULES[i][0].test(s)) { k = RULES[i][1]; break; }
+    var k = iconKey(c);
     return '<span class="di"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">' + ICONS[k] + '</svg></span>';
   }
 
@@ -78,10 +82,13 @@
             parents.map(function (o) { return '<option value="' + h(o.id) + '"' + (o.id === c.parent_id ? ' selected' : '') + '>' + '  '.repeat(o.depth) + h(o.path.split(' › ').pop()) + '</option>'; }).join('') + '</select></label>' +
           '<div class="field"><span>Tags this category owns <small>products with any of these appear here</small></span><div id="ctags"></div></div>' +
           '<label class="field"><span>Description</span><textarea class="input" name="description" rows="2" maxlength="2000">' + h(c.description || '') + '</textarea></label>' +
-          '<div class="field"><span>Banner image <small>optional — a matching illustration is used if empty</small></span>' +
-            '<div style="display:flex;gap:10px;align-items:center"><img id="bannerPrev" src="' + h(c.banner_url ? A.img(c.banner_url) : '../images/store/cat-default.svg') + '" alt="" style="width:120px;aspect-ratio:16/9;object-fit:cover;border-radius:8px;border:1px solid var(--border)">' +
-            '<input type="hidden" name="banner_url" value="' + h(c.banner_url || '') + '"><label class="btn btn-sm btn-ghost"><input type="file" accept="image/*" hidden id="bannerIn">Upload</label>' +
-            '<button type="button" class="btn btn-sm btn-ghost" id="bannerClear">Remove</button></div></div>' +
+          '<div class="field"><span>Category image <small>what customers see on the homepage & category page</small></span>' +
+            '<div class="catimg"><img id="bannerPrev" src="../images/store/cat-default.svg" alt="Category image preview">' +
+            '<div class="catimg-side"><span class="small" id="bannerState"></span>' +
+            '<input type="hidden" name="banner_url" value="' + h(c.banner_url || '') + '">' +
+            '<div style="display:flex;gap:8px;flex-wrap:wrap"><label class="btn btn-sm btn-primary"><input type="file" accept="image/png,image/jpeg,image/webp" hidden id="bannerIn">Upload image</label>' +
+            '<button type="button" class="btn btn-sm btn-ghost" id="bannerClear">Use automatic</button></div></div></div>' +
+            '<div id="bannerPick"></div></div>' +
           '<label class="switch"><span>Show in top menu<small>Top-level categories only appear in the header menu when this is on</small></span><input type="checkbox" name="show_in_nav"' + (c.show_in_nav ? ' checked' : '') + '></label>' +
           '<label class="switch"><span>Active<small>Hidden from the store when off</small></span><input type="checkbox" name="is_active"' + (c.is_active !== false ? ' checked' : '') + '></label>' +
           '<details><summary class="link small" style="cursor:pointer">SEO</summary><div class="form-grid" style="margin-top:10px">' +
@@ -99,13 +106,42 @@
       panel.querySelector('#bannerIn').addEventListener('change', function (e) {
         var f = e.target.files[0];
         if (!f) return;
+        panel.querySelector('#bannerState').textContent = 'Uploading…';
         A.upload(f, { dir: 'categories' }).then(function (path) {
-          form.banner_url.value = path; panel.querySelector('#bannerPrev').src = A.img(path); dirty = true;
-        }).catch(A.fail);
+          form.banner_url.value = path; dirty = true; drawBanner();
+        }).catch(function (err) { A.fail(err); drawBanner(); });
+        e.target.value = '';
       });
-      panel.querySelector('#bannerClear').addEventListener('click', function () {
-        form.banner_url.value = ''; panel.querySelector('#bannerPrev').src = '../images/store/cat-default.svg'; dirty = true;
+      // ---- Category image: own banner → auto (newest featured product image) → illustration
+      var autoImg = null;
+      var art = '../images/store/cat-' + ({ server: 'server-packs', car: 'vehicles', building: 'mlos-maps', map: 'mlos-maps', shirt: 'clothing', gift: 'free-assets', box: 'default' }[iconKey(c)] || 'scripts') + '.svg';
+      function drawBanner() {
+        var own = form.banner_url.value;
+        panel.querySelector('#bannerPrev').src = own ? A.img(own) : autoImg ? A.img(autoImg) : art;
+        panel.querySelector('#bannerState').innerHTML = own ? '✅ Using your image'
+          : autoImg ? '⚡ Automatic — the newest featured product photo in this category (updates by itself)'
+          : '🎨 Illustration — add products with screenshots or upload an image';
+        panel.querySelectorAll('[data-pick]').forEach(function (b) { b.classList.toggle('on', b.dataset.pick === own); });
+      }
+      panel.querySelector('#bannerClear').addEventListener('click', function () { form.banner_url.value = ''; dirty = true; drawBanner(); });
+      panel.querySelector('#bannerPick').addEventListener('click', function (e) {
+        var b = e.target.closest('[data-pick]');
+        if (!b) return;
+        form.banner_url.value = b.dataset.pick; dirty = true; drawBanner();
       });
+      if (!isNew) {
+        A.get('admin/categories/' + c.id + '/images').then(function (r) {
+          autoImg = r.data.auto;
+          if (r.data.images.length) {
+            panel.querySelector('#bannerPick').innerHTML = '<span class="small muted" style="display:block;margin:10px 0 6px">Or pick a product photo:</span><div class="catimg-grid">' +
+              r.data.images.map(function (im) {
+                return '<button type="button" data-pick="' + h(im.url) + '" title="' + h(im.product) + '"><img src="' + h(A.img(im.url)) + '" alt="" loading="lazy"></button>';
+              }).join('') + '</div>';
+          }
+          drawBanner();
+        }).catch(function () { drawBanner(); });
+      }
+      drawBanner();
       form.addEventListener('submit', function (e) {
         e.preventDefault();
         var d = A.formData(form);

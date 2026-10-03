@@ -4,6 +4,8 @@
 2. **Database** — phpMyAdmin → select the `fivemdepot` database → Import, in this order:
    1. `migrations/001_store_rebuild.sql` (categories tree, tags, server packs, homepage, FAQ)
    2. `migrations/002_admin.sql` (admin panel fields, settings)
+   3. `migrations/003_content.sql` (starter blog posts, tutorials, tools, docs and the
+      Terms / Privacy / Refund policy pages — review the legal pages in Admin → Articles)
 
    Both are safe to run more than once and delete nothing.
 3. **Upload** all files. Make sure `config.local.php` is uploaded next to `config.php`

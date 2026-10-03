@@ -38,7 +38,7 @@
         document.title = a.title + ' — FiveMDepot';
         box.innerHTML = '<article class="article"><nav class="crumbs"><a href="index.html">Home</a><span class="sep">/</span><a href="documentation.html?type=' + esc(a.type) + '">' + TYPES[a.type][0] + '</a></nav>' +
           '<h1>' + esc(a.title) + '</h1><p class="muted small">' + (a.author ? 'By ' + esc(a.author) + ' · ' : '') + date(a.created_at) + ' · ' + a.views + ' views</p>' +
-          (a.thumbnail ? '<img class="article-cover" src="' + esc(a.thumbnail) + '" alt="">' : '') + '<div class="prose" style="margin-top:20px">' + a.content_html + '</div></article>';
+          (a.thumbnail && a.thumbnail.indexOf('cat-default') === -1 ? '<img class="article-cover" src="' + esc(a.thumbnail) + '" alt="">' : '') + '<div class="prose" style="margin-top:20px">' + a.content_html + '</div></article>';
       }).catch(function () {
         box.innerHTML = tabs + '<div class="empty"><b>Article not found</b>' + (['terms', 'privacy', 'refunds'].indexOf(slug) !== -1 ? 'This page hasn’t been written yet. Contact support for details.' : '') + '</div>';
       });
