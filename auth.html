@@ -12,7 +12,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Lexend:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/store.css?v=202610032254">
+  <link rel="stylesheet" href="css/store.css?v=202610032258">
   <style>
     .auth { min-height: calc(100vh - var(--header-h)); display: grid; grid-template-columns: 1fr 1fr; }
     .auth-art { position: relative; overflow: hidden; isolation: isolate; background: var(--bg-2); border-right: 1px solid var(--border); display: flex; align-items: flex-end; padding: 48px; }
@@ -22,6 +22,10 @@
     .auth-video { position: absolute; inset: 0; z-index: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0; transition: opacity 1.2s; }
     .auth-art.has-video .auth-video { opacity: 1; }
     .auth-art > div { z-index: 2; }
+    .auth-art > .auth-yt { position: absolute; inset: 0; max-width: none; z-index: 0; overflow: hidden; pointer-events: none; container-type: size; opacity: 0; transition: opacity 1.2s; }
+    .auth-art > .auth-yt iframe { position: absolute; top: 50%; left: 50%; border: 0; transform: translate(-50%, -50%) scale(1.18);
+      width: max(100cqw, calc(100cqh * var(--ar, 1.7778))); height: max(100cqh, calc(100cqw / var(--ar, 1.7778))); }
+    .auth-art.has-video > .auth-yt { opacity: 1; }
     @keyframes auth-zoom { from { transform: scale(1); } to { transform: scale(1.08) translate(-1%, -1%); } }
     @media (prefers-reduced-motion: reduce) { .auth-art::after { animation: none; } }
     .auth-art > div { position: relative; max-width: 440px; }
@@ -111,14 +115,37 @@
         Store.nav().then(function (d) {
           var src = d.settings && d.settings.auth_video;
           if (!src) return;
+          var yt = src.match(/^https:\/\/(?:www\.|m\.)?(?:youtube\.com\/(?:watch\?(?:\S*&)?v=|(shorts)\/|embed\/|live\/)|youtu\.be\/)([A-Za-z0-9_-]{11})/);
+          if (yt) return youtube(yt[2], !!yt[1]);
           v.src = /^https?:/.test(src) ? src : src.replace(/^\/+/, '');
           v.addEventListener('playing', function () { art.classList.add('has-video'); }, { once: true });
           var p = v.play(); if (p && p.catch) p.catch(function () {});
         });
       });
+      // YouTube: embedded (not downloaded) via the official IFrame API; shown only once it is actually playing
+      function youtube(id, vertical) {
+        var box = document.createElement('div'), slot = document.createElement('div');
+        box.className = 'auth-yt'; box.style.setProperty('--ar', vertical ? (9 / 16) : (16 / 9));
+        box.appendChild(slot); art.insertBefore(box, art.firstChild);
+        window.onYouTubeIframeAPIReady = function () {
+          new YT.Player(slot, {
+            host: 'https://www.youtube-nocookie.com', videoId: id,
+            playerVars: { autoplay: 1, mute: 1, controls: 0, loop: 1, playlist: id, playsinline: 1, rel: 0, disablekb: 1, fs: 0, iv_load_policy: 3, modestbranding: 1 },
+            events: {
+              onReady: function (e) { e.target.mute(); e.target.playVideo(); var f = e.target.getIframe(); f.setAttribute('tabindex', '-1'); f.setAttribute('title', ''); },
+              onStateChange: function (e) {
+                if (e.data === YT.PlayerState.PLAYING) art.classList.add('has-video');
+                if (e.data === YT.PlayerState.ENDED) e.target.playVideo();
+              },
+              onError: function () { box.remove(); art.classList.remove('has-video'); } // embedding disabled / removed -> keep the photo
+            }
+          });
+        };
+        var s = document.createElement('script'); s.src = 'https://www.youtube.com/iframe_api'; document.head.appendChild(s);
+      }
     })();
   </script>
-  <script src="js/store.js?v=202610032254"></script>
+  <script src="js/store.js?v=202610032258"></script>
   <script>
   (function () {
     'use strict';
