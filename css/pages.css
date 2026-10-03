@@ -251,3 +251,12 @@ textarea.input { height: auto; padding: 10px 12px; line-height: 1.5; resize: ver
 .tk-meta { display: flex; gap: 10px; align-items: baseline; flex-wrap: wrap; font-size: 13px; margin-bottom: 6px; }
 .tk-body { white-space: pre-wrap; word-break: break-word; font-size: 14.5px; line-height: 1.55; }
 @media (max-width: 640px) { .tk-row { grid-template-columns: 1fr auto; } .tk-row > .mono { display: none; } .tk-msg { max-width: 100%; } }
+
+/* Account settings: connected accounts */
+.conn-list { display: grid; gap: 10px; }
+.conn-row { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-radius: 12px; background: var(--surface); border: 1px solid var(--border); }
+.conn-ico { flex: none; width: 38px; height: 38px; border-radius: 10px; display: grid; place-items: center; background: var(--surface-2); }
+.conn-ico svg { width: 20px; height: 20px; }
+.conn-discord { background: #5865f2; color: #fff; }
+.conn-google { background: #fff; }
+.conn-name { flex: 1; min-width: 0; display: grid; gap: 2px; }

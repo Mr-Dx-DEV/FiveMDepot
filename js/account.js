@@ -241,8 +241,10 @@
     page.innerHTML = '<h1>Account settings</h1><div class="panel panel-pad" style="max-width:560px;margin-bottom:18px"><h2 style="font-size:17px;margin-bottom:14px">Profile</h2>' +
       '<form id="profForm"><label class="field"><span>Name</span><input class="input" name="name" maxlength="100" value="' + esc(user.name) + '"></label>' +
       '<label class="field"><span>Email</span><input class="input" value="' + esc(user.email) + '" disabled></label><button class="btn btn-primary btn-sm" type="submit">Save</button></form></div>' +
-      '<div class="panel panel-pad" style="max-width:560px"><h2 style="font-size:17px;margin-bottom:14px">Change password</h2>' +
-      '<form id="pwForm"><label class="field"><span>Current password</span><input class="input" type="password" name="current_password" autocomplete="current-password"></label>' +
+      '<div class="panel panel-pad" style="max-width:560px;margin-bottom:18px" id="connBox"><h2 style="font-size:17px;margin-bottom:6px">Connected accounts</h2>' +
+      '<p class="small muted" style="margin-bottom:14px">Log in with any connected account.</p><div class="skeleton" style="height:120px"></div></div>' +
+      '<div class="panel panel-pad" style="max-width:560px"><h2 style="font-size:17px;margin-bottom:14px" id="pwTitle">Change password</h2>' +
+      '<form id="pwForm"><label class="field" id="curPw"><span>Current password</span><input class="input" type="password" name="current_password" autocomplete="current-password"></label>' +
       '<label class="field"><span>New password</span><input class="input" type="password" name="new_password" minlength="8" autocomplete="new-password"></label>' +
       '<button class="btn btn-primary btn-sm" type="submit">Update password</button></form></div>';
     page.onsubmit = function (e) {
@@ -250,8 +252,47 @@
       var f = e.target;
       if (f.id === 'profForm') S.v1('POST', 'auth/profile', { name: f.name.value }).then(function (r) { user.name = r.name; drawNav('settings'); S.toast('Profile saved', 'success'); }).catch(fail);
       if (f.id === 'pwForm') S.v1('POST', 'auth/password', { current_password: f.current_password.value, new_password: f.new_password.value })
-        .then(function () { f.reset(); S.toast('Password updated', 'success'); }).catch(fail);
+        .then(function () { f.reset(); S.toast('Password updated', 'success'); connections(); }).catch(fail);
     };
+    var q = new URLSearchParams(location.search);
+    if (q.get('linked') === 'discord') S.toast('Discord connected', 'success');
+    if (q.get('error')) S.toast(q.get('error'), 'error');
+    history.replaceState(null, '', location.pathname + '?tab=settings');
+    connections();
+  }
+
+  // Connected sign-in methods: Discord (link / unlink), Google, password
+  var CONN_ICON = {
+    discord: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M20.32 4.37A19.8 19.8 0 0 0 15.38 2.8a13.9 13.9 0 0 0-.63 1.3 18.4 18.4 0 0 0-5.5 0 13.3 13.3 0 0 0-.64-1.3 19.7 19.7 0 0 0-4.94 1.53C.54 9.06-.31 13.62.11 18.12a19.9 19.9 0 0 0 6.06 3.07 14.7 14.7 0 0 0 1.3-2.12 12.9 12.9 0 0 1-2.04-.98l.5-.39a14.2 14.2 0 0 0 12.14 0l.5.39c-.65.39-1.33.71-2.04.98.37.75.81 1.46 1.3 2.12a19.8 19.8 0 0 0 6.06-3.07c.5-5.22-.84-9.74-3.57-13.75ZM8.02 15.33c-1.18 0-2.16-1.08-2.16-2.42 0-1.33.96-2.42 2.16-2.42 1.21 0 2.18 1.1 2.16 2.42 0 1.34-.96 2.42-2.16 2.42Zm7.96 0c-1.18 0-2.16-1.08-2.16-2.42 0-1.33.96-2.42 2.16-2.42 1.21 0 2.18 1.1 2.16 2.42 0 1.34-.95 2.42-2.16 2.42Z"/></svg>',
+    google: '<svg viewBox="0 0 48 48"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.4-.4-3.5z"/><path fill="#FF3D00" d="m6.3 14.7 6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.2 0-9.6-3.3-11.3-7.9l-6.5 5C9.5 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.1 5.6l6.2 5.2C37 39.2 44 34 44 24c0-1.3-.1-2.4-.4-3.5z"/></svg>',
+    password: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>'
+  };
+  function connections() {
+    var box = document.getElementById('connBox');
+    if (!box) return;
+    S.v1('GET', 'auth/connections').then(function (c) {
+      var row = function (key, name, status, action) {
+        return '<div class="conn-row"><i class="conn-ico conn-' + key + '">' + CONN_ICON[key] + '</i><span class="conn-name"><b>' + name + '</b><small class="muted">' + status + '</small></span>' + (action || '') + '</div>';
+      };
+      var rows = '';
+      if (c.available.discord || c.discord) rows += row('discord', 'Discord', c.discord ? 'Connected as <b>' + esc(c.discord) + '</b>' : 'Not connected',
+        c.discord ? '<button class="btn btn-ghost btn-sm" data-unlink="discord">Disconnect</button>' : '<a class="btn btn-sm discord-btn" href="api/discord-login.php?link=1">Connect</a>');
+      if (c.available.google || c.google) rows += row('google', 'Google', c.google ? 'Connected' : 'Log in with Google once to connect it (same email)', '');
+      rows += row('password', 'Email & password', c.password ? 'Set' : 'Not set — add one below to log in with your email', '');
+      var list = box.querySelector('.conn-list') || box.appendChild(document.createElement('div'));
+      list.className = 'conn-list'; list.innerHTML = rows;
+      if (box.querySelector('.skeleton')) box.querySelector('.skeleton').remove();
+      // Discord/Google-only accounts set a first password without the "current" field
+      document.getElementById('curPw').hidden = !c.password;
+      document.getElementById('pwTitle').textContent = c.password ? 'Change password' : 'Set a password';
+      box.onclick = function (e) {
+        var b = e.target.closest('[data-unlink]');
+        if (!b) return;
+        b.disabled = true;
+        S.v1('POST', 'auth/connections/discord/unlink', {}).then(function () { S.toast('Discord disconnected', 'success'); connections(); })
+          .catch(function (err) { b.disabled = false; fail(err); });
+      };
+    }).catch(function () { box.remove(); });
   }
 
   // ---------- Become a seller ----------

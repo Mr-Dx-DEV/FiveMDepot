@@ -13,6 +13,11 @@ defined('DB_PASS') || define('DB_PASS', 'your-database-password');
 defined('GOOGLE_CLIENT_ID') || define('GOOGLE_CLIENT_ID', '');
 defined('GOOGLE_CLIENT_SECRET') || define('GOOGLE_CLIENT_SECRET', '');
 
+// ---- Discord sign-in (optional): discord.com/developers/applications -> New Application -> OAuth2
+// Copy the Client ID + Client Secret and add the redirect  https://YOUR-DOMAIN/api/discord-callback.php
+defined('DISCORD_CLIENT_ID') || define('DISCORD_CLIENT_ID', '');
+defined('DISCORD_CLIENT_SECRET') || define('DISCORD_CLIENT_SECRET', '');
+
 // ---- Payments (leave empty to hide a method). Webhook URLs are shown in Admin -> Settings.
 // Stripe (cards): Dashboard -> Developers -> API keys / Webhooks. Use sk_test_... while testing.
 defined('STRIPE_SECRET_KEY') || define('STRIPE_SECRET_KEY', '');

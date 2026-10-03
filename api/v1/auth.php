@@ -3,6 +3,7 @@
  * Auth: me, login, register, logout, change password (Google sign-in: api/google-*.php)
  */
 require_once __DIR__ . '/../../core/google.php';
+require_once __DIR__ . '/../../core/discord.php';
 
 // Who am I + CSRF token for the next request
 route('GET', 'auth/me', function () {
@@ -11,7 +12,25 @@ route('GET', 'auth/me', function () {
     'user' => $u ? $u + ['dashboard' => dashboard_url($u['role'])] : null,
     'csrf' => csrf_token(),
     'google' => google_enabled(),
+    'discord' => discord_enabled(),
   ]);
+});
+
+// Connected sign-in methods (Account settings)
+route('GET', 'auth/connections', function () {
+  $u = require_user();
+  $r = Db::one("SELECT password IS NOT NULL AS has_password, google_id IS NOT NULL AS google, discord_id, discord_username FROM users WHERE id = ?", [$u['id']]);
+  ok(['password' => (bool)$r['has_password'], 'google' => (bool)$r['google'], 'discord' => $r['discord_id'] ? ($r['discord_username'] ?: 'Connected') : null,
+      'available' => ['google' => google_enabled(), 'discord' => discord_enabled()]]);
+});
+
+route('POST', 'auth/connections/discord/unlink', function () {
+  $u = require_user();
+  $r = Db::one("SELECT password IS NOT NULL AS has_password, google_id IS NOT NULL AS google FROM users WHERE id = ?", [$u['id']]);
+  if (!$r['has_password'] && !$r['google']) fail(422, 'Set a password first — otherwise you could not log in any more.');
+  Db::pdo()->prepare("UPDATE users SET discord_id = NULL, discord_username = NULL WHERE id = ?")->execute([$u['id']]);
+  audit('discord_unlinked', 'user', $u['id']);
+  ok(['discord' => null]);
 });
 
 route('POST', 'auth/login', function () {

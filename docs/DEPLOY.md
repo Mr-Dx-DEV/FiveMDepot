@@ -10,6 +10,7 @@
    5. `migrations/005_payments.sql` (international payments: Stripe, crypto, SSLCommerz)
    6. `migrations/006_brand.sql` (crimson brand colour, new hero, “Everything you need” features)
    7. `migrations/007_support.sql` (Buy Me a Coffee payments, support tickets, email settings)
+   8. `migrations/008_discord.sql` (Discord sign-in: stores the Discord handle)
 
    Both are safe to run more than once and delete nothing.
 3. **Upload** all files. Make sure `config.local.php` is uploaded next to `config.php`
@@ -26,6 +27,11 @@
    `https://YOUR-DOMAIN/api/google-callback.php`, then put the client ID and secret in
    `config.local.php` (`GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`). The "Continue with Google"
    button appears automatically.
+   **Discord login (optional)** — at discord.com/developers/applications create an application →
+   OAuth2 → add the redirect `https://YOUR-DOMAIN/api/discord-callback.php`, then put the client ID
+   and secret in `config.local.php` (`DISCORD_CLIENT_ID`, `DISCORD_CLIENT_SECRET`). The "Continue
+   with Discord" button appears automatically, and users can link/unlink Discord from
+   Account settings → Connected accounts.
 7. **Payments** — run `migrations/005_payments.sql`, then add your keys to `config.local.php`
    (template in `config.local.example.php`). Each method appears at checkout automatically once its
    keys are set and its switch is on (Admin → Settings → Payment methods, which also shows the
