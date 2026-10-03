@@ -12,11 +12,18 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Lexend:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/store.css?v=202610032220">
+  <link rel="stylesheet" href="css/store.css?v=202610032254">
   <style>
     .auth { min-height: calc(100vh - var(--header-h)); display: grid; grid-template-columns: 1fr 1fr; }
-    .auth-art { position: relative; overflow: hidden; background: url("images/photos/city-traffic.jpg") center / cover no-repeat, var(--bg-2); border-right: 1px solid var(--border); display: flex; align-items: flex-end; padding: 48px; }
-    .auth-art::before { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(10,14,23,.2), rgba(10,14,23,.85)); }
+    .auth-art { position: relative; overflow: hidden; isolation: isolate; background: var(--bg-2); border-right: 1px solid var(--border); display: flex; align-items: flex-end; padding: 48px; }
+    .auth-art::before { content: ""; position: absolute; inset: 0; z-index: 1; background: linear-gradient(180deg, rgba(10,14,23,.15), rgba(10,14,23,.25) 45%, rgba(10,14,23,.88)), radial-gradient(120% 80% at 0% 100%, color-mix(in srgb, var(--accent) 22%, transparent), transparent 60%); }
+    .auth-art::after { content: ""; position: absolute; inset: -4%; background: url("images/photos/city-traffic.jpg") center / cover no-repeat; animation: auth-zoom 28s ease-in-out infinite alternate; }
+    .auth-art.has-video::after { opacity: 0; transition: opacity 1.2s; }
+    .auth-video { position: absolute; inset: 0; z-index: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0; transition: opacity 1.2s; }
+    .auth-art.has-video .auth-video { opacity: 1; }
+    .auth-art > div { z-index: 2; }
+    @keyframes auth-zoom { from { transform: scale(1); } to { transform: scale(1.08) translate(-1%, -1%); } }
+    @media (prefers-reduced-motion: reduce) { .auth-art::after { animation: none; } }
     .auth-art > div { position: relative; max-width: 440px; }
     .auth-art h2 { font-size: 34px; margin-bottom: 10px; color: #fff; }
     .auth-art p { color: #cbd5e1; }
@@ -51,6 +58,7 @@
 
   <main class="auth">
     <section class="auth-art" aria-hidden="true">
+      <video class="auth-video" muted loop playsinline preload="none" disablepictureinpicture tabindex="-1"></video>
       <div>
         <h2>Build your dream server.</h2>
         <p>Premium scripts, MLOs, vehicles and complete server packs — trusted by FiveM server owners.</p>
@@ -93,7 +101,24 @@
     </section>
   </main>
 
-  <script src="js/store.js?v=202610032220"></script>
+  <script>
+    // Background video for the left panel (Admin -> Settings -> Login page). Skipped on phones, data-saver and reduced motion.
+    (function () {
+      var art = document.querySelector('.auth-art'), v = art && art.querySelector('.auth-video');
+      if (!v || matchMedia('(max-width: 900px), (prefers-reduced-motion: reduce)').matches || (navigator.connection && navigator.connection.saveData)) return;
+      window.addEventListener('load', function () {
+        if (!window.Store) return;
+        Store.nav().then(function (d) {
+          var src = d.settings && d.settings.auth_video;
+          if (!src) return;
+          v.src = /^https?:/.test(src) ? src : src.replace(/^\/+/, '');
+          v.addEventListener('playing', function () { art.classList.add('has-video'); }, { once: true });
+          var p = v.play(); if (p && p.catch) p.catch(function () {});
+        });
+      });
+    })();
+  </script>
+  <script src="js/store.js?v=202610032254"></script>
   <script>
   (function () {
     'use strict';

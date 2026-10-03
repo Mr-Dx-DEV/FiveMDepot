@@ -48,7 +48,12 @@
      `noreply@your-domain`) and put its SMTP login in `config.local.php` (see the example file).
    - **Support tickets:** buyers open them from *My account → Support*; you answer in
      **Admin → Support tickets** (replies are emailed). The Discord link comes from Settings → Social links.
-8. **Security** — change the database password in Plesk (the old one was in git history),
+8. **Login page video (optional)** — Admin → Settings → Login page → *Upload video* (MP4/WebM,
+   10–20 s, max 40 MB). Use footage you own, e.g. a clip of your own server recorded with Rockstar
+   Editor or OBS. If the upload fails, raise PHP's limits in Plesk → PHP Settings:
+   `upload_max_filesize` and `post_max_size` to at least 64M. Without a video the page shows the
+   city photo with a slow zoom.
+9. **Security** — change the database password in Plesk (the old one was in git history),
    then update `config.local.php`.
 
 PHP 8.0+ with `pdo_mysql`, `fileinfo`, `mbstring` and `dom`; MariaDB 10.3+.

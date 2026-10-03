@@ -270,14 +270,15 @@ function audit(string $action, ?string $entityType = null, ?string $entityId = n
 function save_upload(array $file, string $dir, string $kind = 'image', int $maxBytes = 0): string
 {
   if (($file['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK) fail(400, 'Upload failed (code ' . ($file['error'] ?? '?') . ')');
-  $maxBytes = $maxBytes ?: ($kind === 'image' ? MAX_UPLOAD_SIZE : 200 * 1024 * 1024);
+  $maxBytes = $maxBytes ?: ($kind === 'image' ? MAX_UPLOAD_SIZE : ($kind === 'video' ? 40 * 1024 * 1024 : 200 * 1024 * 1024));
   if ($file['size'] > $maxBytes) fail(400, 'File is too large (max ' . round($maxBytes / 1048576) . ' MB)');
 
   $mime = (new finfo(FILEINFO_MIME_TYPE))->file($file['tmp_name']);
   $allowed = $kind === 'image'
     ? ['image/jpeg' => 'jpg', 'image/png' => 'png', 'image/webp' => 'webp', 'image/gif' => 'gif']
+    : ($kind === 'video' ? ['video/mp4' => 'mp4', 'video/webm' => 'webm']
     : ['application/zip' => 'zip', 'application/x-zip-compressed' => 'zip', 'application/x-rar' => 'rar',
-       'application/vnd.rar' => 'rar', 'application/x-rar-compressed' => 'rar', 'application/x-7z-compressed' => '7z'];
+       'application/vnd.rar' => 'rar', 'application/x-rar-compressed' => 'rar', 'application/x-7z-compressed' => '7z']);
   if (!isset($allowed[$mime])) fail(400, 'This file type is not allowed');
 
   $root = dirname(__DIR__);

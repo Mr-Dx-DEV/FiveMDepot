@@ -558,7 +558,8 @@ route('POST', 'admin/products/{id}/review', function ($p) {
 route('POST', 'admin/upload', function () {
   $u = require_role('ADMIN', 'SELLER');
   rate_limit('upload', 60, 300);
-  $kind = input('kind', 'image') === 'archive' ? 'archive' : 'image';
+  $kind = in_array(input('kind', 'image'), ['archive', 'video'], true) ? input('kind') : 'image';
+  if ($kind === 'video' && $u['role'] !== 'ADMIN') $kind = 'image'; // background videos are a site setting
   $dir = ['products' => 'products', 'categories' => 'categories', 'site' => 'site'][input('dir', 'products')] ?? 'products';
   if ($u['role'] === 'SELLER') $dir = 'products';
   if (empty($_FILES['file'])) fail(422, 'Choose a file to upload');

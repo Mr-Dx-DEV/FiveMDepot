@@ -177,6 +177,7 @@
   // ============================================================
   var GROUPS = [
     ['Store', [['brand_color', 'Brand colour', 'select', [['crimson', 'Crimson (red/pink)'], ['orange', 'Orange'], ['blue', 'Blue'], ['green', 'Green'], ['purple', 'Purple']]], ['site_name', 'Store name'], ['site_tagline', 'Tagline'], ['since_year', 'Founded year (footer badge)'], ['currency_symbol', 'Currency symbol']]],
+    ['Login page', [['auth_video', 'Background video (MP4 or WebM, 10–20 seconds, muted loop — max 40 MB)', 'video']]],
     ['Announcement bar', [['topbar_text', 'Text (leave empty to hide)'], ['topbar_link', 'Link']]],
     ['Social links', [['social_discord', 'Discord invite (https://…)'], ['social_github', 'GitHub (https://…)'], ['social_youtube', 'YouTube (https://…)'], ['discord_widget_server_id', 'Discord server ID (for the live online count — enable Server Settings → Widget)'], ['discord_server_name', 'Discord card title (optional)']]],
     ['Buy Me a Coffee', [['pay_bmc_enabled', 'Accept payments through Buy Me a Coffee (buyers submit transaction ID, email and amount; you approve in Pay panel)', 'bool'],
@@ -205,6 +206,12 @@
       form.innerHTML = GROUPS.map(function (g) {
         return '<div class="panel"><div class="panel-head"><h3>' + g[0] + '</h3></div><div class="panel-pad form-grid">' + g[1].map(function (f) {
           if (f[2] === 'bool') return '<label class="switch"><span>' + f[1] + '</span><input type="checkbox" name="' + f[0] + '"' + (s[f[0]] === '1' ? ' checked' : '') + '></label>';
+          if (f[2] === 'video') return '<div class="field vid-field"><span>' + f[1] + '</span>' +
+            '<div class="vid-row"><video class="vid-prev" muted loop playsinline autoplay' + (s[f[0]] ? ' src="../' + h(s[f[0]]).replace(/^\.\.\/(https?:)/, '$1') + '"' : '') + '></video>' +
+            '<div class="stack" style="flex:1;gap:8px"><input class="input" name="' + f[0] + '" value="' + h(s[f[0]]) + '" placeholder="Upload a clip, or paste an https://… .mp4 link">' +
+            '<div style="display:flex;gap:8px;flex-wrap:wrap"><label class="btn btn-sm btn-primary">Upload video<input type="file" accept="video/mp4,video/webm" hidden data-vid-up></label>' +
+            '<button type="button" class="btn btn-sm btn-ghost" data-vid-clear>Remove (use the photo)</button></div>' +
+            '<small class="muted">Tip: record 10–20 s of your own server (Rockstar Editor or OBS), export 1080p MP4 (H.264), under ~15 MB so it loads fast.</small></div></div></div>';
           if (f[2] === 'area') return '<label class="field"><span>' + f[1] + '</span><textarea class="input" name="' + f[0] + '" rows="2">' + h(s[f[0]]) + '</textarea></label>';
           if (f[2] === 'select') return '<label class="field"><span>' + f[1] + '</span><select class="input" name="' + f[0] + '">' + f[3].map(function (o) {
             return '<option value="' + o[0] + '"' + ((s[f[0]] || f[3][0][0]) === o[0] ? ' selected' : '') + '>' + o[1] + '</option>';
@@ -212,6 +219,18 @@
           return '<label class="field"><span>' + f[1] + '</span><input class="input" name="' + f[0] + '" value="' + h(s[f[0]]) + '"></label>';
         }).join('') + (g[0] === 'Payment methods' ? payStatus(gw) : '') + '</div></div>';
       }).join('');
+      // Login page video: upload, preview, clear
+      var vin = form.querySelector('[name=auth_video]'), prev = form.querySelector('.vid-prev');
+      function setVid(v) { vin.value = v; prev.src = !v ? '' : /^https?:/.test(v) ? v : '../' + v; if (v) prev.play().catch(function () {}); dirty = true; }
+      vin.addEventListener('change', function () { setVid(vin.value.trim()); });
+      form.querySelector('[data-vid-clear]').addEventListener('click', function () { setVid(''); });
+      form.querySelector('[data-vid-up]').addEventListener('change', function (e) {
+        var file = e.target.files[0]; e.target.value = '';
+        if (!file) return;
+        if (file.size > 40 * 1024 * 1024) { A.toast('Video is larger than 40 MB — trim or compress it first', 'error'); return; }
+        A.toast('Uploading video…');
+        A.upload(file, { kind: 'video', dir: 'site' }).then(function (path) { setVid(path); A.toast('Uploaded — click Save settings'); }).catch(A.fail);
+      });
     });
   });
 

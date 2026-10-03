@@ -129,7 +129,7 @@ const SETTING_KEYS = [
   'brand_color', 'discord_server_name', 'site_name', 'site_tagline', 'since_year', 'currency_symbol', 'topbar_text', 'topbar_link',
   'social_discord', 'social_github', 'social_youtube', 'discord_widget_server_id',
   'bkash_number', 'nagad_number', 'bank_name', 'bank_account', 'bank_branch',
-  'seller_auto_approve', 'platform_fee_percent', 'pay_stripe_enabled', 'pay_crypto_enabled', 'pay_sslcommerz_enabled', 'pay_manual_enabled', 'pay_bmc_enabled', 'bmc_link', 'verify_hours', 'mail_from', 'admin_notify_email', 'newsletter_enabled', 'free_assets_enabled', 'cookie_consent_text', 'download_expiry_days',
+  'seller_auto_approve', 'platform_fee_percent', 'pay_stripe_enabled', 'pay_crypto_enabled', 'pay_sslcommerz_enabled', 'pay_manual_enabled', 'pay_bmc_enabled', 'bmc_link', 'auth_video', 'verify_hours', 'mail_from', 'admin_notify_email', 'newsletter_enabled', 'free_assets_enabled', 'cookie_consent_text', 'download_expiry_days',
 ];
 
 route('GET', 'admin/settings', function () {
@@ -149,6 +149,7 @@ route('POST', 'admin/settings', function () {
     if (input($k) === null) continue;
     $v = mb_substr(trim((string)input($k)), 0, 1000);
     if (str_starts_with($k, 'social_') && $v !== '' && !preg_match('#^https://#i', $v)) fail(422, 'Social links must start with https://', [$k => 'Invalid link']);
+    if ($k === 'auth_video' && $v !== '' && !preg_match('#^(uploads/site/[a-f0-9]+\.(mp4|webm)|https://\S+\.(mp4|webm)(\?\S*)?)$#i', $v)) fail(422, 'Upload an MP4/WebM video or paste an https link ending in .mp4 or .webm', [$k => 'Invalid video']);
     $st->execute([uuid(), $k, $v]);
     $n++;
   }
