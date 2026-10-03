@@ -128,7 +128,7 @@ const SETTING_KEYS = [
   'site_name', 'site_tagline', 'since_year', 'currency_symbol', 'topbar_text', 'topbar_link',
   'social_discord', 'social_github', 'social_youtube', 'discord_widget_server_id',
   'bkash_number', 'nagad_number', 'bank_name', 'bank_account', 'bank_branch',
-  'seller_auto_approve', 'platform_fee_percent', 'newsletter_enabled', 'free_assets_enabled', 'cookie_consent_text', 'download_expiry_days',
+  'seller_auto_approve', 'platform_fee_percent', 'pay_stripe_enabled', 'pay_crypto_enabled', 'pay_sslcommerz_enabled', 'pay_manual_enabled', 'newsletter_enabled', 'free_assets_enabled', 'cookie_consent_text', 'download_expiry_days',
 ];
 
 route('GET', 'admin/settings', function () {
@@ -186,4 +186,20 @@ route('GET', 'admin/activity', function () {
   $rows = Db::all("SELECT a.id, a.action, a.entity_type, a.entity_id, a.details, a.ip_address, a.created_at, u.name AS user_name
                    FROM activity_log a LEFT JOIN users u ON u.id = a.user_id WHERE $where ORDER BY a.id DESC LIMIT $per OFFSET $off", $params);
   ok($rows, ['total' => $total, 'page' => $page, 'per_page' => $per, 'pages' => (int)ceil($total / $per)]);
+});
+
+// Which payment gateways have keys in config.local.php (keys themselves are never sent)
+route('GET', 'admin/payments/status', function () {
+  require_role('ADMIN');
+  require_once __DIR__ . '/../../core/orders.php';
+  $has = fn($k) => defined($k) && constant($k) !== '';
+  ok([
+    'STRIPE' => ['configured' => $has('STRIPE_SECRET_KEY') && $has('STRIPE_WEBHOOK_SECRET'), 'live' => gateway_ready('STRIPE'),
+                 'test_mode' => $has('STRIPE_SECRET_KEY') && str_starts_with(STRIPE_SECRET_KEY, 'sk_test'), 'webhook' => site_root_url() . 'api/pay/stripe-webhook.php'],
+    'CRYPTO' => ['configured' => $has('NOWPAYMENTS_API_KEY') && $has('NOWPAYMENTS_IPN_SECRET'), 'live' => gateway_ready('CRYPTO'),
+                 'test_mode' => defined('NOWPAYMENTS_SANDBOX') && NOWPAYMENTS_SANDBOX, 'webhook' => site_root_url() . 'api/pay/nowpayments-ipn.php'],
+    'SSLCOMMERZ' => ['configured' => $has('SSLCZ_STORE_ID') && $has('SSLCZ_STORE_PASSWORD'), 'live' => gateway_ready('SSLCOMMERZ'),
+                     'test_mode' => defined('SSLCZ_SANDBOX') && SSLCZ_SANDBOX, 'webhook' => site_root_url() . 'api/pay/sslcommerz.php?action=ipn'],
+    'MANUAL' => ['configured' => true, 'live' => gateway_ready('MANUAL')],
+  ]);
 });

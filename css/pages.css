@@ -204,3 +204,15 @@ textarea.input { height: auto; padding: 10px 12px; line-height: 1.5; resize: ver
   .rv-summary { grid-template-columns: 1fr; }
   .facts { grid-template-columns: 1fr 1fr; }
 }
+
+/* ---------- Checkout: payment methods ---------- */
+.pay-group { margin-bottom: 16px; }
+.pay-label { display: block; font-size: 12px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; color: var(--muted); margin-bottom: 8px; }
+.pay-opt span { position: relative; }
+.pay-ico { display: grid; place-items: center; width: 34px; height: 34px; border-radius: 10px; background: var(--accent-soft); color: var(--accent); font-style: normal; margin-bottom: 2px; }
+.pay-ico svg { width: 18px; height: 18px; }
+.pay-online { border-style: solid; }
+.pay-secure { text-align: center; font-size: 12.5px; color: var(--muted); margin-top: 12px; }
+.pay-secure a { color: var(--text-2); text-decoration: underline; }
+.spin-lg { width: 54px; height: 54px; margin: 0 auto 18px; border-radius: 50%; border: 4px solid var(--border-strong); border-top-color: var(--accent); animation: spinx .8s linear infinite; }
+@keyframes spinx { to { transform: rotate(360deg); } }

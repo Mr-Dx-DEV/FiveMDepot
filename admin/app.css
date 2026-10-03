@@ -339,3 +339,7 @@ textarea.input { height: auto; padding: 10px 12px; resize: vertical; line-height
 .catimg-grid button.on { border-color: var(--accent); }
 .catimg-grid img { width: 100%; height: 100%; object-fit: cover; }
 @media (max-width: 560px) { .catimg { grid-template-columns: 1fr; } }
+
+.pay-status { display: grid; gap: 8px; padding: 12px; border-radius: 10px; background: var(--surface-2); }
+.pay-row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.pay-row b { min-width: 110px; }

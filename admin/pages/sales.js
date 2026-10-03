@@ -15,13 +15,14 @@
           '<a href="../api/v1.php?r=admin/proofs/' + h(p.id) + '/file" target="_blank" rel="noopener"><img class="proof-img" src="../api/v1.php?r=admin/proofs/' + h(p.id) + '/file" alt="Payment proof" onerror="this.replaceWith(Object.assign(document.createElement(\'p\'),{className:\'small down\',textContent:\'Proof image missing on the server\'}))"></a>' +
           (p.review_note ? '<p class="small muted">Note: ' + h(p.review_note) + '</p>' : '') + '</div>';
       }).join('') || '<p class="small muted">No payment proof uploaded.</p>';
-      var pending = o.status === 'PENDING';
+      var pending = o.status === 'PENDING' || o.status === 'AWAITING_PAYMENT';
       A.modal({
         title: 'Order ' + o.id.slice(0, 8),
         wide: true,
         body: '<div class="grid g-2" style="align-items:start"><div class="stack">' +
           '<dl class="kv"><dt>Status</dt><dd>' + A.badge(o.status) + '</dd><dt>Customer</dt><dd>' + h(o.customer) + '<br><span class="muted small">' + h(o.email) + '</span></dd>' +
-          '<dt>Payment</dt><dd>' + h(o.payment_method || '—') + '</dd><dt>Transaction ID</dt><dd class="mono">' + h(o.transaction_id || '—') + '</dd>' +
+          '<dt>Payment</dt><dd>' + h(o.payment_method || '—') + '</dd><dt>Transaction ID</dt><dd class="mono">' + h(o.transaction_id || o.gateway_ref || '—') + '</dd>' +
+          (o.paid_at ? '<dt>Paid</dt><dd>' + A.money(o.paid_amount) + ' ' + h(o.paid_currency || '') + ' · ' + A.date(o.paid_at) + '</dd>' : '') +
           '<dt>Placed</dt><dd>' + A.date(o.created_at) + ' (' + A.ago(o.created_at) + ')</dd>' +
           (o.verified_at ? '<dt>Checked</dt><dd>' + A.date(o.verified_at) + '</dd>' : '') +
           (o.admin_note ? '<dt>Note</dt><dd>' + h(o.admin_note) + '</dd>' : '') + '</dl>' +
@@ -57,7 +58,7 @@
       var qs = '&page=' + state.page + (state.status ? '&status=' + state.status : '') + (state.q ? '&q=' + encodeURIComponent(state.q) : '');
       return A.get('admin/orders' + qs).then(function (b) {
         var sc = b.meta.status_counts || {}, all = Object.keys(sc).reduce(function (s, k) { return s + sc[k]; }, 0);
-        el.querySelector('#tabs').innerHTML = [['', 'All', all], ['PENDING', 'Needs check'], ['VERIFIED', 'Verified'], ['REJECTED', 'Rejected'], ['REFUNDED', 'Refunded']].map(function (t) {
+        el.querySelector('#tabs').innerHTML = [['', 'All', all], ['PENDING', 'Needs check'], ['AWAITING_PAYMENT', 'Awaiting online payment'], ['VERIFIED', 'Paid'], ['REJECTED', 'Rejected'], ['CANCELLED', 'Cancelled'], ['REFUNDED', 'Refunded']].map(function (t) {
           return '<button class="tab' + (state.status === t[0] ? ' on' : '') + '" data-status="' + t[0] + '">' + t[1] + '<small>' + (t[2] != null ? t[2] : sc[t[0]] || 0) + '</small></button>';
         }).join('');
         el.querySelector('#rows').innerHTML = b.data.length ? b.data.map(function (o) {

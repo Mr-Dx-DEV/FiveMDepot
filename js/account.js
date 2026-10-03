@@ -6,7 +6,7 @@
   var user = null, overview = null;
 
   function date(s) { var d = new Date(String(s || '').replace(' ', 'T')); return isNaN(d) ? '—' : d.toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }); }
-  var STATUS = { PENDING: ['st-warn', 'Awaiting payment check'], VERIFIED: ['st-ok', 'Paid'], COMPLETED: ['st-ok', 'Completed'], REJECTED: ['st-bad', 'Payment rejected'], REFUNDED: ['st-muted', 'Refunded'] };
+  var STATUS = { AWAITING_PAYMENT: ['st-warn', 'Awaiting payment'], CANCELLED: ['st-muted', 'Cancelled'], PENDING: ['st-warn', 'Awaiting payment check'], VERIFIED: ['st-ok', 'Paid'], COMPLETED: ['st-ok', 'Completed'], REJECTED: ['st-bad', 'Payment rejected'], REFUNDED: ['st-muted', 'Refunded'] };
   function badge(s) { var x = STATUS[s] || ['st-muted', s]; return '<span class="st ' + x[0] + '">' + x[1] + '</span>'; }
 
   function modal(title, bodyHtml, actions) {
@@ -110,11 +110,25 @@
           }).join('') +
           '<div class="order-line"><b>Total</b><b>' + S.money(o.total_amount) + '</b></div>' +
           (o.status === 'PENDING' ? '<div class="order-note">We’re checking your payment. This usually takes a few hours.</div>' : '') +
+          (o.status === 'AWAITING_PAYMENT' ? '<div class="order-note">This order isn’t paid yet.' + (o.admin_note ? ' ' + esc(o.admin_note) : '') +
+            '<div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap"><button class="btn btn-primary btn-sm" data-pay="' + esc(o.id) + '">Pay now</button>' +
+            '<button class="btn btn-ghost btn-sm" data-cancel="' + esc(o.id) + '">Cancel order</button></div></div>' : '') +
           (o.status === 'REJECTED' && o.admin_note ? '<div class="order-note down">Reason: ' + esc(o.admin_note) + '. Contact support if you think this is a mistake.</div>' : '') +
           ((o.status === 'VERIFIED' || o.status === 'COMPLETED') && o.total_amount > 0 ? '<div style="padding:0 18px 14px;text-align:right"><button class="btn btn-ghost btn-sm" data-refund="' + esc(o.id) + '">Request refund</button></div>' : '') +
           '</div>';
       }).join('') : '<div class="empty"><b>No orders yet</b><a class="link-more" href="category.html?c=all">Start shopping →</a></div>');
       page.onclick = function (e) {
+        var pay = e.target.closest('[data-pay]'), cancel = e.target.closest('[data-cancel]');
+        if (pay) {
+          pay.disabled = true;
+          S.v1('POST', 'account/orders/' + encodeURIComponent(pay.dataset.pay) + '/pay', {}).then(function (r) { location.href = r.redirect_url; })
+            .catch(function (err) { pay.disabled = false; fail(err); });
+          return;
+        }
+        if (cancel) {
+          S.v1('POST', 'account/orders/' + encodeURIComponent(cancel.dataset.cancel) + '/cancel', {}).then(function () { S.toast('Order cancelled', 'success'); show('orders'); }).catch(fail);
+          return;
+        }
         var b = e.target.closest('[data-refund]');
         if (!b) return;
         modal('Request a refund', '<p class="muted small" style="margin-bottom:12px">Tell us what went wrong. Our team reviews every request.</p>' +

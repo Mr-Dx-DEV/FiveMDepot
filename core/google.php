@@ -5,57 +5,16 @@
  * Authorized redirect URI to register in Google Cloud Console:
  *   https://<your-domain>/api/google-callback.php
  */
+require_once __DIR__ . '/http.php';
 
 function google_enabled(): bool
 {
   return defined('GOOGLE_CLIENT_ID') && GOOGLE_CLIENT_ID !== '' && defined('GOOGLE_CLIENT_SECRET') && GOOGLE_CLIENT_SECRET !== '';
 }
 
-/** Absolute URL of the site root (folder that contains api/), based on the current request. */
-function site_root_url(): string
-{
-  $https = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') || (($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '') === 'https');
-  $host = $_SERVER['HTTP_HOST'] ?? parse_url(SITE_URL, PHP_URL_HOST);
-  $dir = rtrim(str_replace('\\', '/', dirname(dirname($_SERVER['SCRIPT_NAME'] ?? '/api/x.php'))), '/');
-  return ($https ? 'https' : 'http') . '://' . $host . $dir . '/';
-}
-
 function google_redirect_uri(): string
 {
   return site_root_url() . 'api/google-callback.php';
-}
-
-/** Only allow redirects back to pages on this site. */
-function safe_next(?string $next): ?string
-{
-  $next = (string)$next;
-  if ($next === '' || preg_match('#^[a-z][a-z0-9+.-]*:#i', $next) || strpos($next, '//') === 0 || strpos($next, '\\') !== false) return null;
-  return ltrim($next, '/');
-}
-
-function http_request(string $method, string $url, array $form = [], array $headers = []): array
-{
-  if (function_exists('curl_init')) {
-    $ch = curl_init($url);
-    curl_setopt_array($ch, [
-      CURLOPT_RETURNTRANSFER => true, CURLOPT_TIMEOUT => 15, CURLOPT_HTTPHEADER => $headers,
-      CURLOPT_CUSTOMREQUEST => $method,
-    ]);
-    if ($form) curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($form));
-    $body = curl_exec($ch);
-    $status = (int)curl_getinfo($ch, CURLINFO_RESPONSE_CODE);
-    curl_close($ch);
-  } else {
-    $ctx = stream_context_create(['http' => [
-      'method' => $method, 'timeout' => 15, 'ignore_errors' => true,
-      'header' => implode("\r\n", array_merge($headers, $form ? ['Content-Type: application/x-www-form-urlencoded'] : [])),
-      'content' => $form ? http_build_query($form) : null,
-    ]]);
-    $body = @file_get_contents($url, false, $ctx);
-    $status = 0;
-    foreach ($http_response_header ?? [] as $h) if (preg_match('#^HTTP/\S+ (\d+)#', $h, $m)) $status = (int)$m[1];
-  }
-  return [$status, is_string($body) ? (json_decode($body, true) ?: []) : []];
 }
 
 /**

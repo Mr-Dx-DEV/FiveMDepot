@@ -7,6 +7,7 @@
    3. `migrations/003_content.sql` (starter blog posts, tutorials, tools, docs and the
       Terms / Privacy / Refund policy pages — review the legal pages in Admin → Articles)
    4. `migrations/004_home.sql` (homepage: customer reviews + Discord community sections)
+   5. `migrations/005_payments.sql` (international payments: Stripe, crypto, SSLCommerz)
 
    Both are safe to run more than once and delete nothing.
 3. **Upload** all files. Make sure `config.local.php` is uploaded next to `config.php`
@@ -23,7 +24,19 @@
    `https://YOUR-DOMAIN/api/google-callback.php`, then put the client ID and secret in
    `config.local.php` (`GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`). The "Continue with Google"
    button appears automatically.
-7. **Security** — change the database password in Plesk (the old one was in git history),
+7. **Payments** — run `migrations/005_payments.sql`, then add your keys to `config.local.php`
+   (template in `config.local.example.php`). Each method appears at checkout automatically once its
+   keys are set and its switch is on (Admin → Settings → Payment methods, which also shows the
+   webhook URLs). Test with sandbox/test keys first.
+   - **Stripe (cards):** API key `sk_live_…` + webhook secret `whsec_…`. In Stripe → Developers →
+     Webhooks add `https://YOUR-DOMAIN/api/pay/stripe-webhook.php` with events
+     `checkout.session.completed` and `checkout.session.async_payment_succeeded`.
+   - **NOWPayments (crypto):** API key + IPN secret (Settings → Payments). The IPN URL is sent
+     automatically with every invoice. Set `NOWPAYMENTS_SANDBOX` to `true` while testing.
+   - **SSLCommerz:** store ID + store password. Keep `SSLCZ_SANDBOX = true` until SSLCommerz approves
+     your live account; callback URLs are sent automatically.
+   - **bKash / Nagad / bank:** only shown when a real number/account is filled in Settings.
+8. **Security** — change the database password in Plesk (the old one was in git history),
    then update `config.local.php`.
 
 PHP 8.0+ with `pdo_mysql`, `fileinfo`, `mbstring` and `dom`; MariaDB 10.3+.

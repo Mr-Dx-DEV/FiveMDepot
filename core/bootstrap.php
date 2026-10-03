@@ -191,6 +191,26 @@ function rate_limit(string $key, int $max, int $windowSec): void
 }
 
 // ---------- Helpers ----------
+/** Absolute URL of the site root (folder that contains api/), based on the current request. */
+function site_root_url(): string
+{
+  $https = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') || (($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '') === 'https');
+  $host = $_SERVER['HTTP_HOST'] ?? parse_url(SITE_URL, PHP_URL_HOST);
+  // everything before "/api/" in the script path (works for api/x.php and api/pay/x.php, and sub-folder installs)
+  $script = str_replace('\\', '/', $_SERVER['SCRIPT_NAME'] ?? '/api/x.php');
+  $pos = strpos($script, '/api/');
+  $dir = $pos === false ? rtrim(dirname($script), '/') : substr($script, 0, $pos);
+  return ($https ? 'https' : 'http') . '://' . $host . $dir . '/';
+}
+
+/** Only allow redirects back to pages on this site. */
+function safe_next(?string $next): ?string
+{
+  $next = (string)$next;
+  if ($next === '' || preg_match('#^[a-z][a-z0-9+.-]*:#i', $next) || strpos($next, '//') === 0 || strpos($next, '\\') !== false) return null;
+  return ltrim($next, '/');
+}
+
 /** Where each role lands after logging in. */
 function dashboard_url(string $role): string
 {

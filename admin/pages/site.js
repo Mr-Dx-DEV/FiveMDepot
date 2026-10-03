@@ -162,7 +162,9 @@
     ['Store', [['site_name', 'Store name'], ['site_tagline', 'Tagline'], ['since_year', 'Founded year (footer badge)'], ['currency_symbol', 'Currency symbol']]],
     ['Announcement bar', [['topbar_text', 'Text (leave empty to hide)'], ['topbar_link', 'Link']]],
     ['Social links', [['social_discord', 'Discord invite (https://…)'], ['social_github', 'GitHub (https://…)'], ['social_youtube', 'YouTube (https://…)'], ['discord_widget_server_id', 'Discord widget server ID']]],
-    ['Payments', [['bkash_number', 'bKash number'], ['nagad_number', 'Nagad number'], ['bank_name', 'Bank name'], ['bank_account', 'Bank account'], ['bank_branch', 'Bank branch'], ['download_expiry_days', 'Download link valid for (days)']]],
+    ['Payment methods', [['pay_stripe_enabled', 'Card payments (Stripe)', 'bool'], ['pay_crypto_enabled', 'Crypto (NOWPayments)', 'bool'],
+      ['pay_sslcommerz_enabled', 'SSLCommerz (cards, bKash, Nagad)', 'bool'], ['pay_manual_enabled', 'Manual bKash / Nagad / bank transfer with screenshot', 'bool']]],
+    ['Manual transfer details', [['bkash_number', 'bKash number'], ['nagad_number', 'Nagad number'], ['bank_name', 'Bank name'], ['bank_account', 'Bank account'], ['bank_branch', 'Bank branch'], ['download_expiry_days', 'Download link valid for (days)']]],
     ['Features', [['seller_auto_approve', 'Auto-approve new sellers', 'bool'], ['platform_fee_percent', 'Platform fee on seller sales (%) — sellers get the rest in their wallet'], ['newsletter_enabled', 'Newsletter signup', 'bool'], ['free_assets_enabled', 'Free assets section', 'bool'], ['cookie_consent_text', 'Cookie banner text', 'area']]]
   ];
   A.page('/settings', function (el) {
@@ -177,17 +179,29 @@
       Object.keys(d).forEach(function (k) { if (typeof d[k] === 'boolean') d[k] = d[k] ? '1' : '0'; });
       A.post('admin/settings', d).then(function () { dirty = false; A.toast('Settings saved'); }).catch(function (err) { A.fail(err); A.fieldErrors(form, err); });
     });
-    return A.get('admin/settings').then(function (b) {
+    return Promise.all([A.get('admin/settings'), A.get('admin/payments/status').catch(function () { return { data: {} }; })]).then(function (res) {
+      var b = res[0], gw = res[1].data || {};
       var s = b.data;
       form.innerHTML = GROUPS.map(function (g) {
         return '<div class="panel"><div class="panel-head"><h3>' + g[0] + '</h3></div><div class="panel-pad form-grid">' + g[1].map(function (f) {
           if (f[2] === 'bool') return '<label class="switch"><span>' + f[1] + '</span><input type="checkbox" name="' + f[0] + '"' + (s[f[0]] === '1' ? ' checked' : '') + '></label>';
           if (f[2] === 'area') return '<label class="field"><span>' + f[1] + '</span><textarea class="input" name="' + f[0] + '" rows="2">' + h(s[f[0]]) + '</textarea></label>';
           return '<label class="field"><span>' + f[1] + '</span><input class="input" name="' + f[0] + '" value="' + h(s[f[0]]) + '"></label>';
-        }).join('') + '</div></div>';
+        }).join('') + (g[0] === 'Payment methods' ? payStatus(gw) : '') + '</div></div>';
       }).join('');
     });
   });
+
+  // Shows whether each gateway's keys are in config.local.php + the webhook URL to paste in the gateway dashboard
+  function payStatus(gw) {
+    var names = { STRIPE: 'Stripe', CRYPTO: 'NOWPayments', SSLCOMMERZ: 'SSLCommerz' };
+    return '<div class="pay-status">' + Object.keys(names).map(function (k) {
+      var g = gw[k] || {};
+      var st = g.live ? '<span class="st st-ok">active' + (g.test_mode ? ' · test mode' : '') + '</span>'
+        : g.configured ? '<span class="st st-muted">keys set · switched off</span>' : '<span class="st st-warn">keys missing in config.local.php</span>';
+      return '<div class="pay-row"><b>' + names[k] + '</b>' + st + (g.webhook ? '<span class="mono small muted" title="Webhook / IPN URL">' + h(g.webhook) + '</span>' : '') + '</div>';
+    }).join('') + '<p class="small muted">Keys are read from config.local.php on the server (never stored in the database). See docs/DEPLOY.md.</p></div>';
+  }
 
   // ============================================================
   // Activity log

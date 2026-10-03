@@ -38,7 +38,7 @@
   };
   var STATUS = {
     PUBLISHED: 'ok', VERIFIED: 'ok', COMPLETED: 'ok', APPROVED: 'ok', PAID: 'ok', ADMIN: 'accent',
-    PENDING: 'warn', DRAFT: 'muted', REJECTED: 'bad', REFUNDED: 'bad', BANNED: 'bad', SELLER: 'info', BUYER: 'muted'
+    PENDING: 'warn', AWAITING_PAYMENT: 'info', CANCELLED: 'muted', DRAFT: 'muted', REJECTED: 'bad', REFUNDED: 'bad', BANNED: 'bad', SELLER: 'info', BUYER: 'muted'
   };
   Admin.badge = function (s) { s = String(s || '').toUpperCase(); return '<span class="st st-' + (STATUS[s] || 'muted') + '">' + h(s.toLowerCase()) + '</span>'; };
 

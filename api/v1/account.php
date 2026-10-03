@@ -4,6 +4,7 @@
  * Checkout: quote + place order (prices always come from the database)
  */
 require_once __DIR__ . '/../../core/catalog.php';
+require_once __DIR__ . '/../../core/gateways.php';
 
 /** Product ids this user can download (paid orders, own products, or free products). */
 function owned_product_ids(string $userId): array
@@ -244,7 +245,7 @@ function payment_info(): array
 route('POST', 'checkout/quote', function () {
   [$lines, $subtotal, $discount, $total, $promo] = price_cart(arr_in('ids'), str_in('promo_code', 50), current_user());
   ok(['items' => array_map(function ($l) { unset($l['seller_id']); return $l; }, $lines), 'subtotal' => $subtotal,
-      'discount' => $discount, 'total' => $total, 'promo' => $promo, 'payment' => payment_info()]);
+      'discount' => $discount, 'total' => $total, 'promo' => $promo, 'payment' => payment_info(), 'methods' => payment_methods()]);
 });
 
 route('POST', 'checkout/order', function () {
@@ -256,18 +257,22 @@ route('POST', 'checkout/order', function () {
   if (!$lines) fail(422, 'You already own everything in your cart');
 
   $method = strtoupper(str_in('payment_method', 20));
+  $free = $total <= 0;
+  $available = array_column(payment_methods(), 'type', 'id');
+  $online = !$free && ($available[$method] ?? '') === 'online';
   $tx = str_in('transaction_id', 100);
   $sender = str_in('sender_number', 50);
-  $free = $total <= 0;
   if (!$free) {
-    $errors = [];
-    if (!in_array($method, ['BKASH', 'NAGAD', 'BANK_TRANSFER'], true)) $errors['payment_method'] = 'Choose a payment method';
-    if (mb_strlen($tx) < 4) $errors['transaction_id'] = 'Enter the transaction ID from your payment';
-    if (empty($_FILES['proof']) || $_FILES['proof']['error'] === UPLOAD_ERR_NO_FILE) $errors['proof'] = 'Upload a screenshot of your payment';
-    if ($errors) fail(422, 'Please complete the payment details', $errors);
-    if (Db::value("SELECT COUNT(*) FROM orders WHERE transaction_id = ? AND status <> 'REJECTED'", [$tx])) fail(422, 'This transaction ID was already used', ['transaction_id' => 'Already used']);
+    if (!isset($available[$method])) fail(422, 'Choose a payment method', ['payment_method' => 'Choose a payment method']);
+    if (!$online) {
+      $errors = [];
+      if (mb_strlen($tx) < 4) $errors['transaction_id'] = 'Enter the transaction ID from your payment';
+      if (empty($_FILES['proof']) || $_FILES['proof']['error'] === UPLOAD_ERR_NO_FILE) $errors['proof'] = 'Upload a screenshot of your payment';
+      if ($errors) fail(422, 'Please complete the payment details', $errors);
+      if (Db::value("SELECT COUNT(*) FROM orders WHERE transaction_id = ? AND status <> 'REJECTED'", [$tx])) fail(422, 'This transaction ID was already used', ['transaction_id' => 'Already used']);
+    }
   }
-  $proofPath = $free ? null : save_upload($_FILES['proof'], 'proofs', 'image');
+  $proofPath = ($free || $online) ? null : save_upload($_FILES['proof'], 'proofs', 'image');
 
   // Spread the discount over the items so price_paid adds up to the total
   $remaining = $discount;
@@ -281,17 +286,60 @@ route('POST', 'checkout/order', function () {
   $pdo = Db::pdo();
   $pdo->beginTransaction();
   $orderId = uuid();
-  $status = $free ? 'VERIFIED' : 'PENDING';
-  $pdo->prepare("INSERT INTO orders (id, user_id, product_ids, total_amount, status, payment_method, transaction_id, verified_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)")
-    ->execute([$orderId, $u['id'], json_encode(array_column($lines, 'id')), $total, $status, $free ? null : $method, $free ? null : $tx, $free ? date('Y-m-d H:i:s') : null]);
+  $status = $free ? 'PENDING' : ($online ? 'AWAITING_PAYMENT' : 'PENDING');
+  $pdo->prepare("INSERT INTO orders (id, user_id, product_ids, total_amount, status, payment_method, transaction_id, promo_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)")
+    ->execute([$orderId, $u['id'], json_encode(array_column($lines, 'id')), $total, $status, $free ? 'FREE' : $method,
+               ($free || $online) ? null : $tx, $promo['id'] ?? null]);
   $ins = $pdo->prepare("INSERT INTO order_products (id, order_id, product_id, price_paid) VALUES (?, ?, ?, ?)");
   foreach ($lines as $l) $ins->execute([uuid(), $orderId, $l['id'], $l['paid']]);
-  if (!$free) {
+  if ($proofPath) {
     $pdo->prepare("INSERT INTO payment_proofs (id, order_id, file_path, transaction_id, sender_number, amount) VALUES (?, ?, ?, ?, ?, ?)")
       ->execute([uuid(), $orderId, $proofPath, $tx, $sender ?: null, $total]);
   }
-  if ($promo) $pdo->prepare("UPDATE promos SET uses_count = uses_count + 1 WHERE id = ?")->execute([$promo['id']]);
+  if ($free) {
+    fulfil_order($orderId, null, 'Free order'); // same delivery path as paid orders
+    $status = 'VERIFIED';
+  }
   $pdo->commit();
   audit('order_placed', 'order', $orderId, ($free ? 'free' : $method) . ' ' . $total);
+
+  // Online payment: send the buyer to the gateway's secure payment page
+  if ($online) {
+    $url = start_gateway_payment(order_for_payment($orderId));
+    ok(['order_id' => $orderId, 'status' => $status, 'total' => $total, 'redirect_url' => $url], [], 201);
+  }
   ok(['order_id' => $orderId, 'status' => $status, 'total' => $total], [], 201);
+});
+
+// One order of the current user (checkout polls this after returning from a gateway)
+route('GET', 'account/orders/{id}', function ($p) {
+  $u = require_user();
+  $o = Db::one("SELECT id, total_amount, status, payment_method, admin_note, created_at, paid_at FROM orders WHERE id = ? AND user_id = ?", [$p['id'], $u['id']]);
+  if (!$o) fail(404, 'Order not found');
+  ok($o);
+});
+
+// Resume an unfinished online payment ("Pay now" in My account → Orders)
+route('POST', 'account/orders/{id}/pay', function ($p) {
+  $u = require_user();
+  rate_limit('pay', 10, 600);
+  $o = order_for_payment($p['id']);
+  if (!$o || $o['user_id'] !== $u['id']) fail(404, 'Order not found');
+  if ($o['status'] !== 'AWAITING_PAYMENT') fail(409, 'This order does not need payment');
+  $method = strtoupper(str_in('payment_method', 20)) ?: $o['payment_method'];
+  $available = array_column(payment_methods(), 'type', 'id');
+  if (($available[$method] ?? '') !== 'online') fail(422, 'This payment method is not available right now');
+  if ($method !== $o['payment_method']) {
+    Db::pdo()->prepare("UPDATE orders SET payment_method = ? WHERE id = ?")->execute([$method, $o['id']]);
+    $o['payment_method'] = $method;
+  }
+  ok(['redirect_url' => start_gateway_payment($o)]);
+});
+
+route('POST', 'account/orders/{id}/cancel', function ($p) {
+  $u = require_user();
+  $st = Db::pdo()->prepare("UPDATE orders SET status = 'CANCELLED' WHERE id = ? AND user_id = ? AND status = 'AWAITING_PAYMENT'");
+  $st->execute([$p['id'], $u['id']]);
+  if (!$st->rowCount()) fail(409, 'This order cannot be cancelled');
+  ok(['status' => 'CANCELLED']);
 });

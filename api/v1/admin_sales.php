@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__ . '/../../core/orders.php';
 /**
  * Admin — orders & payment proofs, users, sellers, withdrawals, reviews, promo codes
  */
@@ -69,23 +70,10 @@ route('POST', 'admin/orders/{id}/verify', function ($p) {
   $pdo->beginTransaction();
   $o = Db::one("SELECT id, user_id, status FROM orders WHERE id = ? FOR UPDATE", [$p['id']]);
   if (!$o) { $pdo->rollBack(); fail(404, 'Order not found'); }
-  if ($o['status'] !== 'PENDING') { $pdo->rollBack(); fail(409, 'This order was already ' . strtolower($o['status'])); }
+  if (!in_array($o['status'], ['PENDING', 'AWAITING_PAYMENT'], true)) { $pdo->rollBack(); fail(409, 'This order was already ' . strtolower($o['status'])); }
 
   if ($decision === 'approve') {
-    $code = bin2hex(random_bytes(24));
-    $days = max(1, (int)setting('download_expiry_days', '30'));
-    $pdo->prepare("UPDATE orders SET status = 'VERIFIED', download_code = ?, verified_by = ?, verified_at = NOW(), admin_note = ? WHERE id = ?")
-      ->execute([$code, $admin['id'], $note ?: null, $o['id']]);
-    $pdo->prepare("INSERT INTO download_codes (id, order_id, user_id, code, expires_at) VALUES (?, ?, ?, ?, NOW() + INTERVAL ? DAY)
-                   ON DUPLICATE KEY UPDATE code = VALUES(code), expires_at = VALUES(expires_at)")
-      ->execute([uuid(), $o['id'], $o['user_id'], $code, $days]);
-    // Credit sellers (not admin-owned products) minus the platform fee
-    $fee = min(100, max(0, (float)setting('platform_fee_percent', '0')));
-    $pdo->prepare("UPDATE users u JOIN (
-                     SELECT p.user_id, SUM(op.price_paid) AS amt FROM order_products op JOIN products p ON p.id = op.product_id
-                     JOIN users s ON s.id = p.user_id AND s.role <> 'ADMIN' WHERE op.order_id = ? GROUP BY p.user_id
-                   ) x ON x.user_id = u.id SET u.wallet_balance = u.wallet_balance + ROUND(x.amt * (100 - ?) / 100, 2)")
-      ->execute([$o['id'], $fee]);
+    fulfil_order($o['id'], $admin['id'], $note ?: null);
   } else {
     $pdo->prepare("UPDATE orders SET status = 'REJECTED', verified_by = ?, verified_at = NOW(), admin_note = ? WHERE id = ?")
       ->execute([$admin['id'], $note, $o['id']]);
