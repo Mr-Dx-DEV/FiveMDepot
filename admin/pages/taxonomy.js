@@ -114,13 +114,13 @@
       });
       // ---- Category image: own banner → auto (newest featured product image) → illustration
       var autoImg = null;
-      var art = '../images/store/cat-' + ({ server: 'server-packs', car: 'vehicles', building: 'mlos-maps', map: 'mlos-maps', shirt: 'clothing', gift: 'free-assets', box: 'default' }[iconKey(c)] || 'scripts') + '.svg';
+      var art = '../images/photos/' + ({ server: 'server-packs', car: 'vehicles', building: 'mlos-maps', map: 'hero-city', shirt: 'clothing', gift: 'free-assets', job: 'police', weapon: 'police', box: 'default' }[iconKey(c)] || 'scripts') + '-640.jpg';
       function drawBanner() {
         var own = form.banner_url.value;
         panel.querySelector('#bannerPrev').src = own ? A.img(own) : autoImg ? A.img(autoImg) : art;
         panel.querySelector('#bannerState').innerHTML = own ? '✅ Using your image'
           : autoImg ? '⚡ Automatic — the newest featured product photo in this category (updates by itself)'
-          : '🎨 Illustration — add products with screenshots or upload an image';
+          : '📷 Stock photo — add products with screenshots or upload your own image';
         panel.querySelectorAll('[data-pick]').forEach(function (b) { b.classList.toggle('on', b.dataset.pick === own); });
       }
       panel.querySelector('#bannerClear').addEventListener('click', function () { form.banner_url.value = ''; dirty = true; drawBanner(); });

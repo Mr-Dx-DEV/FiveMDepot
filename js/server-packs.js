@@ -23,7 +23,7 @@
     var fw = (p.pack.frameworks && p.pack.frameworks.length ? p.pack.frameworks : p.compatibility);
     S.productCard(p); // registers the product for the shared cart handler
     return '<article class="pack-card' + (best ? ' best' : '') + '">' + (best ? '<span class="ribbon">MOST POPULAR</span>' : '') +
-      '<a class="media" href="' + S.productUrl(p.slug) + '"><img src="' + esc(p.image || 'images/store/cat-server-packs.svg') + '" alt="' + esc(p.title) + '" data-fallback="images/store/cat-server-packs.svg"></a>' +
+      '<a class="media" href="' + S.productUrl(p.slug) + '"><img src="' + esc(p.image || 'images/photos/server-packs-640.jpg') + '" alt="' + esc(p.title) + '" data-fallback="images/photos/server-packs-640.jpg"></a>' +
       '<div class="body"><h3>' + esc(p.title) + '</h3>' +
       '<div class="mini">' + (p.pack.resources ? '<span>' + esc(p.pack.resources) + '+ systems</span>' : '') +
         (p.pack.resmon_idle_ms ? '<span>' + esc(p.pack.resmon_idle_ms) + ' resmon</span>' : '') +

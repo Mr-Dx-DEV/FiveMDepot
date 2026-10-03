@@ -17,7 +17,12 @@
    - Change the admin password (Account settings) if it is still the default.
    - Settings → fill payment numbers, social links, platform fee.
    - Categories → check each category owns the right tags.
-6. **Security** — change the database password in Plesk (the old one was in git history),
+6. **Google login (optional)** — in Google Cloud Console → APIs & Services → Credentials, create an
+   *OAuth client ID* (type: Web application). Add the authorized redirect URI
+   `https://YOUR-DOMAIN/api/google-callback.php`, then put the client ID and secret in
+   `config.local.php` (`GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`). The "Continue with Google"
+   button appears automatically.
+7. **Security** — change the database password in Plesk (the old one was in git history),
    then update `config.local.php`.
 
 PHP 8.0+ with `pdo_mysql`, `fileinfo`, `mbstring` and `dom`; MariaDB 10.3+.

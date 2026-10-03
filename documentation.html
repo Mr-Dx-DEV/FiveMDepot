@@ -48,7 +48,7 @@
     S.api('docs', { type: type }).then(function (d) {
       box.innerHTML = '<span class="eyebrow">Resources</span><h1 class="section-title">' + TYPES[type][0] + '</h1><p class="section-sub">' + TYPES[type][1] + '</p>' + tabs +
         (d.articles.length ? '<div class="doc-grid">' + d.articles.map(function (a) {
-          return '<a class="doc-card" href="documentation.html?type=' + esc(a.type) + '&slug=' + encodeURIComponent(a.slug) + '"><img src="' + esc(a.thumbnail || S.catArt({ slug: a.type === 'tool' ? 'scripts' : 'box' })) + '" alt="" loading="lazy" data-fallback="images/store/cat-default.svg">' +
+          return '<a class="doc-card" href="documentation.html?type=' + esc(a.type) + '&slug=' + encodeURIComponent(a.slug) + '"><img src="' + esc(a.thumbnail || S.catArt({ slug: a.type === 'tool' ? 'scripts' : 'box' }, true)) + '" alt="" loading="lazy" data-fallback="images/store/cat-default.svg">' +
             '<div><span class="small muted">' + date(a.created_at) + (a.author ? ' · ' + esc(a.author) : '') + '</span><h3>' + esc(a.title) + '</h3>' + (a.excerpt ? '<p class="muted small">' + esc(a.excerpt) + '</p>' : '') + '</div></a>';
         }).join('') + '</div>' : '<div class="empty"><b>Nothing here yet</b>New ' + TYPES[type][0].toLowerCase() + ' are coming soon.</div>');
     }).catch(function () { box.innerHTML = tabs + '<div class="empty"><b>Could not load articles</b>Please try again later.</div>'; });

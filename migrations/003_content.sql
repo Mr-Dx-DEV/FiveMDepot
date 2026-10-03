@@ -38,7 +38,7 @@ INSERT IGNORE INTO `documentation` (`id`, `title`, `slug`, `type`, `category`, `
 <h2>8. Changes</h2>
 <p>We may update these terms. The date at the top shows the latest version. Continuing to use the store after a change means you accept it.</p>
 <h2>Contact</h2>
-<p>Questions? Message us on Discord (link in the footer) or email the address on our website.</p>', 'images/store/cat-default.svg', 1, NOW() - INTERVAL 17 DAY);
+<p>Questions? Message us on Discord (link in the footer) or email the address on our website.</p>', '', 1, NOW() - INTERVAL 17 DAY);
 
 INSERT IGNORE INTO `documentation` (`id`, `title`, `slug`, `type`, `category`, `excerpt`, `content`, `thumbnail`, `is_published`, `created_at`) VALUES
 ('d0000000-0000-0000-0000-000000000002', 'Privacy Policy', 'privacy', 'doc', 'Legal', 'What data we collect, why, and how we protect it.', '<p><b>Last updated: October 2026.</b> This policy explains what personal data FiveMDepot collects and how it is used.</p>
@@ -64,7 +64,7 @@ INSERT IGNORE INTO `documentation` (`id`, `title`, `slug`, `type`, `category`, `
 <h2>Your rights</h2>
 <p>You can ask for a copy of your data, ask us to correct it, or ask us to delete your account by contacting support on Discord or by email.</p>
 <h2>Security</h2>
-<p>Passwords are hashed, the site uses secure cookies, every form is protected against cross-site request forgery, and uploaded files are checked and stored outside public reach where needed.</p>', 'images/store/cat-default.svg', 1, NOW() - INTERVAL 16 DAY);
+<p>Passwords are hashed, the site uses secure cookies, every form is protected against cross-site request forgery, and uploaded files are checked and stored outside public reach where needed.</p>', '', 1, NOW() - INTERVAL 16 DAY);
 
 INSERT IGNORE INTO `documentation` (`id`, `title`, `slug`, `type`, `category`, `excerpt`, `content`, `thumbnail`, `is_published`, `created_at`) VALUES
 ('d0000000-0000-0000-0000-000000000003', 'Refund Policy', 'refunds', 'doc', 'Legal', 'When you can get a refund for a digital resource, and how to ask for one.', '<p><b>Last updated: October 2026.</b> Because resources are digital and can be copied once downloaded, refunds are limited — but we always help when something is genuinely wrong.</p>
@@ -86,7 +86,7 @@ INSERT IGNORE INTO `documentation` (`id`, `title`, `slug`, `type`, `category`, `
 <h2>How refunds are paid</h2>
 <p>Approved refunds are sent back by the same method you paid with (bKash, Nagad or bank transfer) within 5 working days. The licence for the refunded resource ends and its download is removed from your library.</p>
 <h2>Payment disputes</h2>
-<p>Please contact us before opening a dispute with your payment provider — it is faster for everyone. Accounts with fraudulent disputes may be suspended.</p>', 'images/store/cat-default.svg', 1, NOW() - INTERVAL 15 DAY);
+<p>Please contact us before opening a dispute with your payment provider — it is faster for everyone. Accounts with fraudulent disputes may be suspended.</p>', '', 1, NOW() - INTERVAL 15 DAY);
 
 INSERT IGNORE INTO `documentation` (`id`, `title`, `slug`, `type`, `category`, `excerpt`, `content`, `thumbnail`, `is_published`, `created_at`) VALUES
 ('d0000000-0000-0000-0000-000000000004', 'How to buy and pay', 'how-to-buy', 'doc', 'Getting started', 'Step-by-step: from adding to cart to downloading your resource.', '<p>Buying on FiveMDepot takes about two minutes. Here is the whole process.</p>
@@ -102,7 +102,7 @@ INSERT IGNORE INTO `documentation` (`id`, `title`, `slug`, `type`, `category`, `
 <li>Back on the checkout, paste the transaction ID, upload the screenshot and click <b>Submit payment</b>.</li></ol>
 <h2>4. Download</h2>
 <p>Our team checks the payment (usually within a few hours). As soon as it is approved, the resource appears in <a href="dashboard/buyer.html">My library</a> with a <b>Download</b> button. Free resources are added instantly.</p>
-<blockquote>Tip: each transaction ID can only be used once. If your payment is rejected, the reason is shown in My account → Orders.</blockquote>', 'images/store/cat-free-assets.svg', 1, NOW() - INTERVAL 14 DAY);
+<blockquote>Tip: each transaction ID can only be used once. If your payment is rejected, the reason is shown in My account → Orders.</blockquote>', 'images/photos/free-assets.jpg', 1, NOW() - INTERVAL 14 DAY);
 
 INSERT IGNORE INTO `documentation` (`id`, `title`, `slug`, `type`, `category`, `excerpt`, `content`, `thumbnail`, `is_published`, `created_at`) VALUES
 ('d0000000-0000-0000-0000-000000000005', 'Installing a resource on your server', 'install-a-resource', 'doc', 'Getting started', 'Where to put the files, how to ensure them, and how to import SQL.', '<p>Almost every FiveM resource installs the same way. Always read the product’s own <b>Installation</b> tab first — it lists anything special.</p>
@@ -122,7 +122,7 @@ ensure my-resource</pre>
 <h2>5. Configure</h2>
 <p>Open <code>config.lua</code> and set the framework, locations, prices and permissions to match your server.</p>
 <h2>6. Restart and check</h2>
-<p>Restart the server (or run <code>refresh</code> then <code>ensure my-resource</code> in the console). Watch the server console and press <b>F8</b> in game for errors. Still stuck? Open a ticket on our Discord with the exact error text.</p>', 'images/store/cat-scripts.svg', 1, NOW() - INTERVAL 13 DAY);
+<p>Restart the server (or run <code>refresh</code> then <code>ensure my-resource</code> in the console). Watch the server console and press <b>F8</b> in game for errors. Still stuck? Open a ticket on our Discord with the exact error text.</p>', 'images/photos/scripts.jpg', 1, NOW() - INTERVAL 13 DAY);
 
 INSERT IGNORE INTO `documentation` (`id`, `title`, `slug`, `type`, `category`, `excerpt`, `content`, `thumbnail`, `is_published`, `created_at`) VALUES
 ('d0000000-0000-0000-0000-000000000006', 'Seller guide: publishing your first product', 'seller-guide', 'doc', 'Sellers', 'How to apply, upload, get approved and get paid.', '<h2>1. Apply</h2>
@@ -138,7 +138,7 @@ INSERT IGNORE INTO `documentation` (`id`, `title`, `slug`, `type`, `category`, `
 <h2>4. Get paid</h2>
 <p>For every verified sale, your share is added to your wallet. Request a withdrawal to bKash, Nagad or bank from the <b>Withdrawals</b> tab.</p>
 <h2>Rules</h2>
-<ul><li>Only sell work you own.</li><li>No obfuscated backdoors, tracking or remote code.</li><li>Keep your changelog updated — buyers get every update for free.</li></ul>', 'images/store/cat-server-packs.svg', 1, NOW() - INTERVAL 12 DAY);
+<ul><li>Only sell work you own.</li><li>No obfuscated backdoors, tracking or remote code.</li><li>Keep your changelog updated — buyers get every update for free.</li></ul>', 'images/photos/server-packs.jpg', 1, NOW() - INTERVAL 12 DAY);
 
 INSERT IGNORE INTO `documentation` (`id`, `title`, `slug`, `type`, `category`, `excerpt`, `content`, `thumbnail`, `is_published`, `created_at`) VALUES
 ('d0000000-0000-0000-0000-000000000007', 'Set up a QBCore server with txAdmin', 'setup-qbcore-server-txadmin', 'tutorial', 'QBCore', 'From an empty machine to a running QBCore server in about 20 minutes.', '<p>This guide uses <b>txAdmin</b>, which ships with the FiveM server artifacts and installs QBCore for you through a recipe.</p>
@@ -155,7 +155,7 @@ INSERT IGNORE INTO `documentation` (`id`, `title`, `slug`, `type`, `category`, `
 <h2>5. Make yourself admin</h2>
 <p>In txAdmin go to <b>Admins</b> and add your identifier, then add the matching ACE permission in <code>server.cfg</code> so QBCore admin commands work.</p>
 <h2>Next steps</h2>
-<p>Add jobs, maps and vehicles from the <a href="category.html?c=scripts">store</a> — or skip the setup entirely with a <a href="category.html?c=server-packs">Complete Server Pack</a>.</p>', 'images/store/cat-server-packs.svg', 1, NOW() - INTERVAL 11 DAY);
+<p>Add jobs, maps and vehicles from the <a href="category.html?c=scripts">store</a> — or skip the setup entirely with a <a href="category.html?c=server-packs">Complete Server Pack</a>.</p>', 'images/photos/server-packs.jpg', 1, NOW() - INTERVAL 11 DAY);
 
 INSERT IGNORE INTO `documentation` (`id`, `title`, `slug`, `type`, `category`, `excerpt`, `content`, `thumbnail`, `is_published`, `created_at`) VALUES
 ('d0000000-0000-0000-0000-000000000008', 'How to find and fix high resmon', 'reduce-resmon', 'tutorial', 'Performance', 'Use resmon and the profiler to find the resources that cost you FPS and server ticks.', '<p>"Resmon" is FiveM’s resource monitor. It shows how much CPU time each resource uses every frame on the client. A well-optimised script idles at <b>0.00–0.02 ms</b>.</p>
@@ -170,7 +170,7 @@ INSERT IGNORE INTO `documentation` (`id`, `title`, `slug`, `type`, `category`, `
 <p>In the server console type <code>profiler record 500</code>, then <code>profiler view</code> to see which events and threads are slow. Heavy database queries inside loops are the usual suspect — batch them or cache results.</p>
 <h2>4. Test one change at a time</h2>
 <p>Stop resources one by one with <code>stop name</code> and watch the numbers. Fix the worst offender first.</p>
-<blockquote>Every product on FiveMDepot is checked for idle resmon before it is approved.</blockquote>', 'images/store/cat-scripts.svg', 1, NOW() - INTERVAL 10 DAY);
+<blockquote>Every product on FiveMDepot is checked for idle resmon before it is approved.</blockquote>', 'images/photos/city-traffic.jpg', 1, NOW() - INTERVAL 10 DAY);
 
 INSERT IGNORE INTO `documentation` (`id`, `title`, `slug`, `type`, `category`, `excerpt`, `content`, `thumbnail`, `is_published`, `created_at`) VALUES
 ('d0000000-0000-0000-0000-000000000009', 'Adding add-on vehicles to your server', 'add-addon-vehicles', 'tutorial', 'Vehicles', 'Stream cars correctly, add them to your garage shop and avoid texture loss.', '<h2>1. Folder structure</h2>
@@ -182,7 +182,7 @@ INSERT IGNORE INTO `documentation` (`id`, `title`, `slug`, `type`, `category`, `
 <h2>4. Avoid texture loss</h2>
 <ul><li>Keep each .ytd under about 16 MB.</li><li>Do not stream hundreds of 4K cars on a low-end server — choose optimised vehicles.</li><li>Enable an increased streaming memory setting in your server config only if you know your players have enough RAM.</li></ul>
 <h2>5. Test</h2>
-<p>Spawn it with your admin menu, check the handling, the lights and that the textures load from a distance.</p>', 'images/store/cat-vehicles.svg', 1, NOW() - INTERVAL 9 DAY);
+<p>Spawn it with your admin menu, check the handling, the lights and that the textures load from a distance.</p>', 'images/photos/vehicles.jpg', 1, NOW() - INTERVAL 9 DAY);
 
 INSERT IGNORE INTO `documentation` (`id`, `title`, `slug`, `type`, `category`, `excerpt`, `content`, `thumbnail`, `is_published`, `created_at`) VALUES
 ('d0000000-0000-0000-0000-000000000010', 'How to install an MLO interior', 'install-mlo', 'tutorial', 'Maps & MLOs', 'Stream map files, avoid conflicts and fix missing collisions.', '<p>An MLO is a custom interior streamed into the map. Most MLOs are drag-and-drop.</p>
@@ -193,7 +193,7 @@ INSERT IGNORE INTO `documentation` (`id`, `title`, `slug`, `type`, `category`, `
 <h2>3. Doors and props</h2>
 <p>MLOs often include door coordinates for door-lock resources. Copy them into your door-lock config so doors lock correctly.</p>
 <h2>4. Missing collisions</h2>
-<p>Falling through the floor usually means the resource did not load fully — check the console for errors, clear the client cache (delete the FiveM <code>cache</code> folder except <code>game</code>) and rejoin.</p>', 'images/store/cat-mlos-maps.svg', 1, NOW() - INTERVAL 8 DAY);
+<p>Falling through the floor usually means the resource did not load fully — check the console for errors, clear the client cache (delete the FiveM <code>cache</code> folder except <code>game</code>) and rejoin.</p>', 'images/photos/mlos-maps.jpg', 1, NOW() - INTERVAL 8 DAY);
 
 INSERT IGNORE INTO `documentation` (`id`, `title`, `slug`, `type`, `category`, `excerpt`, `content`, `thumbnail`, `is_published`, `created_at`) VALUES
 ('d0000000-0000-0000-0000-000000000011', '10 ways to secure your FiveM server', 'secure-your-server', 'tutorial', 'Security', 'Protect your server from cheaters, leaks and bad resources.', '<ol><li><b>Only download resources from trusted sources.</b> Leaked resources often contain backdoors that give strangers admin access.</li>
@@ -205,7 +205,7 @@ INSERT IGNORE INTO `documentation` (`id`, `title`, `slug`, `type`, `category`, `
 <li><b>Back up</b> your database daily and keep a copy off the server.</li>
 <li><b>Review resource code</b> for <code>PerformHttpRequest</code> calls to unknown websites and obfuscated code.</li>
 <li><b>Use an anticheat</b>, but do not rely on it alone — server-side checks matter more.</li>
-<li><b>Limit who has txAdmin access</b> and enable two-factor authentication on your Cfx.re account.</li></ol>', 'images/store/cat-default.svg', 1, NOW() - INTERVAL 7 DAY);
+<li><b>Limit who has txAdmin access</b> and enable two-factor authentication on your Cfx.re account.</li></ol>', 'images/photos/police.jpg', 1, NOW() - INTERVAL 7 DAY);
 
 INSERT IGNORE INTO `documentation` (`id`, `title`, `slug`, `type`, `category`, `excerpt`, `content`, `thumbnail`, `is_published`, `created_at`) VALUES
 ('d0000000-0000-0000-0000-000000000012', 'server.cfg starter template', 'server-cfg-template', 'tool', 'Configuration', 'A clean, commented server.cfg to start from.', '<p>Copy this template and replace the values in capitals. Keep the order: database and libraries first, then your framework, then everything else.</p>
@@ -244,7 +244,7 @@ ensure [vehicles]
 ## Permissions
 add_ace group.admin command allow
 add_principal identifier.license:YOUR_LICENSE group.admin</pre>
-<blockquote>Never share your server.cfg publicly — it contains your license key and database password.</blockquote>', 'images/store/cat-scripts.svg', 1, NOW() - INTERVAL 6 DAY);
+<blockquote>Never share your server.cfg publicly — it contains your license key and database password.</blockquote>', 'images/photos/scripts.jpg', 1, NOW() - INTERVAL 6 DAY);
 
 INSERT IGNORE INTO `documentation` (`id`, `title`, `slug`, `type`, `category`, `excerpt`, `content`, `thumbnail`, `is_published`, `created_at`) VALUES
 ('d0000000-0000-0000-0000-000000000013', 'Resmon optimisation checklist', 'resmon-checklist', 'tool', 'Performance', 'A quick checklist to review any script before you add it to your server.', '<p>Use this checklist when testing a new resource on a development server.</p>
@@ -256,7 +256,7 @@ INSERT IGNORE INTO `documentation` (`id`, `title`, `slug`, `type`, `category`, `
 <li>☐ Server events check permissions and distance.</li>
 <li>☐ No errors in the server console or F8 after a restart.</li>
 <li>☐ No calls to unknown websites (search for <code>PerformHttpRequest</code>).</li>
-<li>☐ Config options documented and translations available.</li></ul>', 'images/store/cat-default.svg', 1, NOW() - INTERVAL 5 DAY);
+<li>☐ Config options documented and translations available.</li></ul>', 'images/photos/city-traffic.jpg', 1, NOW() - INTERVAL 5 DAY);
 
 INSERT IGNORE INTO `documentation` (`id`, `title`, `slug`, `type`, `category`, `excerpt`, `content`, `thumbnail`, `is_published`, `created_at`) VALUES
 ('d0000000-0000-0000-0000-000000000014', 'Useful free tools for FiveM developers', 'useful-dev-tools', 'tool', 'Development', 'Editors, map tools and debugging helpers we use every day.', '<ul><li><b>Visual Studio Code</b> with a Lua extension — autocomplete and error highlighting for scripts.</li>
@@ -265,7 +265,7 @@ INSERT IGNORE INTO `documentation` (`id`, `title`, `slug`, `type`, `category`, `
 <li><b>CodeWalker</b> — explore the map, find coordinates and edit YMAP files.</li>
 <li><b>OpenIV</b> — inspect game files, vehicles and textures.</li>
 <li><b>The FiveM native reference</b> — documentation for every native function.</li>
-<li><b>The built-in profiler and resmon</b> — find performance problems (see our <a href="documentation.html?type=tutorial&slug=reduce-resmon">resmon guide</a>).</li></ul>', 'images/store/cat-mlos-maps.svg', 1, NOW() - INTERVAL 4 DAY);
+<li><b>The built-in profiler and resmon</b> — find performance problems (see our <a href="documentation.html?type=tutorial&slug=reduce-resmon">resmon guide</a>).</li></ul>', 'images/photos/default.jpg', 1, NOW() - INTERVAL 4 DAY);
 
 INSERT IGNORE INTO `documentation` (`id`, `title`, `slug`, `type`, `category`, `excerpt`, `content`, `thumbnail`, `is_published`, `created_at`) VALUES
 ('d0000000-0000-0000-0000-000000000015', 'Welcome to the new FiveMDepot', 'welcome-to-the-new-fivemdepot', 'blog', 'News', 'A brand-new store: categories, server packs, instant library downloads and a seller program.', '<p>We rebuilt FiveMDepot from the ground up to make finding and buying resources for your server faster and safer.</p>
@@ -275,7 +275,7 @@ INSERT IGNORE INTO `documentation` (`id`, `title`, `slug`, `type`, `category`, `
 <li><b>Server packs</b> — launch a full server in minutes.</li>
 <li><b>Seller program</b> — creators can now sell on FiveMDepot, with every product reviewed before it goes live.</li>
 <li><b>Local payments</b> — bKash, Nagad and bank transfer.</li></ul>
-<p>Thanks for being part of the community. Join our Discord to tell us what you want to see next!</p>', 'images/store/hero-city.svg', 1, NOW() - INTERVAL 3 DAY);
+<p>Thanks for being part of the community. Join our Discord to tell us what you want to see next!</p>', 'images/photos/hero-city.jpg', 1, NOW() - INTERVAL 3 DAY);
 
 INSERT IGNORE INTO `documentation` (`id`, `title`, `slug`, `type`, `category`, `excerpt`, `content`, `thumbnail`, `is_published`, `created_at`) VALUES
 ('d0000000-0000-0000-0000-000000000016', 'QBCore vs ESX vs QBox: which framework should you pick?', 'qbcore-vs-esx-vs-qbox', 'blog', 'Guides', 'A practical comparison for new server owners.', '<p>Your framework decides which scripts you can use, so it is the first big decision for a new roleplay server.</p>
@@ -287,14 +287,14 @@ INSERT IGNORE INTO `documentation` (`id`, `title`, `slug`, `type`, `category`, `
 <p>A newer project built on QBCore’s ideas with a strong focus on performance and the ox_lib ecosystem. Many QBCore scripts work with it through a compatibility bridge.</p>
 <h2>Our advice</h2>
 <ul><li>Starting from zero and want the most choice? <b>QBCore</b>.</li><li>Already running ESX with lots of custom code? Stay on <b>ESX Legacy</b>.</li><li>Want a modern, performance-first base and comfortable with newer tooling? <b>QBox</b>.</li></ul>
-<p>Every product page on FiveMDepot shows which frameworks it supports — use the <b>Framework</b> filter in the store.</p>', 'images/store/cat-scripts.svg', 1, NOW() - INTERVAL 2 DAY);
+<p>Every product page on FiveMDepot shows which frameworks it supports — use the <b>Framework</b> filter in the store.</p>', 'images/photos/scripts.jpg', 1, NOW() - INTERVAL 2 DAY);
 
 INSERT IGNORE INTO `documentation` (`id`, `title`, `slug`, `type`, `category`, `excerpt`, `content`, `thumbnail`, `is_published`, `created_at`) VALUES
 ('d0000000-0000-0000-0000-000000000017', 'Why optimised resources matter for your player count', 'why-buy-optimized-resources', 'blog', 'Performance', 'Low resmon means higher FPS, fewer crashes and players who stay.', '<p>Players leave servers that stutter. Every script you add costs a little CPU time every frame — and it adds up fast.</p>
 <p>Fifty scripts each idling at 0.10 ms cost 5 ms per frame, enough to drop a 60 FPS game to around 45 FPS on mid-range PCs. The same fifty scripts at 0.01 ms cost just 0.5 ms.</p>
 <h2>What we check</h2>
 <ul><li>Idle resmon on a clean server.</li><li>Server-side event security.</li><li>No backdoors or hidden web requests.</li><li>Clean install with the listed framework.</li></ul>
-<p>That is why every product on FiveMDepot goes through review before it is published. Learn to check your own resources with our <a href="documentation.html?type=tutorial&slug=reduce-resmon">resmon tutorial</a>.</p>', 'images/store/cat-vehicles.svg', 1, NOW() - INTERVAL 1 DAY);
+<p>That is why every product on FiveMDepot goes through review before it is published. Learn to check your own resources with our <a href="documentation.html?type=tutorial&slug=reduce-resmon">resmon tutorial</a>.</p>', 'images/photos/vehicles.jpg', 1, NOW() - INTERVAL 1 DAY);
 
 INSERT IGNORE INTO `documentation` (`id`, `title`, `slug`, `type`, `category`, `excerpt`, `content`, `thumbnail`, `is_published`, `created_at`) VALUES
 ('d0000000-0000-0000-0000-000000000018', 'Creators: start selling your scripts on FiveMDepot', 'start-selling-on-fivemdepot', 'blog', 'Sellers', 'Reach server owners, get paid by bKash, Nagad or bank, and keep full credit for your work.', '<p>Building great resources? Turn them into income.</p>
@@ -302,6 +302,6 @@ INSERT IGNORE INTO `documentation` (`id`, `title`, `slug`, `type`, `category`, `
 <li><b>Fair review</b> — we check quality and security, and tell you exactly what to change if needed.</li>
 <li><b>Fast payouts</b> — earnings go to your wallet with every verified sale; withdraw to bKash, Nagad or bank.</li>
 <li><b>Your own seller page</b> with all your products and reviews.</li></ul>
-<p>Read the <a href="documentation.html?type=doc&slug=seller-guide">seller guide</a> and <a href="dashboard/buyer.html?tab=sell">apply here</a>.</p>', 'images/store/cat-server-packs.svg', 1, NOW() - INTERVAL 0 DAY);
+<p>Read the <a href="documentation.html?type=doc&slug=seller-guide">seller guide</a> and <a href="dashboard/buyer.html?tab=sell">apply here</a>.</p>', 'images/photos/server-packs.jpg', 1, NOW() - INTERVAL 0 DAY);
 
 INSERT IGNORE INTO `migrations` (`name`) VALUES ('003_content');

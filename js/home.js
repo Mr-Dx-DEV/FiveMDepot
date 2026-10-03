@@ -43,13 +43,13 @@
         return { img: p.image, title: p.title, sub: p.badge ? p.badge.name : '', href: S.productUrl(p.slug) };
       });
       nav.categories.forEach(function (k) {
-        if (shots.length < 3) shots.push({ img: S.catArt(k), title: k.name, sub: (k.product_count != null ? k.product_count + ' products' : 'Browse'), href: S.catUrl(k.slug) });
+        if (shots.length < 3) shots.push({ img: S.catArt(k, true), title: k.name, sub: (k.product_count != null ? k.product_count + ' products' : 'Browse'), href: S.catUrl(k.slug) });
       });
       var visual = shots.map(function (s, i) {
         return '<a class="hv-card hv-' + (i + 1) + '" href="' + esc(s.href) + '"><img src="' + esc(s.img) + '" alt="" data-fallback="images/store/cat-default.svg">' +
           '<span class="hv-label"><b>' + esc(s.title) + '</b><small>' + esc(s.sub) + '</small></span></a>';
       }).join('');
-      return '<section class="hero"><div class="hero-art" aria-hidden="true"></div><div class="container hero-inner">' +
+      return '<section class="hero"><div class="hero-photo" aria-hidden="true"></div><div class="hero-art" aria-hidden="true"></div><div class="container hero-inner">' +
         '<div>' +
           (c.badge ? '<span class="hero-badge"><span class="dot">NEW</span>' + esc(c.badge) + '</span>' : '') +
           '<h1>' + headline(c.headline) + '</h1>' +
@@ -71,7 +71,7 @@
 
     showcase: function (c, d, nav) {
       var items = nav.categories.map(function (k) {
-        return { img: S.catArt(k), title: k.name, sub: k.product_count != null ? k.product_count + ' products' : '', href: S.catUrl(k.slug), icon: S.catIcon(k) };
+        return { img: S.catArt(k, true), title: k.name, sub: k.product_count != null ? k.product_count + ' products' : '', href: S.catUrl(k.slug), icon: S.catIcon(k) };
       }).concat((d.new || []).filter(function (p) { return p.image; }).map(function (p) {
         return { img: p.image, title: p.title, sub: p.badge ? p.badge.name : '', href: S.productUrl(p.slug), icon: '' };
       }));
@@ -103,7 +103,7 @@
       var cards = nav.categories.map(function (k) {
         var kids = (k.children || []).slice(0, 3).map(function (x) { return '<span class="chip">' + esc(x.name) + '</span>'; }).join('');
         return '<a class="cat-card reveal" href="' + S.catUrl(k.slug) + '">' +
-          '<span class="cat-media"><img src="' + esc(S.catArt(k)) + '" alt="" loading="lazy" data-fallback="images/store/cat-default.svg"></span>' +
+          '<span class="cat-media"><img src="' + esc(S.catArt(k, true)) + '" alt="" loading="lazy" data-fallback="images/store/cat-default.svg"></span>' +
           '<span class="cat-body">' +
             '<span class="ico">' + S.catIcon(k) + '</span>' +
             '<h3>' + esc(k.name) + '</h3>' +

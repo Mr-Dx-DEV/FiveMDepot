@@ -326,6 +326,15 @@ p { margin: 0; }
   -webkit-mask-image: linear-gradient(to bottom, transparent 0%, #000 45%);
 }
 [data-theme="light"] .hero-art { opacity: .18; }
+.hero-photo {
+  position: absolute; inset: 0; pointer-events: none; z-index: 0;
+  background: url("../images/photos/hero-city.jpg") center / cover no-repeat;
+  opacity: .32; filter: saturate(1.15);
+  mask-image: linear-gradient(90deg, rgba(0,0,0,.35) 0%, #000 55%);
+  -webkit-mask-image: linear-gradient(90deg, rgba(0,0,0,.35) 0%, #000 55%);
+}
+.hero-photo + .hero-art { opacity: .4; }
+[data-theme="light"] .hero-photo { opacity: .12; }
 .hero-quick { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 26px; }
 .hero-quick .search-chip { background: color-mix(in srgb, var(--surface) 75%, transparent); backdrop-filter: blur(6px); }
 .hero-visual { position: relative; height: 440px; }

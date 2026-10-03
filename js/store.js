@@ -70,12 +70,14 @@
     return 'box';
   }
   function catIcon(c) { return CAT_ICONS[catKey(c)]; }
-  var ART = { server: 'server-packs', car: 'vehicles', building: 'mlos-maps', map: 'mlos-maps', shirt: 'clothing', gift: 'free-assets', code: 'scripts', ui: 'scripts', job: 'scripts', weapon: 'scripts', box: 'default' };
+  // Real photos (CC0, see images/photos/CREDITS.txt) per category type
+  var ART = { server: 'server-packs', car: 'vehicles', building: 'mlos-maps', map: 'hero-city', shirt: 'clothing', gift: 'free-assets', code: 'scripts', ui: 'scripts', job: 'police', weapon: 'police', box: 'default' };
+  function photo(key, small) { return 'images/photos/' + ART[key] + (small ? '-640' : '') + '.jpg'; }
   // Banner set by admin → newest featured product image in the category → drawn artwork
-  function catArt(c) { return (c && (c.banner_url || c.cover_url)) || 'images/store/cat-' + ART[catKey(c)] + '.svg'; }
+  function catArt(c, small) { return (c && (c.banner_url || c.cover_url)) || photo(catKey(c), small); }
   function productArt(p) {
     var b = (p.badge && p.badge.slug) || (p.type === 'server_pack' ? 'server-pack' : '');
-    return 'images/store/cat-' + ART[catKey({ slug: b })] + '.svg';
+    return photo(catKey({ slug: b }), true);
   }
 
   function logoHtml(name) {

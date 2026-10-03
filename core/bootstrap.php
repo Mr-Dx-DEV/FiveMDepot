@@ -191,6 +191,12 @@ function rate_limit(string $key, int $max, int $windowSec): void
 }
 
 // ---------- Helpers ----------
+/** Where each role lands after logging in. */
+function dashboard_url(string $role): string
+{
+  return ['ADMIN' => 'admin/', 'SELLER' => 'dashboard/seller.html'][$role] ?? 'dashboard/buyer.html';
+}
+
 function uuid(): string
 {
   $b = random_bytes(16);

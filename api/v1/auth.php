@@ -1,12 +1,8 @@
 <?php
 /**
- * Auth: me, login, register, logout, change password
+ * Auth: me, login, register, logout, change password (Google sign-in: api/google-*.php)
  */
-
-function dashboard_url(string $role): string
-{
-  return ['ADMIN' => 'admin/', 'SELLER' => 'dashboard/seller.html'][$role] ?? 'dashboard/buyer.html';
-}
+require_once __DIR__ . '/../../core/google.php';
 
 // Who am I + CSRF token for the next request
 route('GET', 'auth/me', function () {
@@ -14,6 +10,7 @@ route('GET', 'auth/me', function () {
   ok([
     'user' => $u ? $u + ['dashboard' => dashboard_url($u['role'])] : null,
     'csrf' => csrf_token(),
+    'google' => google_enabled(),
   ]);
 });
 
