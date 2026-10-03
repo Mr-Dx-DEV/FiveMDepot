@@ -16,9 +16,9 @@ route('GET', 'admin/orders', function () {
   $params = [];
   if (!empty($_GET['status'])) { $where[] = 'o.status = ?'; $params[] = strtoupper($_GET['status']); }
   if (!empty($_GET['q'])) {
-    $where[] = '(o.id LIKE ? OR o.transaction_id LIKE ? OR u.email LIKE ? OR u.name LIKE ?)';
+    $where[] = '(o.id LIKE ? OR o.transaction_id LIKE ? OR u.email LIKE ? OR u.name LIKE ? OR o.id IN (SELECT pp.order_id FROM payment_proofs pp WHERE pp.payer_email LIKE ?))';
     $l = '%' . $_GET['q'] . '%';
-    array_push($params, $_GET['q'] . '%', $l, $l, $l);
+    array_push($params, $_GET['q'] . '%', $l, $l, $l, $l);
   }
   $w = implode(' AND ', $where);
   $total = (int)Db::value("SELECT COUNT(*) FROM orders o JOIN users u ON u.id = o.user_id WHERE $w", $params);

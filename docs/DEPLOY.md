@@ -9,6 +9,7 @@
    4. `migrations/004_home.sql` (homepage: customer reviews + Discord community sections)
    5. `migrations/005_payments.sql` (international payments: Stripe, crypto, SSLCommerz)
    6. `migrations/006_brand.sql` (crimson brand colour, new hero, “Everything you need” features)
+   7. `migrations/007_support.sql` (Buy Me a Coffee payments, support tickets, email settings)
 
    Both are safe to run more than once and delete nothing.
 3. **Upload** all files. Make sure `config.local.php` is uploaded next to `config.php`
@@ -37,6 +38,16 @@
    - **SSLCommerz:** store ID + store password. Keep `SSLCZ_SANDBOX = true` until SSLCommerz approves
      your live account; callback URLs are sent automatically.
    - **bKash / Nagad / bank:** only shown when a real number/account is filled in Settings.
+   - **Buy Me a Coffee (manual check, no keys needed):** on by default after `007_support.sql`
+     (Settings → Buy Me a Coffee). Buyers pay on your BMC page, then submit the transaction ID,
+     the email they paid with and the amount. Check each one against your BMC dashboard in
+     **Admin → Pay panel** and approve or reject. On approval the buyer is emailed and the files appear in
+     their library. Turn off Stripe / crypto / SSLCommerz in Settings if you only want BMC.
+   - **Email:** set *Settings → Email → Your email* to get alerts for new orders and tickets.
+     PHP `mail()` is used by default; for reliable delivery create a mailbox in Plesk (e.g.
+     `noreply@your-domain`) and put its SMTP login in `config.local.php` (see the example file).
+   - **Support tickets:** buyers open them from *My account → Support*; you answer in
+     **Admin → Support tickets** (replies are emailed). The Discord link comes from Settings → Social links.
 8. **Security** — change the database password in Plesk (the old one was in git history),
    then update `config.local.php`.
 

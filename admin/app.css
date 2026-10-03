@@ -352,3 +352,12 @@ textarea.input { height: auto; padding: 10px 12px; resize: vertical; line-height
   .editor-bar .grow { flex-basis: calc(100% - 50px); }
   .editor-bar .btn { flex: 1; }
 }
+
+/* Support tickets + Buy Me a Coffee receipt check */
+.pay-check { display: grid; gap: 12px; }
+.tk-thread { display: grid; gap: 10px; max-height: 52vh; overflow: auto; padding-right: 4px; }
+.tk-msg { padding: 12px 14px; border-radius: 12px; background: var(--surface); border: 1px solid var(--border); max-width: 88%; }
+.tk-msg.staff { justify-self: end; background: var(--accent-soft); border-color: var(--accent-ring); }
+.tk-meta { display: flex; gap: 10px; align-items: baseline; flex-wrap: wrap; font-size: 13px; margin-bottom: 4px; }
+.tk-body { white-space: pre-wrap; word-break: break-word; font-size: 14px; line-height: 1.55; }
+@media (max-width: 760px) { .modal .grid.g-2 { grid-template-columns: 1fr !important; } .tk-msg { max-width: 100%; } }

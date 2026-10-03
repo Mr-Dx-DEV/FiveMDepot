@@ -41,6 +41,7 @@
     library: { label: 'My library', render: library },
     orders: { label: 'Orders', render: orders },
     wishlist: { label: 'Wishlist', render: wishlist },
+    support: { label: 'Support', render: support },
     settings: { label: 'Account settings', render: settings }
   };
 
@@ -53,13 +54,14 @@
       '<button data-tab="library" class="' + (active === 'library' ? 'on' : '') + '">My library<span class="n">' + st.purchases + '</span></button>' +
       '<button data-tab="orders" class="' + (active === 'orders' ? 'on' : '') + '">Orders' + (st.pending ? '<span class="n">' + st.pending + ' pending</span>' : '') + '</button>' +
       '<button data-tab="wishlist" class="' + (active === 'wishlist' ? 'on' : '') + '">Wishlist<span class="n">' + st.wishlist + '</span></button>' +
+      '<button data-tab="support" class="' + (active === 'support' ? 'on' : '') + '">Support</button>' +
       '<button data-tab="settings" class="' + (active === 'settings' ? 'on' : '') + '">Account settings</button>' + sellerLink +
       '<button data-logout>Log out</button>';
   }
 
-  function show(tab) {
+  function show(tab, extra) {
     if (!TABS[tab] && tab !== 'sell') tab = 'library';
-    history.replaceState(null, '', location.pathname + '?tab=' + tab);
+    history.replaceState(null, '', location.pathname + '?tab=' + tab + (extra || ''));
     drawNav(tab);
     page.innerHTML = '<div class="skeleton" style="height:260px"></div>';
     (tab === 'sell' ? sell : TABS[tab].render)();
@@ -109,11 +111,12 @@
             return '<div class="order-line"><span>' + (i.slug ? '<a href="' + S.productUrl(i.slug) + '">' + esc(i.title) + '</a>' : '<span class="muted">Removed product</span>') + '</span><span>' + S.money(i.price_paid) + '</span></div>';
           }).join('') +
           '<div class="order-line"><b>Total</b><b>' + S.money(o.total_amount) + '</b></div>' +
-          (o.status === 'PENDING' ? '<div class="order-note">We’re checking your payment. This usually takes a few hours.</div>' : '') +
+          (o.status === 'PENDING' ? '<div class="order-note">We’re checking your payment. This usually takes a few hours. ' +
+            '<a class="link" href="dashboard/buyer.html?tab=support&new=1&order=' + encodeURIComponent(o.id) + '">Need help with this order?</a></div>' : '') +
           (o.status === 'AWAITING_PAYMENT' ? '<div class="order-note">This order isn’t paid yet.' + (o.admin_note ? ' ' + esc(o.admin_note) : '') +
             '<div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap"><button class="btn btn-primary btn-sm" data-pay="' + esc(o.id) + '">Pay now</button>' +
             '<button class="btn btn-ghost btn-sm" data-cancel="' + esc(o.id) + '">Cancel order</button></div></div>' : '') +
-          (o.status === 'REJECTED' && o.admin_note ? '<div class="order-note down">Reason: ' + esc(o.admin_note) + '. Contact support if you think this is a mistake.</div>' : '') +
+          (o.status === 'REJECTED' && o.admin_note ? '<div class="order-note down">Reason: ' + esc(o.admin_note) + '. <a class="link" href="dashboard/buyer.html?tab=support&new=1&order=' + encodeURIComponent(o.id) + '">Open a ticket</a> if you think this is a mistake.</div>' : '') +
           ((o.status === 'VERIFIED' || o.status === 'COMPLETED') && o.total_amount > 0 ? '<div style="padding:0 18px 14px;text-align:right"><button class="btn btn-ghost btn-sm" data-refund="' + esc(o.id) + '">Request refund</button></div>' : '') +
           '</div>';
       }).join('') : '<div class="empty"><b>No orders yet</b><a class="link-more" href="category.html?c=all">Start shopping →</a></div>');
@@ -157,6 +160,80 @@
         if (u) S.v1('POST', 'account/wishlist/' + encodeURIComponent(u.dataset.unwish), { on: false }).then(function () { overview.stats.wishlist--; show('wishlist'); }).catch(fail);
       };
     }).catch(fail);
+  }
+
+  // ---------- Support tickets ----------
+  var TICKET_CATS = { payment: 'Payment / order', download: 'Download problem', install: 'Installation help', refund: 'Refund', general: 'General question' };
+  var TICKET_ST = { open: ['st-warn', 'Waiting for staff'], answered: ['st-ok', 'Staff replied'], closed: ['st-muted', 'Closed'] };
+  function tbadge(s) { var x = TICKET_ST[s] || ['st-muted', s]; return '<span class="st ' + x[0] + '">' + x[1] + '</span>'; }
+  function time(s) { var d = new Date(String(s || '').replace(' ', 'T')); return isNaN(d) ? '' : d.toLocaleString(undefined, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }); }
+
+  function support() {
+    var q = new URLSearchParams(location.search);
+    if (q.get('ticket')) return ticket(q.get('ticket'));
+    Promise.all([S.v1('GET', 'account/tickets'), S.v1('GET', 'account/orders').catch(function () { return []; }), S.nav()]).then(function (res) {
+      var rows = res[0], myOrders = res[1], discord = (res[2].settings || {}).social_discord;
+      page.innerHTML = '<div class="tk-top"><h1>Support</h1><button class="btn btn-primary btn-sm" data-new>+ New ticket</button></div>' +
+        '<div class="tk-help panel panel-pad"><div><b>Fastest help: Discord</b><span class="small muted">Open a ticket in our Discord server — we usually reply within minutes when online.</span></div>' +
+        (discord ? '<a class="btn btn-sm discord-btn" href="' + esc(discord) + '" target="_blank" rel="noopener">Open Discord ↗</a>' : '') + '</div>' +
+        (rows.length ? '<div class="panel tk-list">' + rows.map(function (t) {
+          return '<a class="tk-row" href="dashboard/buyer.html?tab=support&ticket=' + encodeURIComponent(t.id) + '" data-open="' + esc(t.id) + '">' +
+            '<span class="mono muted">#' + t.number + '</span><span class="tk-subj"><b>' + esc(t.subject) + '</b><small class="muted">' + esc(TICKET_CATS[t.category] || t.category) + ' · ' + t.messages + ' message' + (+t.messages === 1 ? '' : 's') + ' · updated ' + time(t.updated_at) + '</small></span>' + tbadge(t.status) + '</a>';
+        }).join('') + '</div>'
+          : '<div class="empty"><b>No tickets yet</b>Problem with a payment, download or install? Open a ticket and our team will reply here and by email.</div>');
+      page.onclick = function (e) {
+        if (e.target.closest('[data-new]')) return newTicket(myOrders);
+        var o = e.target.closest('[data-open]');
+        if (o && !e.ctrlKey && !e.metaKey) { e.preventDefault(); ticket(o.dataset.open); }
+      };
+      if (q.get('new')) { history.replaceState(null, '', location.pathname + '?tab=support'); newTicket(myOrders, q.get('order')); }
+    }).catch(fail);
+  }
+
+  function newTicket(myOrders, orderId) {
+    var opts = '<option value="">— Not about a specific order —</option>' + myOrders.map(function (o) {
+      return '<option value="' + esc(o.id) + '"' + (o.id === orderId ? ' selected' : '') + '>#' + esc(o.id.slice(0, 8).toUpperCase()) + ' · ' + S.money(o.total_amount) + ' · ' + esc((STATUS[o.status] || [0, o.status])[1]) + '</option>';
+    }).join('');
+    modal('New support ticket',
+      '<label class="field"><span>Topic</span><select class="input" name="category">' + Object.keys(TICKET_CATS).map(function (k) {
+        return '<option value="' + k + '"' + (orderId && k === 'payment' ? ' selected' : '') + '>' + TICKET_CATS[k] + '</option>';
+      }).join('') + '</select></label>' +
+      '<label class="field"><span>Order</span><select class="input" name="order_id">' + opts + '</select></label>' +
+      '<label class="field"><span>Subject</span><input class="input" name="subject" maxlength="200" placeholder="e.g. Paid but order still pending"' + (orderId ? ' value="Question about order #' + esc(orderId.slice(0, 8).toUpperCase()) + '"' : '') + '></label>' +
+      '<label class="field"><span>Message</span><textarea class="input" name="message" rows="5" maxlength="5000" placeholder="Describe the problem. For payments, include your transaction ID and the email you paid with."></textarea></label>',
+      [{ label: 'Cancel' }, { label: 'Open ticket', primary: true, run: function (f) {
+        return S.v1('POST', 'account/tickets', { category: f.category.value, order_id: f.order_id.value, subject: f.subject.value.trim(), message: f.message.value.trim() })
+          .then(function (r) { S.toast('Ticket #' + r.number + ' opened — we’ll reply by email', 'success'); ticket(r.id); })
+          .catch(function (err) { var k = Object.keys(err.fields || {}); throw new Error(k.length ? err.fields[k[0]] : err.message); });
+      } }]);
+  }
+
+  function ticket(id) {
+    history.replaceState(null, '', location.pathname + '?tab=support&ticket=' + encodeURIComponent(id));
+    S.v1('GET', 'account/tickets/' + encodeURIComponent(id)).then(function (t) {
+      page.innerHTML = '<a class="link-more" href="dashboard/buyer.html?tab=support" data-back>← All tickets</a>' +
+        '<div class="tk-top"><h1 style="font-size:24px">' + esc(t.subject) + '</h1>' + tbadge(t.status) + '</div>' +
+        '<p class="small muted" style="margin-bottom:16px">Ticket <b class="mono">#' + t.number + '</b> · ' + esc(TICKET_CATS[t.category] || t.category) +
+        (t.order_id ? ' · order <span class="mono">#' + esc(t.order_id.slice(0, 8).toUpperCase()) + '</span>' : '') + ' · opened ' + time(t.created_at) + '</p>' +
+        '<div class="tk-thread">' + t.messages.map(function (m) {
+          return '<div class="tk-msg' + (m.is_staff ? ' staff' : '') + '"><div class="tk-meta"><b>' + (m.is_staff ? 'FiveMDepot support' : esc(m.name || 'You')) + '</b><span class="muted">' + time(m.created_at) + '</span></div><div class="tk-body">' + esc(m.body) + '</div></div>';
+        }).join('') + '</div>' +
+        '<form class="panel panel-pad tk-reply" id="tkReply"><label class="field"><span>' + (t.status === 'closed' ? 'Reply to reopen this ticket' : 'Your reply') + '</span><textarea class="input" name="message" rows="4" maxlength="5000"></textarea></label>' +
+        '<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn btn-primary btn-sm" type="submit">Send reply</button>' +
+        (t.status !== 'closed' ? '<button class="btn btn-ghost btn-sm" type="button" data-close>Mark as solved</button>' : '') + '</div></form>';
+      page.onclick = function (e) {
+        if (e.target.closest('[data-back]')) { e.preventDefault(); show('support'); return; }
+        if (e.target.closest('[data-close]')) S.v1('POST', 'account/tickets/' + encodeURIComponent(t.id) + '/close', {}).then(function () { S.toast('Ticket closed', 'success'); ticket(t.id); }).catch(fail);
+      };
+      page.onsubmit = function (e) {
+        e.preventDefault();
+        var f = e.target, btn = f.querySelector('[type=submit]');
+        if (f.message.value.trim().length < 2) { S.toast('Write a message first', 'error'); return; }
+        btn.disabled = true;
+        S.v1('POST', 'account/tickets/' + encodeURIComponent(t.id) + '/reply', { message: f.message.value.trim() })
+          .then(function () { S.toast('Reply sent', 'success'); ticket(t.id); }).catch(function (err) { btn.disabled = false; fail(err); });
+      };
+    }).catch(function (e) { S.toast(e.message, 'error'); show('support'); });
   }
 
   // ---------- Settings ----------
@@ -203,7 +280,9 @@
     user = u;
     return S.v1('GET', 'account/overview').then(function (o) {
       overview = o;
-      show(new URLSearchParams(location.search).get('tab') || 'library');
+      var q0 = new URLSearchParams(location.search), keep = '';
+      ['ticket', 'new', 'order'].forEach(function (k) { if (q0.get(k)) keep += '&' + k + '=' + encodeURIComponent(q0.get(k)); });
+      show(q0.get('tab') || 'library', keep);
     });
   }).catch(function (e) { page.innerHTML = '<div class="empty"><b>Could not load your account</b>' + esc(e.message) + '</div>'; });
 })();

@@ -10,13 +10,26 @@
     A.get('admin/orders/' + encodeURIComponent(id)).then(function (b) {
       var o = b.data;
       var proofs = o.proofs.map(function (p) {
+        if (!+p.has_file) {
+          // Buy Me a Coffee: buyer typed the receipt details — match them against the BMC dashboard
+          var diff = Math.round((+p.amount - +o.total_amount) * 100) / 100;
+          return '<div class="panel panel-pad pay-check"><div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap"><b>☕ Buy Me a Coffee receipt</b>' + A.badge(p.status) + '</div>' +
+            '<dl class="kv"><dt>Transaction ID</dt><dd><b class="mono">' + h(p.transaction_id || '—') + '</b> <button type="button" class="btn btn-sm btn-ghost" data-copy="' + h(p.transaction_id || '') + '">Copy</button></dd>' +
+            '<dt>Paid with email</dt><dd>' + h(p.payer_email || '—') + (p.payer_email && o.email && p.payer_email.toLowerCase() !== o.email.toLowerCase() ? ' <span class="small muted">(account: ' + h(o.email) + ')</span>' : '') + '</dd>' +
+            '<dt>Amount paid</dt><dd><b>' + A.money(p.amount) + '</b> ' + (diff === 0 ? '<span class="st st-ok">matches total</span>' : '<span class="st st-' + (diff < 0 ? 'bad' : 'warn') + '">' + (diff < 0 ? A.money(-diff) + ' short' : A.money(diff) + ' over') + '</span>') + '</dd>' +
+            '<dt>Submitted</dt><dd>' + A.date(p.created_at) + ' (' + A.ago(p.created_at) + ')</dd>' +
+            (p.note ? '<dt>Buyer note</dt><dd style="white-space:pre-wrap">' + h(p.note) + '</dd>' : '') + '</dl>' +
+            '<p class="small muted">Find this payment in your Buy Me a Coffee dashboard (Supporters / Payments) and check the email, amount and ID before approving.</p>' +
+            (p.review_note ? '<p class="small muted">Review note: ' + h(p.review_note) + '</p>' : '') + '</div>';
+        }
         return '<div class="panel panel-pad" style="display:grid;gap:8px"><div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap">' +
           '<span class="small">TX: <b class="mono">' + h(p.transaction_id || '—') + '</b>' + (p.sender_number ? ' · from ' + h(p.sender_number) : '') + ' · ' + A.money(p.amount) + '</span>' + A.badge(p.status) + '</div>' +
           '<a href="../api/v1.php?r=admin/proofs/' + h(p.id) + '/file" target="_blank" rel="noopener"><img class="proof-img" src="../api/v1.php?r=admin/proofs/' + h(p.id) + '/file" alt="Payment proof" onerror="this.replaceWith(Object.assign(document.createElement(\'p\'),{className:\'small down\',textContent:\'Proof image missing on the server\'}))"></a>' +
+          (p.note ? '<p class="small">Buyer note: ' + h(p.note) + '</p>' : '') +
           (p.review_note ? '<p class="small muted">Note: ' + h(p.review_note) + '</p>' : '') + '</div>';
-      }).join('') || '<p class="small muted">No payment proof uploaded.</p>';
+      }).join('') || '<p class="small muted">No payment details submitted.</p>';
       var pending = o.status === 'PENDING' || o.status === 'AWAITING_PAYMENT';
-      A.modal({
+      var m = A.modal({
         title: 'Order ' + o.id.slice(0, 8),
         wide: true,
         body: '<div class="grid g-2" style="align-items:start"><div class="stack">' +
@@ -39,9 +52,13 @@
             });
           } },
           { label: 'Approve payment', kind: 'primary', onClick: function () {
-            return A.post('admin/orders/' + o.id + '/verify', { decision: 'approve' }).then(function () { A.toast('Approved — customer can download now'); onDone(); });
+            return A.post('admin/orders/' + o.id + '/verify', { decision: 'approve' }).then(function () { A.toast('Approved — customer emailed and can download now'); onDone(); });
           } }
         ] : [{ label: 'Close' }]
+      });
+      m.body.addEventListener('click', function (e) {
+        var c = e.target.closest('[data-copy]');
+        if (c && navigator.clipboard) navigator.clipboard.writeText(c.dataset.copy).then(function () { A.toast('Copied'); });
       });
     }).catch(A.fail);
   }
@@ -49,8 +66,8 @@
   A.page('/orders', function (el) {
     var q = A.query();
     var state = { status: q.get('status') || '', q: q.get('q') || '', page: +q.get('page') || 1 };
-    el.innerHTML = A.head('Orders', 'Check payment proofs and approve orders so customers can download.') +
-      '<div class="panel"><div class="tabs" id="tabs"></div><div class="tools"><input class="input grow" id="oq" type="search" placeholder="Search order ID, transaction ID, customer…" value="' + h(state.q) + '"></div>' +
+    el.innerHTML = A.head('Pay panel', 'Check each payment (Buy Me a Coffee receipt or transfer screenshot), then approve — the customer is emailed and can download right away.') +
+      '<div class="panel"><div class="tabs" id="tabs"></div><div class="tools"><input class="input grow" id="oq" type="search" placeholder="Search order ID, transaction ID, customer or payment email…" value="' + h(state.q) + '"></div>' +
       '<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Order</th><th>Customer</th><th>Payment</th><th class="num">Items</th><th class="num">Total</th><th>Status</th><th>Date</th><th></th></tr></thead><tbody id="rows"></tbody></table></div><div id="pager"></div></div>';
 
     function load() {
@@ -81,6 +98,83 @@
     el.querySelector('#oq').addEventListener('input', function (e) { clearTimeout(deb); deb = setTimeout(function () { state.q = e.target.value.trim(); state.page = 1; load(); }, 300); });
     if (q.get('id')) openOrder(q.get('id'), done);
     return load();
+  });
+
+  // ============================================================
+  // Support tickets
+  // ============================================================
+  var TK_ST = { open: 'warn', answered: 'ok', closed: 'muted' };
+  function tkBadge(s) { return '<span class="st st-' + (TK_ST[s] || 'muted') + '">' + h(s === 'open' ? 'needs reply' : s) + '</span>'; }
+
+  function openTicket(id, cats, onDone) {
+    A.get('admin/tickets/' + encodeURIComponent(id)).then(function (b) {
+      var t = b.data;
+      var m = A.modal({
+        title: '#' + t.number + ' · ' + t.subject,
+        wide: true,
+        body: '<div class="grid g-2" style="align-items:start;grid-template-columns:1.6fr 1fr"><div class="stack">' +
+          '<div class="tk-thread">' + t.messages.map(function (x) {
+            return '<div class="tk-msg' + (x.is_staff ? ' staff' : '') + '"><div class="tk-meta"><b>' + h(x.is_staff ? (x.name || 'Staff') + ' (staff)' : (x.name || t.name)) + '</b><span class="muted small">' + A.date(x.created_at) + ' · ' + A.ago(x.created_at) + '</span></div><div class="tk-body">' + h(x.body) + '</div></div>';
+          }).join('') + '</div>' +
+          '<label class="field"><span>Reply (emailed to the customer)</span><textarea class="input" name="reply" rows="5" maxlength="5000" placeholder="Hi ' + h(t.name) + ', …"></textarea></label></div>' +
+          '<div class="stack"><dl class="kv"><dt>Status</dt><dd>' + tkBadge(t.status) + '</dd><dt>Customer</dt><dd>' + h(t.name) + '<br><a class="link small" href="#/users?q=' + encodeURIComponent(t.email) + '">' + h(t.email) + '</a></dd>' +
+          '<dt>Topic</dt><dd>' + h(cats[t.category] || t.category) + '</dd><dt>Opened</dt><dd>' + A.date(t.created_at) + '</dd>' +
+          (t.order_id ? '<dt>Order</dt><dd><a class="link mono" href="#/orders?id=' + h(t.order_id) + '">' + h(t.order_id.slice(0, 8)) + '</a></dd>' : '') + '</dl>' +
+          (t.orders.length ? '<div class="panel"><div class="list">' + t.orders.map(function (o) {
+            return '<a class="list-item" href="#/orders?id=' + h(o.id) + '"><span class="grow mono small">' + h(o.id.slice(0, 8)) + ' · ' + h(o.payment_method || 'Free') + '</span>' + A.badge(o.status) + '<b>' + A.money(o.total_amount) + '</b></a>';
+          }).join('') + '</div></div>' : '<p class="small muted">No orders from this customer.</p>') + '</div></div>',
+        actions: [
+          { label: 'Close' },
+          { label: t.status === 'closed' ? 'Reopen' : 'Close ticket', onClick: function () {
+            return A.post('admin/tickets/' + t.id + '/status', { status: t.status === 'closed' ? 'open' : 'closed' }).then(function () { A.toast('Ticket updated'); onDone(); });
+          } },
+          { label: 'Reply & close', onClick: function (c) { return send(c, true); } },
+          { label: 'Send reply', kind: 'primary', onClick: function (c) { return send(c, false); } }
+        ]
+      });
+      function send(c, close) {
+        var msg = c.body.querySelector('[name=reply]').value.trim();
+        if (msg.length < 2) { A.toast('Write a reply first', 'error'); return false; }
+        return A.post('admin/tickets/' + t.id + '/reply', { message: msg, close: close }).then(function () { A.toast('Reply sent — customer emailed'); onDone(); });
+      }
+      var th = m.body.querySelector('.tk-thread'); th.lastElementChild && th.lastElementChild.scrollIntoView({ block: 'nearest' });
+    }).catch(A.fail);
+  }
+
+  A.page('/tickets', function (el) {
+    var q = A.query();
+    var state = { status: q.has('status') ? q.get('status') : 'open', q: q.get('q') || '', page: 1 }, cats = {};
+    el.innerHTML = A.head('Support tickets', 'Customer questions from the website. Replies are emailed to the customer.') +
+      '<div class="panel"><div class="tabs" id="tabs"></div><div class="tools"><input class="input grow" id="tq" type="search" placeholder="Search subject, customer or ticket #…" value="' + h(state.q) + '"></div>' +
+      '<div class="tbl-wrap"><table class="tbl"><thead><tr><th>#</th><th>Subject</th><th>Customer</th><th>Topic</th><th class="num">Msgs</th><th>Status</th><th>Updated</th><th></th></tr></thead><tbody id="rows"></tbody></table></div><div id="pager"></div></div>';
+    function load() {
+      A.setQuery({ status: state.status, q: state.q });
+      var qs = '&page=' + state.page + (state.status ? '&status=' + state.status : '') + (state.q ? '&q=' + encodeURIComponent(state.q) : '');
+      return A.get('admin/tickets' + qs).then(function (b) {
+        var sc = b.meta.status_counts || {}; cats = b.meta.categories || {};
+        el.querySelector('#tabs').innerHTML = [['open', 'Needs reply'], ['answered', 'Answered'], ['closed', 'Closed'], ['', 'All']].map(function (t) {
+          var n = t[0] ? sc[t[0]] || 0 : Object.keys(sc).reduce(function (s, k) { return s + sc[k]; }, 0);
+          return '<button class="tab' + (state.status === t[0] ? ' on' : '') + '" data-status="' + t[0] + '">' + t[1] + '<small>' + n + '</small></button>';
+        }).join('');
+        el.querySelector('#rows').innerHTML = b.data.length ? b.data.map(function (t) {
+          return '<tr data-id="' + h(t.id) + '" style="cursor:pointer"><td class="mono">' + t.number + '</td><td><b>' + h(t.subject) + '</b>' + (t.order_id ? '<span class="cell-sub mono">order ' + h(t.order_id.slice(0, 8)) + '</span>' : '') + '</td>' +
+            '<td>' + h(t.name) + '<span class="cell-sub">' + h(t.email) + '</span></td><td class="small">' + h(cats[t.category] || t.category) + '</td><td class="num">' + t.messages + '</td>' +
+            '<td>' + tkBadge(t.status) + '</td><td class="small muted">' + A.ago(t.updated_at) + '</td><td class="num"><button class="btn btn-sm ' + (t.status === 'open' ? 'btn-primary">Reply' : 'btn-ghost">View') + '</button></td></tr>';
+        }).join('') : '<tr><td colspan="8">' + A.empty('No tickets', state.status === 'open' ? 'Nothing waiting for a reply.' : '') + '</td></tr>';
+        var pg = el.querySelector('#pager'); pg.innerHTML = '';
+        pg.appendChild(A.pager(b.meta, function (n) { state.page = n; load(); }));
+      }).catch(A.fail);
+    }
+    function done() { A.refreshCounts(); load(); }
+    el.addEventListener('click', function (e) {
+      var t = e.target.closest('[data-status]');
+      if (t) { state.status = t.dataset.status; state.page = 1; load(); return; }
+      var tr = e.target.closest('tr[data-id]');
+      if (tr) openTicket(tr.dataset.id, cats, done);
+    });
+    var deb;
+    el.querySelector('#tq').addEventListener('input', function (e) { clearTimeout(deb); deb = setTimeout(function () { state.q = e.target.value.trim(); state.page = 1; load(); }, 300); });
+    return load().then(function () { if (q.get('id')) openTicket(q.get('id'), cats, done); });
   });
 
   // ============================================================

@@ -345,7 +345,8 @@
       { href: '#/tags', label: 'Tags', icon: 'M20.6 13.4 13.4 20.6a2 2 0 0 1-2.8 0L3 13V3h10l7.6 7.6a2 2 0 0 1 0 2.8zM7.5 7.5h.01' }
     ] },
     { group: 'Sales', items: [
-      { href: '#/orders', label: 'Orders', icon: 'M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4zM3 6h18M16 10a4 4 0 0 1-8 0', count: 'orders_pending' },
+      { href: '#/orders', label: 'Pay panel', icon: 'M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4zM3 6h18M16 10a4 4 0 0 1-8 0', count: 'orders_pending' },
+      { href: '#/tickets', label: 'Support tickets', icon: 'M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z', count: 'tickets_open' },
       { href: '#/promos', label: 'Promo codes', icon: 'M9 14 15 8M9.5 8.5h.01M14.5 13.5h.01M3 7V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v2a3 3 0 0 0 0 6v2a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-2a3 3 0 0 0 0-6z' }
     ] },
     { group: 'People', items: [
@@ -407,6 +408,7 @@
     var path = location.hash.slice(1).split('?')[0] || '/';
     // Fresh container per page so event listeners from the previous page don't leak
     var old = document.getElementById('page');
+    document.querySelectorAll('.modal-wrap').forEach(function (m) { m.remove(); }); // links inside a modal (e.g. ticket → order) open a new page
     var page = old.cloneNode(false);
     old.replaceWith(page);
     renderSide();

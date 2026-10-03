@@ -21,7 +21,7 @@ textarea.input { height: auto; padding: 10px 12px; line-height: 1.5; resize: ver
 .st-warn { background: rgba(251,191,36,.14); color: #f59e0b; }
 .st-bad { background: rgba(239,68,68,.12); color: #ef4444; }
 .st-muted { background: var(--surface-2); color: var(--text-2); }
-.page-wrap { padding: 28px 0 70px; }
+.page-wrap { padding-top: 28px; padding-bottom: 70px; } /* keep .container side gutters */
 .crumbs-bar { padding: 18px 0 0; }
 
 /* ---------- Product page ---------- */
@@ -233,3 +233,21 @@ textarea.input { height: auto; padding: 10px 12px; line-height: 1.5; resize: ver
 .discord-btn { background: #5865f2; color: #fff; }
 .discord-btn:hover { filter: brightness(1.08); }
 @media (max-width: 640px) { .bmc-fields { grid-template-columns: 1fr; } .bmc-step { padding: 12px; } }
+
+/* Support tickets (buyer account) */
+.tk-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 14px; }
+.tk-top h1 { margin: 0; }
+.tk-help { display: flex; align-items: center; justify-content: space-between; gap: 14px; flex-wrap: wrap; margin-bottom: 18px; }
+.tk-help > div { display: grid; gap: 2px; }
+.tk-list { overflow: hidden; }
+.tk-row { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 14px; padding: 14px 18px; border-bottom: 1px solid var(--border); }
+.tk-row:last-child { border-bottom: 0; }
+.tk-row:hover { background: var(--surface); }
+.tk-subj { display: grid; gap: 2px; min-width: 0; }
+.tk-subj b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tk-thread { display: grid; gap: 12px; margin-bottom: 18px; }
+.tk-msg { padding: 14px 16px; border-radius: 14px; background: var(--surface); border: 1px solid var(--border); max-width: 86%; }
+.tk-msg.staff { justify-self: end; background: var(--accent-soft); border-color: var(--accent-ring); }
+.tk-meta { display: flex; gap: 10px; align-items: baseline; flex-wrap: wrap; font-size: 13px; margin-bottom: 6px; }
+.tk-body { white-space: pre-wrap; word-break: break-word; font-size: 14.5px; line-height: 1.55; }
+@media (max-width: 640px) { .tk-row { grid-template-columns: 1fr auto; } .tk-row > .mono { display: none; } .tk-msg { max-width: 100%; } }
