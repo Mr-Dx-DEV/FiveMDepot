@@ -14,7 +14,7 @@ if (is_file(__DIR__ . '/config.local.php')) {
 defined('DB_HOST') || define('DB_HOST', 'localhost:3306');
 defined('DB_NAME') || define('DB_NAME', 'fivemdepot');
 defined('DB_USER') || define('DB_USER', 'fivemdepot');
-defined('DB_PASS') || define('DB_PASS', '');
+defined('DB_PASS') || define('DB_PASS', 'FIVVEM@22316');
 define('DB_CHARSET', 'utf8mb4');
 
 // === Site ===
