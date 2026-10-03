@@ -70,7 +70,7 @@
     var compat = (p.compatibility.length ? p.compatibility : p.frameworks.map(function (f) { return f.name; }));
     var action;
     if (owned) action = '<a class="btn btn-primary btn-lg" href="api/v1.php?r=account/download/' + encodeURIComponent(p.id) + '">⬇ Download v' + esc(p.version) + '</a>';
-    else if (price === 0) action = '<button class="btn btn-primary btn-lg" data-free>Get it free</button>';
+    else if (price === 0) action = '<button class="btn btn-lg pc-claim" data-free>🎁 Claim for free</button>';
     else action = '<button class="btn btn-primary btn-lg" data-buy>Buy now</button>';
     return '<aside class="buybox">' +
       '<div>' + (p.breadcrumb.length ? '<nav class="crumbs" aria-label="Breadcrumb"><a href="index.html">Home</a>' + p.breadcrumb.map(function (b) {
@@ -84,7 +84,8 @@
         (onSale ? '<s>' + S.money(p.price) + '</s><span class="save">Save ' + Math.round((1 - p.sale_price / p.price) * 100) + '%</span>' : '') + '</div>' +
       '<div class="buy-actions">' + action +
         '<button class="wish-btn" data-wishbtn aria-label="Save to wishlist">' + I.heart + '</button></div>' +
-      (!owned && price > 0 ? '<button class="btn btn-ghost btn-block" data-add>' + (S.cart.has(p.id) ? 'In your cart ✓' : 'Add to cart') + '</button>' : '') +
+      (!owned && price > 0 ? '<button class="btn btn-ghost btn-block" data-add>' + (S.cart.has(p.id) ? 'In your cart ✓ — view cart' : 'Add to cart') + '</button>' : '') +
+      (!owned && price === 0 ? '<p class="small muted" style="margin:0">Free with a FiveMDepot account — it’s added to your library with lifetime updates.</p>' : '') +
       (owned ? '<p class="small up" style="margin:0">✓ You own this — downloads and updates are in <a class="link-more" href="dashboard/buyer.html">your library</a></p>' : '') +
       (staff && !owned ? '<p class="small muted" style="margin:0">👁 You see the customer view. <a class="link-more" href="api/v1.php?r=account/download/' + encodeURIComponent(p.id) + '">⬇ Download (admin)</a></p>' : '') +
       '<div class="facts"><div><small>Version</small><b>' + esc(p.version) + '</b></div><div><small>Updated</small><b>' + date(p.updated_at) + '</b></div>' +
@@ -162,15 +163,9 @@
       if (t.dataset.tabLink) document.getElementById('tabs-sec').scrollIntoView({ behavior: 'smooth' });
       return;
     }
-    if (e.target.closest('[data-add]')) { S.cart.add(p); e.target.closest('[data-add]').textContent = 'In your cart ✓'; return; }
-    if (e.target.closest('[data-buy]')) { if (!S.cart.has(p.id)) S.cart.add(p); go('checkout.html'); return; }
-    if (e.target.closest('[data-free]')) {
-      if (!S.user) { go(S.loginUrl()); return; }
-      var b = e.target.closest('[data-free]'); b.disabled = true;
-      S.v1('POST', 'checkout/order', { ids: [p.id] }).then(function () { owned = true; S.toast('Added to your library', 'success'); render(); })
-        .catch(function (err) { S.toast(err.message, 'error'); b.disabled = false; });
-      return;
-    }
+    if (e.target.closest('[data-add]')) { S.cart.add(p); e.target.closest('[data-add]').textContent = 'In your cart ✓ — view cart'; return; }
+    if (e.target.closest('[data-buy]')) { S.cart.add(p, { silent: true }); go('checkout.html'); return; }
+    if (e.target.closest('[data-free]')) { S.claim(p, e.target.closest('[data-free]')); return; }
     if (e.target.closest('[data-wishbtn]')) {
       if (!S.user) { go(S.loginUrl()); return; }
       wished = !wished; syncWishBtn();
@@ -195,6 +190,12 @@
     }).catch(function (err) { S.toast(err.message, 'error'); });
   });
 
+  var claimedId = null;
+  document.addEventListener('store:claimed', function (e) {
+    claimedId = e.detail;
+    if (p && e.detail === p.id) { owned = true; render(); }
+  });
+
   function load() {
     return S.api('product', { slug: slug }).then(function (data) {
       p = data;
@@ -202,7 +203,7 @@
       return S.me().then(function (user) {
         if (!user) return;
         return S.v1('GET', 'account/status&ids=' + encodeURIComponent(p.id)).then(function (st) {
-          owned = st.owned.indexOf(p.id) !== -1;
+          owned = st.owned.indexOf(p.id) !== -1 || claimedId === p.id;
           staff = user.role === 'ADMIN' || (p.seller_info && p.seller_info.id === user.id);
           wished = st.wishlist.indexOf(p.id) !== -1;
         }).catch(function () {});

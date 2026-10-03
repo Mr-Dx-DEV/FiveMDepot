@@ -70,7 +70,7 @@
     var b = e.target.closest('[data-buy]');
     if (!b) return;
     var p = byId[b.dataset.buy];
-    if (!S.cart.has(p.id)) S.cart.add(p);
+    S.cart.add(p, { silent: true });
     location.href = 'checkout.html';
   });
 

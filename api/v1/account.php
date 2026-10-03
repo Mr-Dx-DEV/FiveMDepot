@@ -211,7 +211,7 @@ function price_cart(array $productIds, string $promoCode, ?array $user): array
     if ($r['status'] !== 'PUBLISHED') continue;
     $price = $r['sale_price'] !== null ? (float)$r['sale_price'] : (float)$r['price'];
     $lines[] = [
-      'id' => $r['id'], 'title' => $r['title'], 'slug' => $r['slug'], 'price' => $price, 'seller_id' => $r['user_id'],
+      'id' => $r['id'], 'title' => $r['title'], 'slug' => $r['slug'], 'price' => $price, 'original' => (float)$r['price'], 'seller_id' => $r['user_id'],
       'image' => json_col($r['screenshots'])[0] ?? null,
       'owned' => in_array($r['id'], $owned, true) || ($user && $r['user_id'] === $user['id']),
     ];

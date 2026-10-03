@@ -1,0 +1,25 @@
+# FiveMDepot — caching & basic hardening (Apache / Plesk)
+
+
+# Keep secrets and tooling private
+<FilesMatch "^(config\.local\.php|config\.local\.example\.php|database\.sql|.*\.md|bump-version\.py)$">
+  Require all denied
+</FilesMatch>
+RedirectMatch 404 ^/(migrations|tools|docs|core)/
+
+<IfModule mod_headers.c>
+  # HTML pages: always check for a new version (CSS/JS links carry ?v= so updates load instantly)
+  <FilesMatch "\.(html)$">
+    Header set Cache-Control "no-cache"
+  </FilesMatch>
+  # Versioned CSS/JS and images can be cached by the browser
+  <FilesMatch "\.(css|js)$">
+    Header set Cache-Control "public, max-age=604800"
+  </FilesMatch>
+  <FilesMatch "\.(jpg|jpeg|png|webp|svg|gif|ico)$">
+    Header set Cache-Control "public, max-age=2592000"
+  </FilesMatch>
+  Header always set X-Content-Type-Options "nosniff"
+  Header always set Referrer-Policy "strict-origin-when-cross-origin"
+  Header always set X-Frame-Options "SAMEORIGIN"
+</IfModule>

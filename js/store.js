@@ -196,16 +196,20 @@
       try { localStorage.setItem(CART_KEY, JSON.stringify(items)); } catch (e) {}
       Cart.renderCount();
     },
-    add: function (p) {
+    add: function (p, opts) {
+      opts = opts || {};
       var items = Cart.items();
-      if (items.some(function (i) { return i.id === p.id; })) { toast('Already in cart'); return; }
-      items.push({
-        id: p.id, slug: p.slug, title: p.title,
-        price: p.sale_price != null ? p.sale_price : p.price,
-        image: p.image || '', seller: { name: p.seller || 'FiveMDepot' }
-      });
-      Cart.save(items);
-      toast('Added to cart', 'success');
+      if (!items.some(function (i) { return i.id === p.id; })) {
+        items.push({
+          id: p.id, slug: p.slug, title: p.title,
+          price: p.sale_price != null ? p.sale_price : p.price,
+          original: p.price,
+          image: p.image || '', seller: { name: p.seller || 'FiveMDepot' }
+        });
+        Cart.save(items);
+        bumpCart();
+      }
+      if (!opts.silent) Drawer.open(p.id);
     },
     remove: function (id) {
       Cart.save(Cart.items().filter(function (i) { return i.id !== id; }));
@@ -244,6 +248,137 @@
     }).catch(function () {});
   }
 
+  // ---------- Cart icon bounce ----------
+  function bumpCart() {
+    document.querySelectorAll('.cart-btn').forEach(function (b) {
+      b.classList.remove('bump'); void b.offsetWidth; b.classList.add('bump');
+    });
+  }
+
+  // ---------- Claim a free product (login required) ----------
+  var CLAIM_KEY = 'fivemdepot-claim';
+  function claim(p, btn) {
+    if (!Store.user) {
+      try { sessionStorage.setItem(CLAIM_KEY, p.id); } catch (e) {}
+      toast('Log in or create a free account to claim it');
+      setTimeout(function () { location.href = loginUrl(); }, 600);
+      return Promise.resolve(false);
+    }
+    if (btn) { btn.disabled = true; btn.textContent = '…'; }
+    return v1('POST', 'checkout/order', { ids: [p.id] }).then(function () {
+      if (btn) { btn.textContent = '✓ Claimed'; btn.classList.add('done'); }
+      toastLink('Added to your library', 'dashboard/buyer.html', 'Open library');
+      document.dispatchEvent(new CustomEvent('store:claimed', { detail: p.id }));
+      return true;
+    }).catch(function (e) {
+      if (btn) { btn.disabled = false; btn.textContent = 'Claim'; }
+      if (/already own/i.test(e.message)) { toastLink('You already own this', 'dashboard/buyer.html', 'Open library'); return true; }
+      toast(e.message, 'error');
+      return false;
+    });
+  }
+  function toastLink(msg, href, label) {
+    toast(msg, 'success');
+    var t = document.querySelector('.toasts .toast:last-child');
+    if (t) t.innerHTML = esc(msg) + ' · <a href="' + esc(ROOT + href) + '" style="color:var(--accent);font-weight:700">' + esc(label) + ' →</a>';
+  }
+
+  // ---------- Slide-in cart drawer ----------
+  var Drawer = (function () {
+    var el = null, lastFocus = null, highlight = null;
+    function build() {
+      if (el) return;
+      el = document.createElement('div');
+      el.className = 'cd-wrap';
+      el.innerHTML = '<div class="cd-scrim" data-cd-close></div>' +
+        '<aside class="cd" role="dialog" aria-modal="true" aria-labelledby="cdTitle">' +
+          '<div class="cd-head"><h2 id="cdTitle">Your cart</h2><button class="icon-btn" data-cd-close aria-label="Close cart">' + I.close + '</button></div>' +
+          '<div class="cd-body" id="cdBody"></div><div class="cd-foot" id="cdFoot"></div>' +
+        '</aside>';
+      document.body.appendChild(el);
+      el.addEventListener('click', function (e) {
+        if (e.target.closest('[data-cd-close]')) { close(); return; }
+        var rm = e.target.closest('[data-cd-rm]');
+        if (rm) {
+          var line = rm.closest('.cd-line');
+          line.classList.add('out');
+          setTimeout(function () { Cart.remove(rm.getAttribute('data-cd-rm')); render(); }, 220);
+        }
+      });
+      document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && el.classList.contains('open')) close(); });
+    }
+    function lineHtml(i, idx) {
+      var save = i.original > i.price ? i.original - i.price : 0;
+      return '<div class="cd-line' + (i.id === highlight ? ' new' : '') + '" style="animation-delay:' + (idx * 40) + 'ms">' +
+        '<a href="' + ROOT + productUrl(i.slug) + '"><img src="' + esc(i.image || 'images/photos/default-640.jpg') + '" alt="" data-fallback="images/store/cat-default.svg"></a>' +
+        '<div class="cd-info"><a class="cd-title" href="' + ROOT + productUrl(i.slug) + '">' + esc(i.title) + '</a>' +
+          (i.owned ? '<span class="cd-owned">✓ You already own this — not charged</span>'
+                   : save ? '<span class="cd-save">You save ' + money(save) + '</span>' : '<span class="cd-meta">Instant download · lifetime updates</span>') +
+        '</div>' +
+        '<div class="cd-price">' + (i.owned ? '<s>' + money(i.price) + '</s>' : (i.price === 0 ? '<b class="up">Free</b>' : '<b>' + money(i.price) + '</b>' + (save ? '<s>' + money(i.original) + '</s>' : ''))) +
+          '<button data-cd-rm="' + esc(i.id) + '" aria-label="Remove ' + esc(i.title) + '">Remove</button></div></div>';
+    }
+    function render() {
+      var body = el.querySelector('#cdBody'), foot = el.querySelector('#cdFoot');
+      var local = Cart.items();
+      el.querySelector('#cdTitle').textContent = 'Your cart' + (local.length ? ' (' + local.length + ')' : '');
+      if (!local.length) {
+        body.innerHTML = '<div class="cd-empty"><div class="cd-empty-ico">' + I.cart + '</div><b>Your cart is empty</b><span>Scripts, MLOs, vehicles and server packs are waiting.</span>' +
+          '<a class="btn btn-primary" href="' + ROOT + 'category.html?c=all">Browse the store</a></div>';
+        foot.innerHTML = '';
+        return;
+      }
+      // instant render from local data, then replace with server-checked prices
+      draw(local.map(function (i) { return { id: i.id, slug: i.slug, title: i.title, image: i.image, price: +i.price, original: +(i.original != null ? i.original : i.price), owned: false }; }));
+      v1('POST', 'checkout/quote', { ids: local.map(function (i) { return i.id; }) }).then(function (q) {
+        var live = q.items.map(function (x) { return x.id; });
+        local.forEach(function (i) { if (live.indexOf(i.id) === -1) Cart.remove(i.id); });
+        if (!q.items.length) { render(); return; }
+        draw(q.items);
+      }).catch(function () {});
+    }
+    function draw(items) {
+      var body = el.querySelector('#cdBody'), foot = el.querySelector('#cdFoot');
+      var charge = items.filter(function (i) { return !i.owned; });
+      var original = charge.reduce(function (s, i) { return s + (i.original > i.price ? i.original : i.price); }, 0);
+      var total = charge.reduce(function (s, i) { return s + i.price; }, 0);
+      var saved = Math.max(0, original - total);
+      body.innerHTML = items.map(lineHtml).join('') +
+        '<p class="cd-hint">🏷 Have a promo code? Add it on the <a href="' + ROOT + 'cart.html">cart page</a>.</p>';
+      var checkoutBtn;
+      if (!charge.length) checkoutBtn = '<a class="btn btn-ghost btn-block" href="' + ROOT + 'dashboard/buyer.html">You own everything — open library</a>';
+      else if (Store.user) checkoutBtn = '<a class="btn btn-primary btn-lg btn-block cd-checkout" href="' + ROOT + 'checkout.html">' + (total === 0 ? 'Get them free' : 'Checkout · ' + money(total)) + ' →</a>';
+      else checkoutBtn = '<div class="cd-login"><b>Log in to checkout</b><span>Your purchases are saved to your account so you can download them any time.</span>' +
+          '<div class="cd-login-btns"><a class="btn btn-primary" href="' + ROOT + 'auth.html?next=checkout.html">Log in</a>' +
+          '<a class="btn btn-ghost" href="' + ROOT + 'auth.html?mode=register&next=checkout.html">Sign up free</a></div></div>';
+      foot.innerHTML =
+        '<div class="cd-row"><span>Subtotal</span><span>' + money(original) + '</span></div>' +
+        (saved ? '<div class="cd-row up"><span>Discount</span><span>−' + money(saved) + '</span></div>' : '') +
+        '<div class="cd-row cd-total"><span>Total</span><span>' + money(total) + '</span></div>' +
+        (saved ? '<div class="cd-saved">🎉 You save ' + money(saved) + ' on this order</div>' : '') +
+        checkoutBtn +
+        '<div class="cd-trust"><span>✓ Instant download after payment check</span><span>✓ bKash · Nagad · Bank</span></div>' +
+        '<a class="cd-viewcart" href="' + ROOT + 'cart.html">View full cart</a>';
+    }
+    function open(newId) {
+      build();
+      highlight = newId || null;
+      lastFocus = document.activeElement;
+      render();
+      el.classList.add('open');
+      document.body.classList.add('cd-lock');
+      setTimeout(function () { var c = el.querySelector('.cd-head .icon-btn'); if (c) c.focus(); }, 50);
+    }
+    function close() {
+      if (!el) return;
+      el.classList.remove('open');
+      document.body.classList.remove('cd-lock');
+      if (lastFocus && lastFocus.focus) lastFocus.focus();
+    }
+    window.addEventListener('storage', function (e) { if (e.key === CART_KEY && el && el.classList.contains('open')) render(); });
+    return { open: open, close: close, render: function () { if (el && el.classList.contains('open')) render(); } };
+  })();
+
   // ---------- Product card ----------
   var cardData = {};
   function stars(r) {
@@ -275,7 +410,9 @@
           '<div class="pc-foot">' +
             '<div class="price' + (price === 0 ? ' free' : '') + '">' + (price === 0 ? 'Free' : money(price)) +
               (onSale ? '<s>' + money(p.price) + '</s>' : '') + '</div>' +
-            '<button class="pc-add" data-add="' + esc(p.id) + '" aria-label="Add ' + esc(p.title) + ' to cart">' + I.plus + '</button>' +
+            (price === 0
+              ? '<button class="pc-claim" data-claim="' + esc(p.id) + '">Claim</button>'
+              : '<button class="pc-add" data-add="' + esc(p.id) + '" aria-label="Add ' + esc(p.title) + ' to cart">' + I.plus + '</button>') +
           '</div>' +
         '</div>' +
       '</article>';
@@ -291,6 +428,10 @@
 
   // Delegated clicks for cards anywhere on the page
   document.addEventListener('click', function (e) {
+    var claimBtn = e.target.closest('[data-claim]');
+    if (claimBtn) { e.preventDefault(); var cp = cardData[claimBtn.getAttribute('data-claim')]; if (cp) claim(cp, claimBtn); return; }
+    var cartLink = e.target.closest('[data-open-cart]');
+    if (cartLink && !e.ctrlKey && !e.metaKey) { e.preventDefault(); Drawer.open(); return; }
     var add = e.target.closest('[data-add]');
     if (add) { e.preventDefault(); var p = cardData[add.getAttribute('data-add')]; if (p) Cart.add(p); return; }
     var wish = e.target.closest('[data-wish]');
@@ -354,7 +495,7 @@
         '<div class="header-actions">' +
           '<button class="icon-btn" id="searchBtn" aria-label="Search (press /)" aria-haspopup="dialog">' + I.search + '</button>' +
           '<button class="icon-btn theme-btn" id="themeBtn" aria-label="Toggle light/dark theme">' + I.moon + I.sun + '</button>' +
-          '<a class="icon-btn" href="cart.html" aria-label="Cart">' + I.cart + '<span class="badge-count" data-cart-count></span></a>' +
+          '<a class="icon-btn cart-btn" href="cart.html" data-open-cart aria-label="Cart">' + I.cart + '<span class="badge-count" data-cart-count></span></a>' +
           '<a class="icon-btn hide-sm" href="auth.html" id="accountBtn" aria-label="Account">' + I.user + '</a>' +
           '<div class="socials">' + socialLinks(data.settings || {}) + '</div>' +
           '<button class="icon-btn menu-btn" id="menuBtn" aria-label="Open menu" aria-expanded="false">' + I.menu + '</button>' +
@@ -434,6 +575,9 @@
       if (a) { a.href = user.dashboard; a.setAttribute('aria-label', 'My account'); a.classList.add('is-in'); }
       document.querySelectorAll('[data-wish]').forEach(function (b) { b.hidden = false; });
       syncWishlist();
+      var pending = null;
+      try { pending = sessionStorage.getItem(CLAIM_KEY); sessionStorage.removeItem(CLAIM_KEY); } catch (e) {}
+      if (pending) claim({ id: pending }, null);
       document.dispatchEvent(new CustomEvent('store:user', { detail: user }));
     });
   }
@@ -489,6 +633,6 @@
     api: api, nav: nav, esc: esc, icon: icon, money: money, qs: qs,
     catUrl: catUrl, productUrl: productUrl, icons: I, catIcon: catIcon, catArt: catArt,
     productCard: productCard, cart: Cart, toast: toast, reveal: reveal, user: null,
-    v1: v1, me: me, loginUrl: loginUrl, syncWishlist: syncWishlist
+    v1: v1, me: me, loginUrl: loginUrl, syncWishlist: syncWishlist, claim: claim, drawer: Drawer
   };
 })();
