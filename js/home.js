@@ -6,7 +6,7 @@
   // Same content as the seeded homepage_sections — used until the API answers or if it fails.
   var DEFAULTS = {
     sections: [
-      { key: 'hero', content: { badge: 'Premium Marketplace Now Live', headline: 'The Trusted FiveM Marketplace', subtitle: 'Premium scripts, MLOs, vehicles, clothing and complete server packs for QBCore, ESX and QBox.', primary_text: 'Explore Marketplace', primary_link: 'category.html?c=all', secondary_text: 'View Server Packs', secondary_link: 'server-packs.html' } },
+      { key: 'hero', content: { badge: 'Premium Marketplace Now Live', headline: '*FiveM* Premium|*Scripts*, MLOs &|Server Packs', subtitle: '**Since 2024** — the **trusted** FiveM marketplace for QBCore, ESX and QBox: server packs, jobs, MLO maps, vehicles, clothing and more.', checks: ['100% Legal', 'Instant Download', 'Lifetime Updates'], primary_text: 'Explore Marketplace', primary_link: 'category.html?c=all', secondary_text: 'View Server Packs', secondary_link: 'server-packs.html' } },
       { key: 'trust', content: { items: [{ value: '4.9/5', label: 'Customer rating' }, { value: '10K+', label: 'Discord members' }, { value: '98%', label: 'Satisfaction rate' }, { value: '500+', label: 'Premium resources' }] } },
       { key: 'categories', content: { heading: 'Shop by Category', subheading: 'Everything you need to build your server' } },
       { key: 'featured', content: { heading: 'Featured Resources' } },
@@ -38,48 +38,65 @@
   // ---------- Section renderers ----------
   var R = {
     hero: function (c, d, nav) {
-      // Floating showcase: featured product images, topped up with category artwork
-      var seen = {};
-      var shots = (d.featured || []).concat(d.packs || []).filter(function (p) {
-        if (!p.image || seen[p.id]) return false;
-        return (seen[p.id] = true);
-      }).slice(0, 3).map(function (p) {
-        return { img: p.image, title: p.title, sub: p.badge ? p.badge.name : '', href: S.productUrl(p.slug) };
-      });
-      nav.categories.forEach(function (k) {
-        if (shots.length < 3) shots.push({ img: S.catArt(k, true), title: k.name, sub: (k.product_count != null ? k.product_count + ' products' : 'Browse'), href: S.catUrl(k.slug) });
-      });
-      var visual = shots.map(function (s, i) {
-        return '<a class="hv-card hv-' + (i + 1) + '" href="' + esc(s.href) + '"><img src="' + esc(s.img) + '" alt="" data-fallback="images/store/cat-default.svg">' +
-          '<span class="hv-label"><b>' + esc(s.title) + '</b><small>' + esc(s.sub) + '</small></span></a>';
-      }).join('');
-      return '<section class="hero"><div class="hero-photo" aria-hidden="true"></div><div class="hero-art" aria-hidden="true"></div><div class="container hero-inner">' +
-        '<div class="hero-copy">' +
-          '<div class="hero-kicker"><span class="hero-kicker-mark"></span>FIVEM RESOURCE MARKETPLACE <span class="hero-kicker-index">// BUILD YOUR WORLD</span></div>' +
-          (c.badge ? '<span class="hero-badge"><span class="dot">FDM</span>' + esc(c.badge) + '</span>' : '') +
-          '<h1>' + headline(c.headline) + '</h1>' +
-          '<p class="hero-sub">' + esc(c.subtitle) + '</p>' +
-          '<form class="hero-search" action="category.html" role="search">' + I.search +
-            '<input type="hidden" name="c" value="all"><input name="q" aria-label="Search the store" placeholder="Search ' + (d.stats && d.stats.products >= 50 ? d.stats.products + '+ ' : '') + 'scripts, MLOs, vehicles…">' +
-            '<button class="btn btn-primary" type="submit">Search</button></form>' +
-          ((d.popular_tags || []).length ? '<div class="hero-popular"><span>Popular:</span>' + d.popular_tags.slice(0, 3).map(function (t) {
-            return '<a href="category.html?c=all&tags=' + encodeURIComponent(t.slug) + '">' + esc(t.name) + '</a>';
-          }).join('') + '</div>' : '') +
-          '<div class="hero-cta">' +
-            (c.primary_text ? '<a class="btn btn-primary btn-lg" href="' + esc(link(c.primary_link)) + '">' + esc(c.primary_text) + '</a>' : '') +
-            (c.secondary_text ? '<a class="btn btn-ghost btn-lg" href="' + esc(link(c.secondary_link)) + '">' + esc(c.secondary_text) + '</a>' : '') +
+      var st = nav.settings || {};
+      var since = st.since_year || '2024';
+      var checks = (c.checks && c.checks.length ? c.checks : ['100% Legal', 'Instant Download', 'Lifetime Updates']).slice(0, 3);
+      var discord = st.social_discord
+        ? '<div class="hx-discord reveal"><div class="hx-dc-left"><span class="hx-pill"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>Official Discord</span>' +
+            '<h3>' + esc(st.discord_server_name || ((st.site_name || 'FiveMDepot') + ' Community')) + '</h3>' +
+            '<p>' + esc(c.discord_text || 'Live support, update alerts and a community of server owners.') + '</p>' +
+            '<span class="hx-online" id="dcOnline" hidden><i></i><b>—</b> online</span></div>' +
+          '<div class="hx-dc-right"><div><small>ONLINE MEMBERS</small><span>Live from <b>discord.com</b></span></div>' +
+            '<a class="btn btn-ghost btn-sm" href="' + esc(st.social_discord) + '" target="_blank" rel="noopener">' +
+            '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6M15 3h6v6M10 14 21 3"/></svg>Join Discord</a></div></div>'
+        : '';
+      return '<section class="hx"><div class="hx-glow" aria-hidden="true"></div><div class="hx-grid" aria-hidden="true"></div>' +
+        '<svg class="hx-curve" viewBox="0 0 900 120" aria-hidden="true"><path d="M10 40 C 300 0, 600 10, 880 90" fill="none" stroke="var(--accent)" stroke-opacity=".5" stroke-width="2"/><path d="M866 76 l16 15 -20 4" fill="none" stroke="var(--accent)" stroke-opacity=".7" stroke-width="2"/></svg>' +
+        '<div class="container hx-inner"><div class="hx-copy">' +
+          '<div class="hx-badges reveal">' +
+            '<span class="hx-b green"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2 4 5v6c0 5 3.4 9.4 8 11 4.6-1.6 8-6 8-11V5z"/><path d="m9 12 2 2 4-4"/></svg>✓ Official Store</span>' +
+            '<span class="hx-b blue"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="m8.5 12 2.5 2.5 4.5-5"/></svg>✓ Verified Sellers</span>' +
+            '<span class="hx-b yellow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="6"/><path d="M8.2 13.5 7 22l5-3 5 3-1.2-8.5"/></svg>✓ Since ' + esc(since) + '</span>' +
           '</div>' +
-          (nav.categories.length ? '<div class="hero-path"><span>Explore by category</span><div class="hero-quick">' +
-            nav.categories.slice(0, 5).map(function (k) {
-              return '<a class="search-chip" href="' + esc(S.catUrl(k.slug)) + '"><span class="di">' + S.catIcon(k) + '</span>' + esc(k.name) + '</a>';
-            }).join('') +
-          '</div></div>' : '') +
+          (c.badge ? '<span class="hx-live reveal"><i></i>' + esc(c.badge) + '</span>' : '') +
+          '<h1 class="hx-title">' + headline(c.headline || '*FiveM* Premium|*Scripts*, MLOs &|Server Packs') + '</h1>' +
+          '<svg class="hx-swoosh" viewBox="0 0 400 14" aria-hidden="true"><path d="M2 10 C 120 2, 260 2, 398 7" fill="none" stroke="var(--accent)" stroke-width="3" stroke-linecap="round"/></svg>' +
+          '<p class="hx-sub">' + rich(c.subtitle) + '</p>' +
+          '<p class="hx-checks">' + checks.map(function (t, i) { return '<span class="c' + i + '">✓ ' + esc(t) + '</span>'; }).join('<span class="dot">·</span>') + '</p>' +
+          '<div class="hx-cta">' +
+            (c.primary_text ? '<a class="btn btn-primary btn-lg hx-main" href="' + esc(link(c.primary_link)) + '">' + esc(c.primary_text) + ' <span aria-hidden="true">→</span></a>' : '') +
+            (c.secondary_text ? '<a class="btn btn-ghost btn-lg" href="' + esc(link(c.secondary_link)) + '">' + esc(c.secondary_text) + '</a>' : '') +
+          '</div>' + discord +
         '</div>' +
-        (visual ? '<div class="hero-visual" role="group" aria-label="Explore featured resources and categories">' +
-          '<div class="hero-visual-top"><span><i></i> RESOURCE LOADOUT</span><span>01 / ' + String(shots.length).padStart(2, '0') + '</span></div>' +
-          '<div class="hero-visual-reticle" aria-hidden="true"></div>' + visual +
-          '<div class="hero-visual-bottom"><span>SELECT YOUR NEXT UPGRADE</span><span>FIVEMDEPOT // CATALOG</span></div></div>' : '') +
+        '<div class="hx-term-wrap"><div class="hx-term" id="hxTerm" role="img" aria-label="Animated terminal creating a QBCore script">' +
+          '<div class="hx-term-bar"><span class="r"></span><span class="y"></span><span class="g"></span><em>&gt;_ ' + esc((st.site_name || 'fivemdepot').toLowerCase().replace(/\s+/g, '')) + '@terminal</em></div>' +
+          '<div class="hx-term-body" id="hxTermBody"></div></div></div>' +
       '</div></section>';
+    },
+
+    features: function (c) {
+      var ICONS = {
+        users: '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.9M16 3.1a4 4 0 0 1 0 7.8"/>',
+        database: '<ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14c0 1.7 4 3 9 3s9-1.3 9-3V5M3 12c0 1.7 4 3 9 3s9-1.3 9-3"/>',
+        zap: '<path d="M13 2 3 14h9l-1 8 10-12h-9z"/>',
+        shield: '<path d="M12 2 4 5v6c0 5 3.4 9.4 8 11 4.6-1.6 8-6 8-11V5z"/><path d="M12 8v4M12 16h.01"/>',
+        activity: '<path d="M22 12h-4l-3 9L9 3l-3 9H2"/>',
+        sliders: '<path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6"/>',
+        globe: '<circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15 15 0 0 1 0 20M12 2a15 15 0 0 0 0 20"/>',
+        layers: '<path d="M4 4h6v6H4zM14 14h6v6h-6zM4 14h6M7 10v4M14 7h3a3 3 0 0 1 3 3v1"/>',
+        code: '<path d="m8 8-4 4 4 4M16 8l4 4-4 4"/>', box: '<path d="m21 8-9-5-9 5v8l9 5 9-5z"/><path d="m3 8 9 5 9-5M12 13v8"/>'
+      };
+      var items = (c.items || []).slice(0, 12);
+      if (!items.length) return '';
+      var sub = esc(c.subheading || '')
+        .replace(/\bperformance\b/i, '<b class="g">$&</b>').replace(/\bsecurity\b/i, '<b class="b">$&</b>').replace(/\bconfigurability\b/i, '<b class="y">$&</b>');
+      return '<section class="section fx"><div class="container">' +
+        '<div class="section-head center reveal"><div><h2 class="section-title fx-title">' + headline(c.heading || 'Everything You Need') + '</h2>' +
+        (sub ? '<p class="section-sub">' + sub + '</p>' : '') + '</div></div>' +
+        '<div class="fx-grid">' + items.map(function (it) {
+          return '<div class="fx-card reveal"><span class="fx-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">' + (ICONS[it.icon] || ICONS.box) + '</svg></span>' +
+            '<h3>' + esc(it.title) + '</h3><p>' + esc(it.text) + '</p></div>';
+        }).join('') + '</div></div></section>';
     },
 
     showcase: function (c, d, nav) {
@@ -231,12 +248,109 @@
 
   var TAB_DATA = {}, COMMUNITY = false;
 
-  // Last word of the headline gets the accent gradient
+  // Headline markup: "*word*" = accent colour, "|" = new line. Without markup the last word is highlighted.
   function headline(text) {
-    var words = String(text || '').trim().split(/\s+/);
-    if (words.length < 2) return esc(text);
-    var last = words.pop();
-    return esc(words.join(' ')) + ' <span class="text-grad">' + esc(last) + '</span>';
+    text = String(text || '').trim();
+    if (text.indexOf('*') === -1 && text.indexOf('|') === -1) {
+      var words = text.split(/\s+/);
+      if (words.length < 2) return esc(text);
+      var last = words.pop();
+      return esc(words.join(' ')) + ' <span class="text-grad">' + esc(last) + '</span>';
+    }
+    return text.split('|').map(function (line) {
+      return '<span class="hl-line">' + esc(line.trim()).replace(/\*([^*]+)\*/g, '<span class="hl-accent">$1</span>') + '</span>';
+    }).join('');
+  }
+  // Subtitle markup: "**bold**"
+  function rich(text) { return esc(text || '').replace(/\*\*([^*]+)\*\*/g, '<b>$1</b>'); }
+
+  // ---------- Animated terminal (types a QBCore script, then loops) ----------
+  var TERM = [
+    ['cmd', 'mkdir fdm-garage && cd fdm-garage'],
+    ['out', 'Creating QBCore resource structure...'],
+    ['cmd', 'touch fxmanifest.lua server/main.lua config.lua'],
+    ['cmd', 'nano server/main.lua'],
+    ['code', [
+      '-- FiveMDepot Garage · optimised for QBCore',
+      '-- Idle resmon: 0.00ms',
+      "local QBCore = exports['qb-core']:GetCoreObject()",
+      "RegisterNetEvent('fdm-garage:server:store', function(plate)",
+      '    local src = source',
+      '    local Player = QBCore.Functions.GetPlayer(src)',
+      '    if not Player then return end',
+      "    MySQL.update('UPDATE player_vehicles SET state = 1 WHERE plate = ?', { plate })",
+      "    TriggerClientEvent('QBCore:Notify', src, 'Vehicle stored', 'success')",
+      'end)',
+      "print('^2[fdm-garage] ^7Loaded successfully!')"
+    ]],
+    ['ok', 'Script saved successfully'],
+    ['cmd', 'ensure fdm-garage'],
+    ['info', '[fdm-garage] Resource loaded - 0.00ms resmon']
+  ];
+  function lua(line) {
+    var h = esc(line);
+    if (/^\s*--/.test(line)) return '<span class="t-com">' + h + '</span>';
+    h = h.replace(/(&#39;[^&]*?&#39;)/g, '<span class="t-str">$1</span>');
+    h = h.replace(/\b(local|function|if|then|end|not|return)\b/g, '<span class="t-kw">$1</span>');
+    h = h.replace(/\b(RegisterNetEvent|TriggerClientEvent|print|exports|MySQL\.update)\b/g, '<span class="t-fn">$1</span>');
+    return h;
+  }
+  var termTimer = null;
+  function terminal() {
+    var body = document.getElementById('hxTermBody');
+    if (!body) return;
+    clearTimeout(termTimer);
+    var reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+    var prompt = '<span class="t-arrow">→</span> <span class="t-tilde">~</span> ';
+    function line(cls, html) { var d = document.createElement('div'); d.className = 't-line ' + cls; d.innerHTML = html; body.appendChild(d); return d; }
+    if (reduce) {
+      TERM.forEach(function (s) {
+        if (s[0] === 'cmd') line('t-cmd', prompt + esc(s[1]));
+        else if (s[0] === 'code') line('t-code', s[1].map(lua).join('\n'));
+        else if (s[0] === 'ok') line('t-ok', '✓ ' + esc(s[1]));
+        else line('t-' + s[0], esc(s[1]));
+      });
+      return;
+    }
+    var i = 0;
+    function next() {
+      if (!document.body.contains(body)) return;
+      if (i >= TERM.length) {
+        var cur = line('t-cmd', prompt + '<span class="t-caret"></span>');
+        termTimer = setTimeout(function () { body.innerHTML = ''; i = 0; next(); }, 4200);
+        return;
+      }
+      var s = TERM[i++];
+      if (s[0] === 'cmd') {
+        var el = line('t-cmd', prompt + '<span class="t-typed"></span><span class="t-caret"></span>'), typed = el.querySelector('.t-typed'), n = 0;
+        (function type() {
+          typed.textContent = s[1].slice(0, ++n);
+          if (n < s[1].length) termTimer = setTimeout(type, 28 + Math.random() * 40);
+          else { el.querySelector('.t-caret').remove(); termTimer = setTimeout(next, 380); }
+        })();
+      } else if (s[0] === 'code') {
+        var box = line('t-code', ''), k = 0;
+        (function addLine() {
+          box.innerHTML += (k ? '\n' : '') + lua(s[1][k++]);
+          termTimer = setTimeout(k < s[1].length ? addLine : next, k < s[1].length ? 120 : 500);
+        })();
+      } else {
+        line(s[0] === 'ok' ? 't-ok' : 't-' + s[0], (s[0] === 'ok' ? '✓ ' : '') + esc(s[1]));
+        termTimer = setTimeout(next, s[0] === 'ok' ? 700 : 450);
+      }
+    }
+    next();
+  }
+
+  // Live "online members" from the public Discord widget (Server Settings → Widget → Enable)
+  function discordOnline(nav) {
+    var el = document.getElementById('dcOnline'), id = nav.settings && nav.settings.discord_widget_server_id;
+    if (!el || !id || !/^\d{15,22}$/.test(id)) return;
+    fetch('https://discord.com/api/guilds/' + id + '/widget.json').then(function (r) { return r.ok ? r.json() : null; }).then(function (w) {
+      if (!w || typeof w.presence_count !== 'number') return;
+      el.querySelector('b').textContent = w.presence_count.toLocaleString();
+      el.hidden = false;
+    }).catch(function () {});
   }
 
   function head(title, sub, eyebrow, center, moreHref) {
@@ -276,6 +390,8 @@
     main.innerHTML = html;
     S.reveal(main);
     countUp(main);
+    terminal();
+    discordOnline(nav);
     S.syncWishlist();
   }
 

@@ -66,7 +66,7 @@ route('GET', 'admin/dashboard', function () {
 });
 
 // ---------- Homepage builder ----------
-const HOMEPAGE_KEYS = ['hero', 'trust', 'categories', 'featured', 'server_pack', 'new', 'free', 'reviews', 'about', 'faq', 'community'];
+const HOMEPAGE_KEYS = ['hero', 'trust', 'categories', 'features', 'featured', 'server_pack', 'new', 'free', 'reviews', 'about', 'faq', 'community'];
 
 route('GET', 'admin/homepage', function () {
   require_role('ADMIN');
@@ -125,7 +125,7 @@ route('POST', 'admin/faqs', function () {
 
 // ---------- Settings (allow-listed keys) ----------
 const SETTING_KEYS = [
-  'site_name', 'site_tagline', 'since_year', 'currency_symbol', 'topbar_text', 'topbar_link',
+  'brand_color', 'discord_server_name', 'site_name', 'site_tagline', 'since_year', 'currency_symbol', 'topbar_text', 'topbar_link',
   'social_discord', 'social_github', 'social_youtube', 'discord_widget_server_id',
   'bkash_number', 'nagad_number', 'bank_name', 'bank_account', 'bank_branch',
   'seller_auto_approve', 'platform_fee_percent', 'pay_stripe_enabled', 'pay_crypto_enabled', 'pay_sslcommerz_enabled', 'pay_manual_enabled', 'newsletter_enabled', 'free_assets_enabled', 'cookie_consent_text', 'download_expiry_days',

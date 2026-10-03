@@ -37,7 +37,7 @@
   --container: 1280px;
   --header-h: 68px;
   --font: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
-  --font-head: 'Space Grotesk', 'Inter', system-ui, sans-serif;
+  --font-head: 'Lexend', 'Inter', system-ui, sans-serif;
   --ease: cubic-bezier(0.16, 1, 0.3, 1);
 }
 
@@ -794,3 +794,25 @@ body.cd-lock { overflow: hidden; }
   :root { --container: 1800px; }
   body { font-size: 17px; }
 }
+
+/* ============================================================
+   Brand colour presets (Admin → Settings → Brand colour)
+   ============================================================ */
+:root[data-accent="crimson"] {
+  --bg: #050507; --bg-2: #0a0a0e; --surface: #111116; --surface-2: #1a1a2160; --card: #0e0e13; --card-hover: #15151c;
+  --border: rgba(255, 255, 255, 0.08); --border-strong: rgba(255, 255, 255, 0.15);
+  --accent: #ff2e63; --accent-2: #ff4f7b; --accent-3: #ff8a65;
+  --accent-soft: rgba(255, 46, 99, 0.12); --accent-ring: rgba(255, 46, 99, 0.38);
+  --shadow-accent: 0 10px 30px rgba(255, 46, 99, 0.28);
+}
+:root[data-accent="orange"] { /* default palette defined at the top */ }
+:root[data-accent="blue"] {
+  --accent: #3b82f6; --accent-2: #60a5fa; --accent-3: #22d3ee; --accent-soft: rgba(59,130,246,.13); --accent-ring: rgba(59,130,246,.38); --shadow-accent: 0 10px 30px rgba(59,130,246,.28);
+}
+:root[data-accent="green"] {
+  --accent: #10b981; --accent-2: #34d399; --accent-3: #a3e635; --accent-soft: rgba(16,185,129,.13); --accent-ring: rgba(16,185,129,.38); --shadow-accent: 0 10px 30px rgba(16,185,129,.26);
+}
+:root[data-accent="purple"] {
+  --accent: #8b5cf6; --accent-2: #a78bfa; --accent-3: #f472b6; --accent-soft: rgba(139,92,246,.14); --accent-ring: rgba(139,92,246,.4); --shadow-accent: 0 10px 30px rgba(139,92,246,.3);
+}
+[data-theme="light"][data-accent] { --bg: #f6f7fb; --bg-2: #ffffff; --surface: #ffffff; --card: #ffffff; --card-hover: #fbfbfd; --border: rgba(15,23,42,.08); --border-strong: rgba(15,23,42,.16); }

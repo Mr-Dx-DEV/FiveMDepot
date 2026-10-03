@@ -658,6 +658,12 @@
   // ---------- Boot ----------
   function boot() {
     nav().then(function (data) {
+      // Brand colour chosen in Admin -> Settings (cached so the next page paints in the right colour)
+      var accent = (data.settings && data.settings.brand_color) || '';
+      if (/^(crimson|orange|blue|green|purple)$/.test(accent)) {
+        document.documentElement.setAttribute('data-accent', accent);
+        try { localStorage.setItem('fdm_accent', accent); } catch (e) {}
+      }
       renderHeader(data);
       renderFooter(data);
     });

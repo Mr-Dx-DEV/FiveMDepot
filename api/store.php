@@ -556,7 +556,7 @@ function routeDocs(): array
 
 function publicSettings(): array
 {
-  $keys = ['site_name', 'site_tagline', 'social_discord', 'social_github', 'social_youtube', 'since_year', 'topbar_text', 'topbar_link'];
+  $keys = ['site_name', 'site_tagline', 'social_discord', 'social_github', 'social_youtube', 'since_year', 'topbar_text', 'topbar_link', 'brand_color', 'discord_server_name', 'discord_widget_server_id'];
   $out = array_fill_keys($keys, '');
   foreach (Db::all("SELECT `key`, `value` FROM site_settings WHERE `key` IN (" . Db::in($keys) . ")", $keys) as $r) {
     $out[$r['key']] = (string)$r['value'];

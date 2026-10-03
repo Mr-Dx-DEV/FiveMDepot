@@ -5,8 +5,10 @@
 
   // Field definitions per homepage section. t: text | area | number | pairs (value/label list) | list (strings)
   var SECTIONS = {
-    hero: { name: 'Hero banner', fields: [['badge', 'Badge text'], ['headline', 'Headline (last word gets the orange gradient)'], ['subtitle', 'Subtitle', 'area'],
-      ['primary_text', 'Main button text'], ['primary_link', 'Main button link'], ['secondary_text', 'Second button text'], ['secondary_link', 'Second button link']] },
+    hero: { name: 'Hero banner', fields: [['badge', 'Live badge text'], ['headline', 'Headline — put *stars* around coloured words, | starts a new line'], ['subtitle', 'Subtitle — **double stars** make text bold', 'area'],
+      ['checks', 'Coloured check marks (max 3)', 'list'], ['primary_text', 'Main button text'], ['primary_link', 'Main button link'], ['secondary_text', 'Second button text'], ['secondary_link', 'Second button link'],
+      ['discord_text', 'Discord card text', 'area']], note: 'Example headline: <code>*FiveM* Premium|*Scripts*, MLOs &amp;|Server Packs</code>. Trust badges use the founded year from Settings.' },
+    features: { name: 'Features grid (“Everything you need…”)', fields: [['heading', 'Heading — *stars* = coloured + underlined'], ['subheading', 'Subheading'], ['items', 'Feature cards', 'features']] },
     trust: { name: 'Trust numbers', fields: [['items', 'Numbers (value + label)', 'pairs']] },
     categories: { name: 'Shop by category', fields: [['heading', 'Heading'], ['subheading', 'Subheading']] },
     featured: { name: 'Product showcase (Featured / New / Popular / Free tabs)', fields: [['heading', 'Heading'], ['limit', 'How many products per tab', 'number']] },
@@ -25,6 +27,13 @@
     return '<div class="list-row"><input class="input" data-k="value" placeholder="Value e.g. 4.9/5" value="' + h(v.value || '') + '" style="max-width:160px">' +
       '<input class="input" data-k="label" placeholder="Label e.g. Customer rating" value="' + h(v.label || '') + '"><button type="button" class="icon-btn" data-rm aria-label="Remove">✕</button></div>';
   }
+  var FX_ICONS = ['users', 'database', 'zap', 'shield', 'activity', 'sliders', 'globe', 'layers', 'code', 'box'];
+  function featRow(v) {
+    v = v || {};
+    return '<div class="list-row"><select class="input" data-k="icon" style="max-width:120px">' + FX_ICONS.map(function (i) { return '<option' + (v.icon === i ? ' selected' : '') + '>' + i + '</option>'; }).join('') + '</select>' +
+      '<input class="input" data-k="title" placeholder="Title" value="' + h(v.title || '') + '" style="max-width:200px">' +
+      '<input class="input" data-k="text" placeholder="Short description" value="' + h(v.text || '') + '"><button type="button" class="icon-btn" data-rm aria-label="Remove">✕</button></div>';
+  }
   function listRow(v) {
     return '<div class="list-row"><input class="input" data-k="item" value="' + h(v || '') + '"><button type="button" class="icon-btn" data-rm aria-label="Remove">✕</button></div>';
   }
@@ -35,6 +44,8 @@
     if (type === 'number') return '<label class="field"><span>' + label + '</span><input class="input" type="number" min="1" max="24" data-f="' + key + '" value="' + h(v || 8) + '" style="max-width:140px"></label>';
     if (type === 'pairs') return '<div class="field"><span>' + label + '</span><div class="list-edit" data-pairs="' + key + '">' + (v || []).map(pairRow).join('') +
       '<button type="button" class="btn btn-sm btn-ghost" data-addpair>+ Add</button></div></div>';
+    if (type === 'features') return '<div class="field"><span>' + label + '</span><div class="list-edit" data-feats="' + key + '">' + (v || []).map(featRow).join('') +
+      '<button type="button" class="btn btn-sm btn-ghost" data-addfeat>+ Add card</button></div></div>';
     if (type === 'list') return '<div class="field"><span>' + label + '</span><div class="list-edit" data-list="' + key + '">' + (v || []).map(listRow).join('') +
       '<button type="button" class="btn btn-sm btn-ghost" data-addlist>+ Add</button></div></div>';
     return '<label class="field"><span>' + label + '</span><input class="input" data-f="' + key + '" value="' + h(v || '') + '"></label>';
@@ -72,6 +83,11 @@
             return { value: r.querySelector('[data-k=value]').value.trim(), label: r.querySelector('[data-k=label]').value.trim() };
           }).filter(function (p) { return p.value || p.label; });
         });
+        sec.querySelectorAll('[data-feats]').forEach(function (w) {
+          content[w.dataset.feats] = Array.prototype.map.call(w.querySelectorAll('.list-row'), function (r) {
+            return { icon: r.querySelector('[data-k=icon]').value, title: r.querySelector('[data-k=title]').value.trim(), text: r.querySelector('[data-k=text]').value.trim() };
+          }).filter(function (x) { return x.title; });
+        });
         sec.querySelectorAll('[data-list]').forEach(function (w) {
           content[w.dataset.list] = Array.prototype.map.call(w.querySelectorAll('[data-k=item]'), function (i) { return i.value.trim(); }).filter(Boolean);
         });
@@ -81,6 +97,7 @@
 
     box.addEventListener('click', function (e) {
       if (e.target.closest('[data-addpair]')) { e.target.closest('[data-addpair]').insertAdjacentHTML('beforebegin', pairRow()); dirty = true; return; }
+      if (e.target.closest('[data-addfeat]')) { e.target.closest('[data-addfeat]').insertAdjacentHTML('beforebegin', featRow()); dirty = true; return; }
       if (e.target.closest('[data-addlist]')) { e.target.closest('[data-addlist]').insertAdjacentHTML('beforebegin', listRow()); dirty = true; return; }
       if (e.target.closest('[data-rm]')) { e.target.closest('.list-row').remove(); dirty = true; return; }
       var head = e.target.closest('.hsec-head');
@@ -159,9 +176,9 @@
   // Settings
   // ============================================================
   var GROUPS = [
-    ['Store', [['site_name', 'Store name'], ['site_tagline', 'Tagline'], ['since_year', 'Founded year (footer badge)'], ['currency_symbol', 'Currency symbol']]],
+    ['Store', [['brand_color', 'Brand colour', 'select', [['crimson', 'Crimson (red/pink)'], ['orange', 'Orange'], ['blue', 'Blue'], ['green', 'Green'], ['purple', 'Purple']]], ['site_name', 'Store name'], ['site_tagline', 'Tagline'], ['since_year', 'Founded year (footer badge)'], ['currency_symbol', 'Currency symbol']]],
     ['Announcement bar', [['topbar_text', 'Text (leave empty to hide)'], ['topbar_link', 'Link']]],
-    ['Social links', [['social_discord', 'Discord invite (https://…)'], ['social_github', 'GitHub (https://…)'], ['social_youtube', 'YouTube (https://…)'], ['discord_widget_server_id', 'Discord widget server ID']]],
+    ['Social links', [['social_discord', 'Discord invite (https://…)'], ['social_github', 'GitHub (https://…)'], ['social_youtube', 'YouTube (https://…)'], ['discord_widget_server_id', 'Discord server ID (for the live online count — enable Server Settings → Widget)'], ['discord_server_name', 'Discord card title (optional)']]],
     ['Payment methods', [['pay_stripe_enabled', 'Card payments (Stripe)', 'bool'], ['pay_crypto_enabled', 'Crypto (NOWPayments)', 'bool'],
       ['pay_sslcommerz_enabled', 'SSLCommerz (cards, bKash, Nagad)', 'bool'], ['pay_manual_enabled', 'Manual bKash / Nagad / bank transfer with screenshot', 'bool']]],
     ['Manual transfer details', [['bkash_number', 'bKash number'], ['nagad_number', 'Nagad number'], ['bank_name', 'Bank name'], ['bank_account', 'Bank account'], ['bank_branch', 'Bank branch'], ['download_expiry_days', 'Download link valid for (days)']]],
@@ -186,6 +203,9 @@
         return '<div class="panel"><div class="panel-head"><h3>' + g[0] + '</h3></div><div class="panel-pad form-grid">' + g[1].map(function (f) {
           if (f[2] === 'bool') return '<label class="switch"><span>' + f[1] + '</span><input type="checkbox" name="' + f[0] + '"' + (s[f[0]] === '1' ? ' checked' : '') + '></label>';
           if (f[2] === 'area') return '<label class="field"><span>' + f[1] + '</span><textarea class="input" name="' + f[0] + '" rows="2">' + h(s[f[0]]) + '</textarea></label>';
+          if (f[2] === 'select') return '<label class="field"><span>' + f[1] + '</span><select class="input" name="' + f[0] + '">' + f[3].map(function (o) {
+            return '<option value="' + o[0] + '"' + ((s[f[0]] || f[3][0][0]) === o[0] ? ' selected' : '') + '>' + o[1] + '</option>';
+          }).join('') + '</select></label>';
           return '<label class="field"><span>' + f[1] + '</span><input class="input" name="' + f[0] + '" value="' + h(s[f[0]]) + '"></label>';
         }).join('') + (g[0] === 'Payment methods' ? payStatus(gw) : '') + '</div></div>';
       }).join('');

@@ -8,6 +8,7 @@
       Terms / Privacy / Refund policy pages — review the legal pages in Admin → Articles)
    4. `migrations/004_home.sql` (homepage: customer reviews + Discord community sections)
    5. `migrations/005_payments.sql` (international payments: Stripe, crypto, SSLCommerz)
+   6. `migrations/006_brand.sql` (crimson brand colour, new hero, “Everything you need” features)
 
    Both are safe to run more than once and delete nothing.
 3. **Upload** all files. Make sure `config.local.php` is uploaded next to `config.php`
