@@ -155,6 +155,7 @@ route('POST', 'admin/settings', function () {
     if (input($k) === null) continue;
     $v = mb_substr(trim((string)input($k)), 0, 1000);
     if (str_starts_with($k, 'social_') && $v !== '' && !preg_match('#^https://#i', $v)) fail(422, 'Social links must start with https://', [$k => 'Invalid link']);
+    if ($k === 'auth_video' && preg_match('#^(?:https?://)?(?:www\.|m\.)?(?:youtube\.com|youtu\.be)/#i', $v)) $v = preg_replace('#^(?:https?://)?#i', 'https://', $v); // links pasted without https
     if ($k === 'auth_video' && $v !== '' && !preg_match('#^(uploads/site/[a-f0-9]+\.(mp4|webm)|https://\S+\.(mp4|webm)(\?\S*)?)$#i', $v) && !youtube_id($v))
       fail(422, 'Paste a YouTube link, upload an MP4/WebM, or paste an https link ending in .mp4 / .webm', [$k => 'Invalid video']);
     $st->execute([uuid(), $k, $v]);

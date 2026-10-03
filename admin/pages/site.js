@@ -221,7 +221,7 @@
       }).join('');
       // Login page video: upload, preview, clear
       var vin = form.querySelector('[name=auth_video]'), prev = form.querySelector('.vid-prev');
-      function ytId(v) { var m = v.match(/^https:\/\/(?:www\.|m\.)?(?:youtube\.com\/(?:watch\?(?:\S*&)?v=|shorts\/|embed\/|live\/)|youtu\.be\/)([A-Za-z0-9_-]{11})/); return m ? m[1] : ''; }
+      function ytId(v) { var m = v.match(/^(?:https?:\/\/)?(?:www\.|m\.)?(?:youtube\.com\/(?:watch\?(?:\S*&)?v=|shorts\/|embed\/|live\/)|youtu\.be\/)([A-Za-z0-9_-]{11})/); return m ? m[1] : ''; }
       function showVid(v) {
         var id = ytId(v);
         prev.poster = id ? 'https://i.ytimg.com/vi/' + id + '/hqdefault.jpg' : '';
