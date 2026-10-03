@@ -343,3 +343,12 @@ textarea.input { height: auto; padding: 10px 12px; resize: vertical; line-height
 .pay-status { display: grid; gap: 8px; padding: 12px; border-radius: 10px; background: var(--surface-2); }
 .pay-row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
 .pay-row b { min-width: 110px; }
+
+/* small screens: editor top bar wraps, long URLs break instead of stretching panels */
+.editor-bar { flex-wrap: wrap; }
+.pay-row .mono { word-break: break-all; min-width: 0; }
+.stack, .form-grid, .panel { min-width: 0; }
+@media (max-width: 420px) {
+  .editor-bar .grow { flex-basis: calc(100% - 50px); }
+  .editor-bar .btn { flex: 1; }
+}
