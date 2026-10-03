@@ -656,7 +656,47 @@
   }
 
   // ---------- Boot ----------
+  // ---------- Hover & mouse effects ----------
+  // Card light/border follows the mouse, a soft glow trails the cursor, buttons ripple on click.
+  function initEffects() {
+    var fine = window.matchMedia && matchMedia('(hover: hover) and (pointer: fine)').matches;
+    var calm = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+    var CARDS = '.product-card, .cat-card, .fx-card, .rv-card, .seller-card, .trust-item, .hero-cat, .hv-card';
+    if (fine) {
+      var halo = null, hx = 0, hy = 0, frame = 0;
+      if (!calm) { halo = document.createElement('div'); halo.className = 'fx-halo'; halo.setAttribute('aria-hidden', 'true'); document.body.appendChild(halo); }
+      document.addEventListener('pointermove', function (e) {
+        var card = e.target.closest && e.target.closest(CARDS);
+        if (card) {
+          var spot = card.querySelector(':scope > .fx-spot');
+          if (!spot) { spot = document.createElement('span'); spot.className = 'fx-spot'; spot.setAttribute('aria-hidden', 'true'); card.appendChild(spot); }
+          var r = card.getBoundingClientRect();
+          card.style.setProperty('--mx', (e.clientX - r.left) + 'px');
+          card.style.setProperty('--my', (e.clientY - r.top) + 'px');
+        }
+        if (halo) {
+          hx = e.clientX; hy = e.clientY;
+          if (!frame) frame = requestAnimationFrame(function () { frame = 0; halo.style.transform = 'translate(' + hx + 'px,' + hy + 'px)'; halo.classList.add('on'); });
+        }
+      }, { passive: true });
+      if (halo) document.documentElement.addEventListener('mouseleave', function () { halo.classList.remove('on'); });
+    }
+    if (!calm) {
+      document.addEventListener('pointerdown', function (e) {
+        var b = e.target.closest && e.target.closest('.btn');
+        if (!b || b.disabled) return;
+        var r = b.getBoundingClientRect(), d = Math.max(r.width, r.height) * 2.2;
+        var s = document.createElement('span');
+        s.className = 'fx-ripple';
+        s.style.cssText = 'width:' + d + 'px;height:' + d + 'px;left:' + (e.clientX - r.left - d / 2) + 'px;top:' + (e.clientY - r.top - d / 2) + 'px';
+        b.appendChild(s);
+        setTimeout(function () { s.remove(); }, 650);
+      });
+    }
+  }
+
   function boot() {
+    initEffects();
     nav().then(function (data) {
       // Brand colour chosen in Admin -> Settings (cached so the next page paints in the right colour)
       var accent = (data.settings && data.settings.brand_color) || '';
