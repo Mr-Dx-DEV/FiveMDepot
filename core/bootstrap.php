@@ -235,12 +235,6 @@ function audit(string $action, ?string $entityType = null, ?string $entityId = n
     ]);
 }
 
-function json_col($v): array
-{
-  if (is_array($v)) return $v;
-  $d = json_decode((string)$v, true);
-  return is_array($d) ? $d : [];
-}
 
 // ---------- Uploads ----------
 /**

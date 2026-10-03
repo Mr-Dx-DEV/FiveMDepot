@@ -79,8 +79,13 @@ route('POST', 'admin/orders/{id}/verify', function ($p) {
     $pdo->prepare("INSERT INTO download_codes (id, order_id, user_id, code, expires_at) VALUES (?, ?, ?, ?, NOW() + INTERVAL ? DAY)
                    ON DUPLICATE KEY UPDATE code = VALUES(code), expires_at = VALUES(expires_at)")
       ->execute([uuid(), $o['id'], $o['user_id'], $code, $days]);
-    $pdo->prepare("UPDATE products p JOIN order_products op ON op.product_id = p.id SET p.downloads = p.downloads + 1 WHERE op.order_id = ?")
-      ->execute([$o['id']]);
+    // Credit sellers (not admin-owned products) minus the platform fee
+    $fee = min(100, max(0, (float)setting('platform_fee_percent', '0')));
+    $pdo->prepare("UPDATE users u JOIN (
+                     SELECT p.user_id, SUM(op.price_paid) AS amt FROM order_products op JOIN products p ON p.id = op.product_id
+                     JOIN users s ON s.id = p.user_id AND s.role <> 'ADMIN' WHERE op.order_id = ? GROUP BY p.user_id
+                   ) x ON x.user_id = u.id SET u.wallet_balance = u.wallet_balance + ROUND(x.amt * (100 - ?) / 100, 2)")
+      ->execute([$o['id'], $fee]);
   } else {
     $pdo->prepare("UPDATE orders SET status = 'REJECTED', verified_by = ?, verified_at = NOW(), admin_note = ? WHERE id = ?")
       ->execute([$admin['id'], $note, $o['id']]);

@@ -161,7 +161,7 @@
     ['Announcement bar', [['topbar_text', 'Text (leave empty to hide)'], ['topbar_link', 'Link']]],
     ['Social links', [['social_discord', 'Discord invite (https://…)'], ['social_github', 'GitHub (https://…)'], ['social_youtube', 'YouTube (https://…)'], ['discord_widget_server_id', 'Discord widget server ID']]],
     ['Payments', [['bkash_number', 'bKash number'], ['nagad_number', 'Nagad number'], ['bank_name', 'Bank name'], ['bank_account', 'Bank account'], ['bank_branch', 'Bank branch'], ['download_expiry_days', 'Download link valid for (days)']]],
-    ['Features', [['seller_auto_approve', 'Auto-approve new sellers', 'bool'], ['newsletter_enabled', 'Newsletter signup', 'bool'], ['free_assets_enabled', 'Free assets section', 'bool'], ['cookie_consent_text', 'Cookie banner text', 'area']]]
+    ['Features', [['seller_auto_approve', 'Auto-approve new sellers', 'bool'], ['platform_fee_percent', 'Platform fee on seller sales (%) — sellers get the rest in their wallet'], ['newsletter_enabled', 'Newsletter signup', 'bool'], ['free_assets_enabled', 'Free assets section', 'bool'], ['cookie_consent_text', 'Cookie banner text', 'area']]]
   ];
   A.page('/settings', function (el) {
     var dirty = false;

@@ -33,6 +33,7 @@ INSERT IGNORE INTO `site_settings` (`id`, `key`, `value`, `description`) VALUES
 ('s0000000-0000-0000-0000-000000000030', 'topbar_text', '', 'Announcement bar text (empty = hidden)'),
 ('s0000000-0000-0000-0000-000000000031', 'topbar_link', '', 'Announcement bar link'),
 ('s0000000-0000-0000-0000-000000000032', 'currency_symbol', '$', 'Currency symbol shown on prices'),
-('s0000000-0000-0000-0000-000000000033', 'download_expiry_days', '30', 'Days a download link stays valid');
+('s0000000-0000-0000-0000-000000000033', 'download_expiry_days', '30', 'Days a download link stays valid'),
+('s0000000-0000-0000-0000-000000000034', 'platform_fee_percent', '0', 'Percent the store keeps from seller sales');
 
 INSERT IGNORE INTO `migrations` (`name`) VALUES ('002_admin');

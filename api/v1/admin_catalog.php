@@ -368,7 +368,13 @@ function product_payload(?string $id, bool $asSeller): array
   $status = strtoupper(str_in('status', 20) ?: 'DRAFT');
   if (!in_array($status, $statuses, true)) $status = $asSeller ? 'PENDING' : 'DRAFT';
 
-  $shots = array_values(array_filter(arr_in('screenshots'), fn($s) => is_string($s) && preg_match('#^(uploads/|images/|https://)#', $s)));
+  $shots = array_values(array_filter(arr_in('screenshots'), fn($s) => is_string($s)
+    && preg_match('#^(uploads/(products|categories|site)/[A-Za-z0-9._-]+|images/[A-Za-z0-9/._-]+|https://[^\s"\'<>]+)$#', $s)));
+  $file = str_in('file_path', 500);
+  // product files must be our own private uploads (or an external https link)
+  if ($file !== '' && !preg_match('#^(uploads/files/[a-f0-9]{24}\.(zip|rar|7z)|https://[^\s"\'<>]+)$#', $file)) {
+    fail(422, 'Invalid download file', ['file_path' => 'Upload the file again']);
+  }
   $pack = arr_in('pack_meta');
   $packClean = $type === 'server_pack' ? [
     'resources' => (int)($pack['resources'] ?? 0),
@@ -397,7 +403,7 @@ function product_payload(?string $id, bool $asSeller): array
     'seo_title' => str_in('seo_title', 255) ?: null,
     'seo_description' => str_in('seo_description', 500) ?: null,
     'pack_meta' => $packClean ? json_encode($packClean) : null,
-    'files' => str_in('file_path', 500) ?: null,
+    'files' => $file ?: null,
   ];
 }
 

@@ -7,12 +7,16 @@
  *   GET api/store.php?r=category&slug=scripts    category page (slug=all for every product)
  *        &tags=qbcore,police  &min=0&max=50  &q=search  &sort=featured|newest|price-low|price-high|popular
  *        &page=1&per_page=24
+ *   GET api/store.php?r=product&slug=police-job     product page
+ *   GET api/store.php?r=seller&id=<user id>         public seller profile
+ *   GET api/store.php?r=docs&type=blog[&slug=x]     blog / tutorials / tools / docs
  *
  * A product is in a category when it has a tag owned by that category
  * or by any of its sub-categories (see migrations/001_store_rebuild.sql).
  */
 
 require_once __DIR__ . '/../core/Db.php';
+require_once __DIR__ . '/../core/catalog.php';
 
 header('Content-Type: application/json; charset=utf-8');
 header('Cache-Control: public, max-age=60');
@@ -22,6 +26,9 @@ try {
     case 'nav':      $data = routeNav(); break;
     case 'home':     $data = routeHome(); break;
     case 'category': $data = routeCategory(); break;
+    case 'product':  $data = routeProduct(); break;
+    case 'seller':   $data = routeSeller(); break;
+    case 'docs':     $data = routeDocs(); break;
     default:
       respondError(404, 'Unknown route');
   }
@@ -367,6 +374,119 @@ function tagFilters(string $whereSql, array $params): array
     $groups[$g]['tags'][] = ['name' => $r['name'], 'slug' => $r['slug'], 'color' => $r['color'], 'count' => (int)$r['cnt']];
   }
   return array_values($groups);
+}
+
+// ============================================================
+// Product page, seller profile, docs
+// ============================================================
+
+/** Legacy descriptions were stored HTML-escaped plain text; new ones are sanitized HTML. */
+function description_html(?string $d): string
+{
+  $d = (string)$d;
+  if ($d === '') return '';
+  if (!preg_match('/<[a-z][\s\S]*>/i', $d)) {
+    return nl2br(htmlspecialchars(html_entity_decode($d, ENT_QUOTES, 'UTF-8'), ENT_QUOTES, 'UTF-8'));
+  }
+  return clean_html($d);
+}
+
+function video_embed(?string $url): ?string
+{
+  $url = (string)$url;
+  if (preg_match('#(?:youtube\.com/(?:watch\?v=|shorts/|embed/)|youtu\.be/)([A-Za-z0-9_-]{6,15})#', $url, $m)) {
+    return 'https://www.youtube-nocookie.com/embed/' . $m[1];
+  }
+  if (preg_match('#vimeo\.com/(\d+)#', $url, $m)) return 'https://player.vimeo.com/video/' . $m[1];
+  return null;
+}
+
+function routeProduct(): array
+{
+  $slug = (string)($_GET['slug'] ?? '');
+  $p = Db::one("SELECT p.*, u.name AS seller_name, u.role AS seller_role FROM products p JOIN users u ON u.id = p.user_id
+                WHERE (p.slug = ? OR p.id = ?) AND p.status = 'PUBLISHED'", [$slug, $slug]);
+  if (!$p) respondError(404, 'Product not found');
+
+  $card = productRows('p.id = ?', [$p['id']], 'featured', 1)[0];
+  $tagIds = array_column(Db::all("SELECT tag_id FROM product_tags WHERE product_id = ?", [$p['id']]), 'tag_id');
+  $cats = array_values(array_filter(categories_for_tags($tagIds), fn($c) => $c['direct']));
+  $breadcrumb = [];
+  if ($cats) {
+    $breadcrumb = array_map(fn($c) => ['name' => $c['name'], 'slug' => $c['slug']], cat_path($cats[0]['id']));
+  }
+  $reviews = Db::all("SELECT r.rating, r.comment, r.created_at, u.name FROM reviews r JOIN users u ON u.id = r.user_id
+                      WHERE r.product_id = ? AND r.is_hidden = 0 ORDER BY r.created_at DESC LIMIT 30", [$p['id']]);
+  $dist = array_fill(1, 5, 0);
+  foreach (Db::all("SELECT rating, COUNT(*) c FROM reviews WHERE product_id = ? AND is_hidden = 0 GROUP BY rating", [$p['id']]) as $r) {
+    $dist[(int)$r['rating']] = (int)$r['c'];
+  }
+  $related = [];
+  if ($tagIds) {
+    $related = productRows(
+      "p.id <> ? AND p.id IN (SELECT product_id FROM product_tags WHERE tag_id IN (" . Db::in($tagIds) . "))",
+      array_merge([$p['id']], $tagIds), 'popular', 4);
+  }
+  $seller = Db::one("SELECT sp.bio, (SELECT COUNT(*) FROM products x WHERE x.user_id = ? AND x.status = 'PUBLISHED') AS products
+                     FROM seller_profiles sp WHERE sp.user_id = ?", [$p['user_id'], $p['user_id']]);
+
+  return $card + [
+    'description_html' => description_html($p['description']),
+    'install_html' => description_html($p['install_guide'] ?? ''),
+    'features' => json_col($p['features'] ?? null),
+    'compatibility' => json_col($p['compatibility'] ?? null),
+    'screenshots' => json_col($p['screenshots'] ?? null),
+    'changelog' => (string)($p['changelog'] ?? ''),
+    'video_embed' => video_embed($p['video_url'] ?? ''),
+    'pack' => $p['type'] === 'server_pack' ? (json_col($p['pack_meta'] ?? null) ?: null) : null,
+    'downloads' => (int)$p['downloads'],
+    'updated_at' => $p['updated_at'],
+    'seo_title' => $p['seo_title'] ?? null,
+    'seo_description' => $p['seo_description'] ?? null,
+    'seller_info' => [
+      'id' => $p['user_id'], 'name' => $p['seller_name'], 'official' => $p['seller_role'] === 'ADMIN',
+      'bio' => $seller['bio'] ?? null, 'products' => (int)($seller['products'] ?? 0),
+    ],
+    'categories' => array_map(fn($c) => ['name' => $c['name'], 'slug' => $c['slug'], 'path' => $c['path']], $cats),
+    'breadcrumb' => $breadcrumb,
+    'reviews' => $reviews,
+    'rating_distribution' => $dist,
+    'related' => $related,
+  ];
+}
+
+function routeSeller(): array
+{
+  $id = (string)($_GET['id'] ?? '');
+  $u = Db::one("SELECT u.id, u.name, u.role, u.created_at, sp.bio, sp.discord_tag FROM users u
+                LEFT JOIN seller_profiles sp ON sp.user_id = u.id WHERE u.id = ? AND u.role IN ('SELLER','ADMIN')", [$id]);
+  if (!$u) respondError(404, 'Seller not found');
+  $rating = Db::one("SELECT AVG(r.rating) a, COUNT(*) c FROM reviews r JOIN products p ON p.id = r.product_id
+                     WHERE p.user_id = ? AND r.is_hidden = 0", [$id]);
+  return [
+    'seller' => ['id' => $u['id'], 'name' => $u['name'], 'official' => $u['role'] === 'ADMIN', 'joined' => $u['created_at'],
+                 'bio' => $u['bio'], 'discord' => $u['discord_tag'], 'rating' => round((float)$rating['a'], 1), 'reviews' => (int)$rating['c']],
+    'products' => productRows('p.user_id = ?', [$id], 'popular', 60),
+  ];
+}
+
+function routeDocs(): array
+{
+  $type = in_array($_GET['type'] ?? '', ['blog', 'tutorial', 'tool', 'doc'], true) ? $_GET['type'] : 'doc';
+  $slug = (string)($_GET['slug'] ?? '');
+  if ($slug !== '') {
+    $d = Db::one("SELECT d.id, d.title, d.slug, d.type, d.category, d.content, d.thumbnail, d.views, d.created_at, d.updated_at, u.name AS author
+                  FROM documentation d LEFT JOIN users u ON u.id = d.author_id WHERE d.slug = ? AND d.is_published = 1", [$slug]);
+    if (!$d) respondError(404, 'Article not found');
+    Db::pdo()->prepare("UPDATE documentation SET views = views + 1 WHERE id = ?")->execute([$d['id']]);
+    $d['content_html'] = description_html($d['content']);
+    unset($d['content']);
+    return ['article' => $d];
+  }
+  $rows = Db::all("SELECT d.title, d.slug, d.type, d.category, d.excerpt, d.thumbnail, d.views, d.created_at, u.name AS author
+                   FROM documentation d LEFT JOIN users u ON u.id = d.author_id WHERE d.type = ? AND d.is_published = 1
+                   ORDER BY d.created_at DESC LIMIT 100", [$type]);
+  return ['type' => $type, 'articles' => $rows];
 }
 
 // ============================================================

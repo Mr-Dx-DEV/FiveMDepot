@@ -59,3 +59,11 @@ final class Db
     return implode(', ', array_fill(0, max(1, count($values)), '?'));
   }
 }
+
+/** Decode a JSON column into an array ([] for NULL/invalid). */
+function json_col($v): array
+{
+  if (is_array($v)) return $v;
+  $d = json_decode((string)$v, true);
+  return is_array($d) ? $d : [];
+}
