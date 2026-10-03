@@ -1,8 +1,9 @@
 <!DOCTYPE html>
 <html lang="en" data-theme="dark">
 <head>
-  <link rel="icon" type="image/svg+xml" href="favicon.svg">
   <meta charset="UTF-8">
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
+  <script>try{if(localStorage.getItem('fivedepot_theme')==='light')document.documentElement.setAttribute('data-theme','light')}catch(e){}</script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Log in or create an account — FiveMDepot</title>
   <meta name="description" content="Log in to download your purchases or create a FiveMDepot account.">
@@ -12,7 +13,6 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/store.css">
-  <script>try{if(localStorage.getItem('fivedepot_theme')==='light')document.documentElement.setAttribute('data-theme','light')}catch(e){}</script>
   <style>
     .auth { min-height: calc(100vh - var(--header-h)); display: grid; grid-template-columns: 1fr 1fr; }
     .auth-art { position: relative; overflow: hidden; background: url("images/store/hero-city.svg") center bottom / cover no-repeat, var(--bg-2); border-right: 1px solid var(--border); display: flex; align-items: flex-end; padding: 48px; }
@@ -93,7 +93,6 @@
   (function () {
     'use strict';
     var params = new URLSearchParams(location.search);
-    var csrf = null;
 
     // Only allow redirects to pages on this site (no protocol, no //host)
     function safeNext(n) {
@@ -101,9 +100,6 @@
       return n.replace(/^\/+/, '');
     }
 
-    function me() {
-      return fetch('api/v1.php?r=auth/me', { credentials: 'same-origin' }).then(function (r) { return r.json(); }).then(function (j) { csrf = j.data.csrf; return j.data.user; });
-    }
 
     function show(which) {
       ['login', 'register'].forEach(function (k) {
@@ -143,23 +139,17 @@
       (first || form.querySelector('input')).focus();
     }
 
+    // Uses the shared Store API client (one session, CSRF + automatic retry)
     function submit(form, route, payload) {
       var btn = form.querySelector('[type=submit]'), label = btn.textContent;
       btn.disabled = true; btn.textContent = 'Please wait…';
       clearErrors(form);
-      var send = function (retry) {
-        return fetch('api/v1.php?r=' + route, {
-          method: 'POST', credentials: 'same-origin',
-          headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf || '' },
-          body: JSON.stringify(payload)
-        }).then(function (r) { return r.json().then(function (j) { return { status: r.status, body: j }; }); }).then(function (res) {
-          if (res.status === 419 && !retry) return me().then(function () { return send(true); });
-          if (res.body.error) { showErrors(form, res.body.error.message, res.body.error.fields); return; }
-          location.href = safeNext(params.get('next')) || res.body.data.redirect;
-        });
-      };
-      send(false).catch(function () { showErrors(form, 'Could not reach the server. Check your connection and try again.'); })
-        .finally(function () { btn.disabled = false; btn.textContent = label; });
+      window.Store.v1('POST', route, payload).then(function (data) {
+        location.href = safeNext(params.get('next')) || data.redirect;
+      }).catch(function (err) {
+        showErrors(form, err.status ? err.message : 'Could not reach the server. Check your connection and try again.', err.fields);
+        btn.disabled = false; btn.textContent = label;
+      });
     }
 
     document.getElementById('login').addEventListener('submit', function (e) {
@@ -178,7 +168,7 @@
       submit(f, 'auth/register', { name: f.name.value.trim(), email: f.email.value.trim(), password: f.password.value, confirm_password: f.confirm_password.value, want_seller: f.want_seller.checked });
     });
 
-    me().then(function (user) {
+    window.Store.me().then(function (user) {
       if (user) { location.replace(safeNext(params.get('next')) || user.dashboard); return; }
       if (params.get('mode') === 'register') show('register');
     }).catch(function () {});

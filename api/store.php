@@ -427,8 +427,9 @@ function routeProduct(): array
       "p.id <> ? AND p.id IN (SELECT product_id FROM product_tags WHERE tag_id IN (" . Db::in($tagIds) . "))",
       array_merge([$p['id']], $tagIds), 'popular', 4);
   }
-  $seller = Db::one("SELECT sp.bio, (SELECT COUNT(*) FROM products x WHERE x.user_id = ? AND x.status = 'PUBLISHED') AS products
-                     FROM seller_profiles sp WHERE sp.user_id = ?", [$p['user_id'], $p['user_id']]);
+  $seller = Db::one("SELECT (SELECT bio FROM seller_profiles WHERE user_id = ?) AS bio,
+                            (SELECT COUNT(*) FROM products x WHERE x.user_id = ? AND x.status = 'PUBLISHED') AS products",
+                    [$p['user_id'], $p['user_id']]);
 
   return $card + [
     'description_html' => description_html($p['description']),
@@ -495,7 +496,7 @@ function routeDocs(): array
 
 function publicSettings(): array
 {
-  $keys = ['site_name', 'site_tagline', 'social_discord', 'social_github', 'social_youtube', 'since_year'];
+  $keys = ['site_name', 'site_tagline', 'social_discord', 'social_github', 'social_youtube', 'since_year', 'topbar_text', 'topbar_link'];
   $out = array_fill_keys($keys, '');
   foreach (Db::all("SELECT `key`, `value` FROM site_settings WHERE `key` IN (" . Db::in($keys) . ")", $keys) as $r) {
     $out[$r['key']] = (string)$r['value'];

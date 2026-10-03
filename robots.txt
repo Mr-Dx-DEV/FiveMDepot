@@ -1,0 +1,11 @@
+User-agent: *
+Disallow: /admin/
+Disallow: /dashboard/
+Disallow: /api/
+Disallow: /uploads/files/
+Disallow: /uploads/proofs/
+Disallow: /checkout.html
+Disallow: /cart.html
+Disallow: /auth.html
+
+Sitemap: https://fivemdepot.com/sitemap.php

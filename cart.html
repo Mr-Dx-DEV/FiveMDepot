@@ -1,174 +1,27 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
-  <link rel="icon" type="image/svg+xml" href="favicon.svg">
   <meta charset="UTF-8">
+  <script>try{if(localStorage.getItem('fivedepot_theme')==='light')document.documentElement.setAttribute('data-theme','light')}catch(e){}</script>
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Shopping Cart — FiveMDepot</title>
-  <meta name="description" content="Your shopping cart at FiveMDepot marketplace.">
+  <title>Your cart — FiveMDepot</title>
+  <meta name="robots" content="noindex">
+  <meta name="theme-color" content="#0a0e17">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/main.css">
-  <style>
-    .cart-item { display:flex;gap:16px;padding:20px;align-items:center; }
-    .cart-item-image { width:120px;height:75px;border-radius:var(--radius-sm);overflow:hidden;flex-shrink:0;background:var(--bg-tertiary);display:flex;align-items:center;justify-content:center;font-size:2rem;opacity:0.3; }
-    .cart-item-image img { width:100%;height:100%;object-fit:cover; }
-    .cart-item-info { flex:1;min-width:0; }
-    .cart-item-info h3 { font-family:var(--font-heading);font-size:1rem;font-weight:600;margin-bottom:4px; }
-    .cart-item-info p { font-size:0.875rem;color:var(--text-secondary); }
-    .cart-remove { color:var(--text-muted);transition:color var(--duration-fast);padding:8px; }
-    .cart-remove:hover { color:#ef4444; }
-    .checkout-summary { padding:24px; }
-    .checkout-summary h3 { font-family:var(--font-heading);font-size:1.125rem;font-weight:600;margin-bottom:16px; }
-    .checkout-line { display:flex;justify-content:space-between;padding:8px 0;font-size:0.9375rem;color:var(--text-secondary); }
-    .checkout-total { display:flex;justify-content:space-between;padding:16px 0 0;border-top:1px solid var(--border);margin-top:8px;font-weight:700;font-size:1.25rem; }
-    .checkout-total .amount { color:var(--gold); }
-  </style>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/store.css">
+  <link rel="stylesheet" href="css/pages.css">
 </head>
 <body>
-
-  <nav class="navbar" id="navbar">
-    <div class="container navbar-inner">
-      <a href="/" class="navbar-logo">
-        <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" width="36" height="36">
-          <defs><linearGradient id="lb" x1="0" y1="0" x2="40" y2="40"><stop offset="0%" stop-color="#f97316"/><stop offset="50%" stop-color="#fb923c"/><stop offset="100%" stop-color="#f97316"/></linearGradient></defs>
-          <rect x="2" y="2" width="36" height="36" rx="10" stroke="url(#lb)" stroke-width="2.5" fill="none"/>
-          <path d="M12 28V14l8 6 8-6v14" stroke="url(#lb)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
-        </svg>
-        <span class="gradient-gold">FiveMDepot</span>
-      </a>
-      <div class="navbar-actions">
-        <button class="theme-toggle" id="themeToggle" aria-label="Toggle theme" title="Toggle theme">
-          <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
-          <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
-        </button>
-        <a href="shop.html" class="btn btn-sm btn-outline-gold">Continue Shopping</a>
-      </div>
-    </div>
-  </nav>
-
-  <section style="padding-top:calc(var(--header-height) + 48px);padding-bottom:24px;">
-    <div class="container">
-      <h1 class="heading-lg reveal"><span class="gradient-gold">Shopping</span> Cart</h1>
-    </div>
-  </section>
-
-  <section class="section" style="padding-top:0;">
-    <div class="container">
-      <div id="cart-content" style="display:grid;grid-template-columns:1fr 380px;gap:32px;max-width:960px;margin:0 auto;">
-        <!-- Items -->
-        <div id="cart-items" style="display:flex;flex-direction:column;gap:12px;"></div>
-        <!-- Summary -->
-        <div id="cart-summary" style="display:none;">
-          <div class="card checkout-summary">
-            <h3>Order Summary</h3>
-            <div id="summary-lines"></div>
-            <!-- Promo Code -->
-            <div id="promo-section" style="margin-top:16px;">
-              <div class="promo-input-group">
-                <input type="text" id="promo-code-input" placeholder="Promo code" style="padding:10px 14px;border-radius:var(--radius-md);background:var(--bg-input);border:1px solid var(--border);color:var(--text-primary);font-size:0.875rem;">
-                <button type="button" id="promo-apply-btn" class="btn btn-sm btn-outline-gold">Apply</button>
-              </div>
-              <div id="promo-message" style="font-size:0.8125rem;margin-top:6px;"></div>
-            </div>
-            <div class="checkout-total">
-              <span>Total</span>
-              <span class="amount" id="cart-total">$0.00</span>
-            </div>
-            <a href="checkout.html" class="btn btn-primary" style="width:100%;margin-top:20px;">Proceed to Checkout</a>
-            <p style="text-align:center;font-size:0.75rem;color:var(--text-muted);margin-top:12px;">Secure checkout via bKash / Nagad / Bank Transfer</p>
-          </div>
-        </div>
-      </div>
-      <!-- Empty state -->
-      <div id="cart-empty" style="display:none;text-align:center;padding:60px 20px;">
-        <div style="font-size:4rem;margin-bottom:16px;opacity:0.2;">&#128722;</div>
-        <h3 class="heading-sm" style="margin-bottom:8px;">Your cart is empty</h3>
-        <p class="text-secondary" style="margin-bottom:24px;">Browse our marketplace and add assets to your cart.</p>
-        <a href="shop.html" class="btn btn-primary">Browse Assets</a>
-      </div>
-    </div>
-  </section>
-
-  <script src="js/main.js"></script>
-  <script>
-  (function(){
-    var items = window.FiveMDepotCart ? window.FiveMDepotCart.getItems() : [];
-    var itemsEl = document.getElementById('cart-items');
-    var summaryEl = document.getElementById('cart-summary');
-    var emptyEl = document.getElementById('cart-empty');
-    var summaryLines = document.getElementById('summary-lines');
-    var totalEl = document.getElementById('cart-total');
-
-    if(items.length === 0) {
-      itemsEl.style.display = 'none';
-      summaryEl.style.display = 'none';
-      emptyEl.style.display = 'block';
-    } else {
-      emptyEl.style.display = 'none';
-      itemsEl.style.display = 'flex';
-      summaryEl.style.display = 'block';
-
-      itemsEl.innerHTML = items.map(function(item){
-        return '<div class="card cart-item">' +
-          '<div class="cart-item-image">' + (item.image ? '<img src="'+item.image+'" alt="">': '&#128187;') + '</div>' +
-          '<div class="cart-item-info">' +
-            '<h3>' + item.title + '</h3>' +
-            '<p>by ' + item.seller.name + '</p>' +
-            '<span class="text-gold" style="font-weight:700;">$' + item.price.toFixed(2) + '</span>' +
-          '</div>' +
-          '<button class="cart-remove" onclick="removeItem(\''+item.id+'\')" aria-label="Remove '+item.title+'">&#10005;</button>' +
-        '</div>';
-      }).join('');
-
-      summaryLines.innerHTML = items.map(function(item){
-        return '<div class="checkout-line"><span class="truncate" style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + item.title + '</span><span>$' + item.price.toFixed(2) + '</span></div>';
-      }).join('');
-
-      var total = items.reduce(function(s,i){return s+i.price;},0);
-      totalEl.textContent = '$' + total.toFixed(2);
-    }
-
-    window.removeItem = function(id) {
-      if(window.FiveMDepotCart) window.FiveMDepotCart.removeItem(id);
-      location.reload();
-    };
-
-    // Promo code apply
-    var promoBtn = document.getElementById('promo-apply-btn');
-    var promoInput = document.getElementById('promo-code-input');
-    var promoMsg = document.getElementById('promo-message');
-    if (promoBtn && promoInput) {
-      promoBtn.addEventListener('click', function() {
-        var code = promoInput.value.trim();
-        if (!code) { promoMsg.textContent = 'Please enter a promo code'; promoMsg.style.color = '#ef4444'; return; }
-        fetch('api/promos.php?action=validate', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ code: code, total: parseFloat(totalEl.textContent.replace('$','')) })
-        })
-        .then(function(r){ return r.json(); })
-        .then(function(data) {
-          if (data.valid) {
-            promoMsg.textContent = '✓ Code applied! Discount: $' + data.discount.toFixed(2);
-            promoMsg.style.color = 'var(--cyan)';
-            // Update total with discount
-            var originalTotal = parseFloat(totalEl.textContent.replace('$',''));
-            var discounted = originalTotal - data.discount;
-            totalEl.textContent = '$' + discounted.toFixed(2);
-          } else {
-            promoMsg.textContent = data.error || 'Invalid code';
-            promoMsg.style.color = '#ef4444';
-          }
-        })
-        .catch(function(){ promoMsg.textContent = 'Validation failed'; promoMsg.style.color = '#ef4444'; });
-      });
-    }
-  })();
-
-  // Theme Toggle
-  if (typeof ThemeToggle !== 'undefined') ThemeToggle.init();
-  </script>
+  <div id="site-header"></div>
+  <main class="container page-wrap">
+    <h1 class="section-title" style="margin-bottom:22px">Your cart</h1>
+    <div id="cart"><div class="skeleton" style="height:240px"></div></div>
+  </main>
+  <div id="site-footer"></div>
+  <script src="js/store.js"></script>
+  <script src="js/cart.js"></script>
 </body>
 </html>

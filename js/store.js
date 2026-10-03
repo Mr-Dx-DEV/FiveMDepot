@@ -108,6 +108,44 @@
     });
   }
 
+  // API v1 (auth/account/checkout). Non-GET calls carry the CSRF token; a 419 refreshes it once.
+  var csrf = null, mePromise = null;
+  function me(force) {
+    if (!mePromise || force) {
+      mePromise = fetch('api/v1.php?r=auth/me', { credentials: 'same-origin' })
+        .then(function (r) { return r.json(); })
+        .then(function (j) { csrf = j.data.csrf; return j.data.user; })
+        .catch(function () { return null; });
+    }
+    return mePromise;
+  }
+  function v1(method, path, data, retried) {
+    var ready = method === 'GET' || csrf ? Promise.resolve() : me();
+    return ready.then(function () {
+      var opts = { method: method, credentials: 'same-origin', headers: {} };
+      if (method !== 'GET') opts.headers['X-CSRF-Token'] = csrf || '';
+      if (data instanceof FormData) opts.body = data;
+      else if (data !== undefined) { opts.headers['Content-Type'] = 'application/json'; opts.body = JSON.stringify(data); }
+      return fetch('api/v1.php?r=' + path, opts);
+    }).then(function (res) {
+      return res.json().catch(function () { return {}; }).then(function (body) {
+        if (res.status === 419 && !retried) return me(true).then(function () { return v1(method, path, data, true); });
+        if (!res.ok || body.error) {
+          var e = new Error((body.error && body.error.message) || 'Something went wrong (' + res.status + ')');
+          e.status = res.status; e.fields = (body.error && body.error.fields) || {};
+          throw e;
+        }
+        return body.data;
+      });
+    });
+  }
+  // Site root = folder that contains js/store.js (works from sub-folders and sub-directory installs)
+  var ROOT = (document.currentScript && document.currentScript.src || location.href).replace(/js\/store\.js.*$/, '');
+  function loginUrl(next) {
+    var here = location.href.indexOf(ROOT) === 0 ? location.href.slice(ROOT.length) : 'index.html';
+    return ROOT + 'auth.html?next=' + encodeURIComponent(next || here);
+  }
+
   var navPromise = null;
   function nav() {
     if (!navPromise) {
@@ -165,6 +203,11 @@
       Cart.save(items);
       toast('Added to cart', 'success');
     },
+    remove: function (id) {
+      Cart.save(Cart.items().filter(function (i) { return i.id !== id; }));
+    },
+    clear: function () { Cart.save([]); },
+    has: function (id) { return Cart.items().some(function (i) { return i.id === id; }); },
     renderCount: function () {
       var n = Cart.items().length;
       document.querySelectorAll('[data-cart-count]').forEach(function (b) {
@@ -177,18 +220,24 @@
 
   // ---------- Wishlist ----------
   function toggleWish(btn, productId) {
-    var on = btn.classList.contains('on');
-    fetch('api/wishlist.php?action=' + (on ? 'remove' : 'add'), {
-      method: 'POST', credentials: 'same-origin',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ product_id: productId })
-    }).then(function (res) {
-      if (res.status === 401) { toast('Log in to use your wishlist'); return; }
-      if (res.ok || res.status === 409) {
-        btn.classList.toggle('on', !on);
-        toast(on ? 'Removed from wishlist' : 'Saved to wishlist', 'success');
-      } else { toast('Could not update wishlist', 'error'); }
-    }).catch(function () { toast('Could not update wishlist', 'error'); });
+    if (!Store.user) { location.href = loginUrl(); return; }
+    var on = !btn.classList.contains('on');
+    btn.classList.toggle('on', on);
+    v1('POST', 'account/wishlist/' + encodeURIComponent(productId), { on: on }).then(function () {
+      toast(on ? 'Saved to wishlist' : 'Removed from wishlist', 'success');
+    }).catch(function (e) { btn.classList.toggle('on', !on); toast(e.message, 'error'); });
+  }
+  /** Mark hearts of wishlisted products on the current page. */
+  function syncWishlist() {
+    if (!Store.user) return;
+    var ids = Object.keys(cardData);
+    if (!ids.length) return;
+    v1('GET', 'account/status&ids=' + ids.map(encodeURIComponent).join(',')).then(function (st) {
+      document.querySelectorAll('[data-wish]').forEach(function (b) {
+        b.hidden = false;
+        b.classList.toggle('on', st.wishlist.indexOf(b.getAttribute('data-wish')) !== -1);
+      });
+    }).catch(function () {});
   }
 
   // ---------- Product card ----------
@@ -292,7 +341,9 @@
 
     var name = (data.settings && data.settings.site_name) || 'FiveMDepot';
 
-    el.innerHTML =
+    var s0 = data.settings || {};
+    var topbar = s0.topbar_text ? '<div class="topbar">' + (s0.topbar_link ? '<a href="' + esc(s0.topbar_link) + '">' + esc(s0.topbar_text) + '</a>' : esc(s0.topbar_text)) + '</div>' : '';
+    el.innerHTML = topbar +
       '<header class="header"><div class="container header-inner">' +
         '<a class="logo" href="index.html" aria-label="' + esc(name) + ' home">' + logoHtml(name) + '</a>' +
         '<nav class="nav" aria-label="Main">' + links + '</nav>' +
@@ -372,18 +423,15 @@
   }
 
   function checkAuth() {
-    fetch('api/v1.php?r=auth/me', { credentials: 'same-origin' })
-      .then(function (r) { return r.json(); })
-      .then(function (j) {
-        var d = j && j.data;
-        if (!d || !d.user) return;
-        Store.user = d.user;
-        Store.csrf = d.csrf;
-        var dash = d.user.dashboard;
-        var a = document.getElementById('accountBtn');
-        if (a) { a.href = dash; a.setAttribute('aria-label', 'My dashboard'); }
-        document.querySelectorAll('[data-wish]').forEach(function (b) { b.hidden = false; });
-      }).catch(function () {});
+    me().then(function (user) {
+      if (!user) return;
+      Store.user = user;
+      var a = document.getElementById('accountBtn');
+      if (a) { a.href = user.dashboard; a.setAttribute('aria-label', 'My account'); a.classList.add('is-in'); }
+      document.querySelectorAll('[data-wish]').forEach(function (b) { b.hidden = false; });
+      syncWishlist();
+      document.dispatchEvent(new CustomEvent('store:user', { detail: user }));
+    });
   }
 
   // ---------- Footer ----------
@@ -436,6 +484,7 @@
   var Store = window.Store = {
     api: api, nav: nav, esc: esc, icon: icon, money: money, qs: qs,
     catUrl: catUrl, productUrl: productUrl, icons: I, catIcon: catIcon, catArt: catArt,
-    productCard: productCard, cart: Cart, toast: toast, reveal: reveal, user: null
+    productCard: productCard, cart: Cart, toast: toast, reveal: reveal, user: null,
+    v1: v1, me: me, loginUrl: loginUrl, syncWishlist: syncWishlist
   };
 })();
