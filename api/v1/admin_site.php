@@ -66,7 +66,7 @@ route('GET', 'admin/dashboard', function () {
 });
 
 // ---------- Homepage builder ----------
-const HOMEPAGE_KEYS = ['hero', 'trust', 'categories', 'featured', 'server_pack', 'new', 'free', 'about', 'faq'];
+const HOMEPAGE_KEYS = ['hero', 'trust', 'categories', 'featured', 'server_pack', 'new', 'free', 'reviews', 'about', 'faq', 'community'];
 
 route('GET', 'admin/homepage', function () {
   require_role('ADMIN');

@@ -79,9 +79,26 @@ function routeHome(): array
     'new'        => productRows("1 = 1", [], 'newest', $limit('new', 8)),
     'free'       => productRows("p.price = 0", [], 'popular', $limit('free', 4)),
     'packs'      => productRows("p.type = 'server_pack'", [], 'featured', 3),
+    'popular'    => productRows("1 = 1", [], 'popular', $limit('featured', 8)),
+    // Best real reviews (4–5 stars with a comment); reviewer shown as first name + initial
+    'reviews'    => array_map(function ($r) {
+      $parts = preg_split('/\s+/', trim($r['name']));
+      $r['name'] = $parts[0] . (isset($parts[1]) ? ' ' . mb_substr($parts[1], 0, 1) . '.' : '');
+      return $r;
+    }, Db::all("SELECT r.rating, r.comment, r.created_at, u.name, p.title AS product, p.slug
+                FROM reviews r JOIN users u ON u.id = r.user_id JOIN products p ON p.id = r.product_id AND p.status = 'PUBLISHED'
+                WHERE r.is_hidden = 0 AND r.rating >= 4 AND CHAR_LENGTH(COALESCE(r.comment, '')) >= 15
+                ORDER BY r.rating DESC, r.created_at DESC LIMIT 6")),
+    // Most-used tags for the hero "popular" chips
+    'popular_tags' => Db::all("SELECT t.name, t.slug, COUNT(*) AS cnt FROM product_tags pt JOIN tags t ON t.id = pt.tag_id
+                               JOIN products p ON p.id = pt.product_id AND p.status = 'PUBLISHED'
+                               GROUP BY t.id, t.name, t.slug ORDER BY cnt DESC, t.name LIMIT 6"),
     'stats'      => [
       'products' => (int)Db::value("SELECT COUNT(*) FROM products WHERE status = 'PUBLISHED'"),
       'sellers'  => (int)Db::value("SELECT COUNT(DISTINCT user_id) FROM products WHERE status = 'PUBLISHED'"),
+      'downloads' => (int)Db::value("SELECT COALESCE(SUM(downloads), 0) FROM products WHERE status = 'PUBLISHED'"),
+      'reviews'  => (int)Db::value("SELECT COUNT(*) FROM reviews WHERE is_hidden = 0"),
+      'rating'   => round((float)Db::value("SELECT AVG(rating) FROM reviews WHERE is_hidden = 0"), 1),
     ],
   ];
 }

@@ -6,6 +6,7 @@
    2. `migrations/002_admin.sql` (admin panel fields, settings)
    3. `migrations/003_content.sql` (starter blog posts, tutorials, tools, docs and the
       Terms / Privacy / Refund policy pages — review the legal pages in Admin → Articles)
+   4. `migrations/004_home.sql` (homepage: customer reviews + Discord community sections)
 
    Both are safe to run more than once and delete nothing.
 3. **Upload** all files. Make sure `config.local.php` is uploaded next to `config.php`

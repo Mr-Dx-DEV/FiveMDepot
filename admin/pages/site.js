@@ -9,13 +9,15 @@
       ['primary_text', 'Main button text'], ['primary_link', 'Main button link'], ['secondary_text', 'Second button text'], ['secondary_link', 'Second button link']] },
     trust: { name: 'Trust numbers', fields: [['items', 'Numbers (value + label)', 'pairs']] },
     categories: { name: 'Shop by category', fields: [['heading', 'Heading'], ['subheading', 'Subheading']] },
-    featured: { name: 'Featured products', fields: [['heading', 'Heading'], ['limit', 'How many products', 'number']] },
+    featured: { name: 'Product showcase (Featured / New / Popular / Free tabs)', fields: [['heading', 'Heading'], ['limit', 'How many products per tab', 'number']] },
     server_pack: { name: 'Server pack showcase', fields: [['heading', 'Heading'], ['subheading', 'Subheading'], ['stats', 'Big numbers (value + label)', 'pairs'],
       ['benefits', 'Benefits', 'list'], ['cta_text', 'Button text'], ['cta_link', 'Button link']] },
     new: { name: 'New releases', fields: [['heading', 'Heading'], ['limit', 'How many products', 'number']] },
     free: { name: 'Free assets', fields: [['heading', 'Heading'], ['limit', 'How many products', 'number']] },
     about: { name: 'About', fields: [['heading', 'Heading'], ['body', 'Text', 'area']] },
-    faq: { name: 'FAQ', fields: [['heading', 'Heading']], note: 'Questions are edited on the <a class="link" href="#/faqs">FAQ page</a>.' }
+    reviews: { name: 'Customer reviews', fields: [['heading', 'Heading'], ['subheading', 'Subheading']], note: 'Shows your best 4–5 star reviews that have a comment. Hidden automatically until you have some.' },
+    faq: { name: 'FAQ', fields: [['heading', 'Heading']], note: 'Questions are edited on the <a class="link" href="#/faqs">FAQ page</a>.' },
+    community: { name: 'Discord community banner', fields: [['heading', 'Heading'], ['text', 'Text', 'area'], ['button', 'Button text']], note: 'Uses the Discord link from <a class="link" href="#/settings">Settings</a>. Hidden when no Discord link is set.' }
   };
 
   function pairRow(v) {
