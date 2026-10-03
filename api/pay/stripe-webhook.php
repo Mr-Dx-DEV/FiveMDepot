@@ -6,6 +6,7 @@
  */
 require_once __DIR__ . '/../../core/bootstrap.php';
 require_once __DIR__ . '/../../core/gateways.php';
+require_once __DIR__ . '/../../core/mail.php';
 
 $payload = file_get_contents('php://input');
 $sig = $_SERVER['HTTP_STRIPE_SIGNATURE'] ?? '';
@@ -34,6 +35,7 @@ if (in_array($type, ['checkout.session.completed', 'checkout.session.async_payme
   }
   if (fulfil_order($orderId, null, 'Paid by card (Stripe)', ['ref' => $s['id'] ?? null, 'amount' => $amount, 'currency' => $currency])) {
     audit('order_paid_stripe', 'order', $orderId);
+    mail_order_approved($orderId);
   }
 }
 echo 'ok';

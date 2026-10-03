@@ -56,6 +56,7 @@ function gateway_ready(string $id): bool
     case 'CRYPTO': return setting('pay_crypto_enabled', '1') === '1' && $c('NOWPAYMENTS_API_KEY') && $c('NOWPAYMENTS_IPN_SECRET');
     case 'SSLCOMMERZ': return setting('pay_sslcommerz_enabled', '1') === '1' && $c('SSLCZ_STORE_ID') && $c('SSLCZ_STORE_PASSWORD');
     case 'MANUAL': return setting('pay_manual_enabled', '1') === '1';
+    case 'BMC': return setting('pay_bmc_enabled', '1') === '1' && preg_match('#^https://#', setting('bmc_link', 'https://buymeacoffee.com/dxfivem'));
   }
   return false;
 }
@@ -69,6 +70,11 @@ function payment_methods(): array
     ['id' => 'SSLCOMMERZ', 'type' => 'online', 'name' => 'SSLCommerz', 'desc' => 'International & local cards, bKash, Nagad, Rocket'],
   ];
   $out = array_values(array_filter($all, fn($m) => gateway_ready($m['id'])));
+  if (gateway_ready('BMC')) {
+    // Pay on the external page, then submit transaction id / email / amount / note for manual verification
+    $out[] = ['id' => 'BMC', 'type' => 'external', 'name' => 'Buy Me a Coffee', 'desc' => 'Card, Apple Pay, Google Pay — verified by our team',
+              'link' => setting('bmc_link', 'https://buymeacoffee.com/dxfivem')];
+  }
   if (gateway_ready('MANUAL')) {
     foreach ([['BKASH', 'bKash', 'bkash_number'], ['NAGAD', 'Nagad', 'nagad_number'], ['BANK_TRANSFER', 'Bank transfer', 'bank_account']] as [$id, $name, $key]) {
       $v = setting($key);

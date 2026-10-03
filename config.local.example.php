@@ -25,3 +25,10 @@ defined('NOWPAYMENTS_SANDBOX') || define('NOWPAYMENTS_SANDBOX', false);
 defined('SSLCZ_STORE_ID') || define('SSLCZ_STORE_ID', '');
 defined('SSLCZ_STORE_PASSWORD') || define('SSLCZ_STORE_PASSWORD', '');
 defined('SSLCZ_SANDBOX') || define('SSLCZ_SANDBOX', true);
+
+// ---- Email (optional but recommended: emails from PHP mail() often land in spam)
+// Plesk: Mail -> create e.g. noreply@your-domain, then use its login here.
+// defined('SMTP_HOST') || define('SMTP_HOST', 'mail.your-domain.com');
+// defined('SMTP_PORT') || define('SMTP_PORT', 587);          // 587 = STARTTLS, 465 = SSL
+// defined('SMTP_USER') || define('SMTP_USER', 'noreply@your-domain.com');
+// defined('SMTP_PASS') || define('SMTP_PASS', 'mailbox-password');

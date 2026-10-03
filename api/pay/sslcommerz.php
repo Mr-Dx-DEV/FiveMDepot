@@ -8,6 +8,7 @@
  */
 require_once __DIR__ . '/../../core/bootstrap.php';
 require_once __DIR__ . '/../../core/gateways.php';
+require_once __DIR__ . '/../../core/mail.php';
 
 $action = $_GET['action'] ?? '';
 $orderId = (string)($_POST['tran_id'] ?? $_POST['value_a'] ?? '');
@@ -33,6 +34,7 @@ function sslcz_confirm(string $orderId): bool
   if (fulfil_order($orderId, null, 'Paid via SSLCommerz (' . ($v['card_type'] ?? 'online') . ')',
       ['ref' => $v['bank_tran_id'] ?? $valId, 'amount' => (float)$v['currency_amount'], 'currency' => 'USD'])) {
     audit('order_paid_sslcommerz', 'order', $orderId);
+    mail_order_approved($orderId);
   }
   return true;
 }

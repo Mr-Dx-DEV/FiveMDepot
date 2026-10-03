@@ -12,6 +12,7 @@
     STRIPE: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20M6 15h4"/></svg>',
     CRYPTO: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M9.5 8h4a2 2 0 0 1 0 4h-4m0 0h4.5a2 2 0 0 1 0 4H9.5M9.5 8v8M11 6v2m0 8v2"/></svg>',
     SSLCOMMERZ: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 2 4 5v6c0 5 3.4 9.4 8 11 4.6-1.6 8-6 8-11V5z"/><path d="m9 12 2 2 4-4"/></svg>',
+    BMC: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M17 8h1a4 4 0 0 1 0 8h-1M3 8h14v9a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4z"/><path d="M6 2v2M10 2v2M14 2v2"/></svg>',
     MANUAL: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="6" y="2" width="12" height="20" rx="2"/><path d="M11 18h2"/></svg>'
   };
   var MANUAL_INFO = {
@@ -30,6 +31,23 @@
   function details(id) {
     var m = method(id);
     if (!m) return '';
+    if (m.type === 'external') {
+      var email = (S.user && S.user.email) || '';
+      return '<div class="bmc-steps">' +
+        '<div class="bmc-step"><b class="bmc-n">1</b><div><b>Pay ' + S.money(quote.total) + ' on Buy Me a Coffee</b>' +
+          '<span class="small muted">Opens in a new tab. Pay with card, Apple Pay or Google Pay, then come back to this page.</span>' +
+          '<a class="btn btn-primary bmc-btn" href="' + esc(m.link) + '" target="_blank" rel="noopener">☕ Pay ' + S.money(quote.total) + ' on Buy Me a Coffee ↗</a></div></div>' +
+        '<div class="bmc-step"><b class="bmc-n">2</b><div style="width:100%"><b>Enter your payment details</b>' +
+          '<span class="small muted">Find them in the Buy Me a Coffee receipt email.</span>' +
+          '<div class="bmc-fields">' +
+            '<label class="field"><span>Transaction ID</span><input class="input" name="transaction_id" maxlength="100" autocomplete="off" placeholder="e.g. TXN-8F2K…"></label>' +
+            '<label class="field"><span>Payment email</span><input class="input" name="payer_email" type="email" maxlength="255" value="' + esc(email) + '" placeholder="Email you paid with"></label>' +
+            '<label class="field"><span>Amount paid (USD)</span><input class="input" name="paid_amount" type="number" step="0.01" min="0" value="' + quote.total.toFixed(2) + '"></label>' +
+            '<label class="field bmc-note"><span>Note <small class="muted" style="font-weight:400">optional</small></span><textarea class="input" name="note" rows="2" maxlength="1000" placeholder="Anything we should know — e.g. paid from a friend’s account"></textarea></label>' +
+          '</div></div></div>' +
+        '<p class="small muted" style="margin:4px 0 0">⏱ We verify payments within <b>' + esc((quote.support && quote.support.verify_hours) || '2–3 hours') + '</b>. You’ll get an email and can download from your account as soon as it’s approved.</p>' +
+      '</div>';
+    }
     if (m.type === 'online') {
       return '<div class="pay-info pay-online">' +
         '<span>You’ll pay <b>' + S.money(quote.total) + ' USD</b> on a secure ' + esc(m.name === 'Card' ? 'Stripe' : m.name) + ' page' +
@@ -53,6 +71,7 @@
     var m = method(id);
     if (quote.total === 0) return 'Get it free';
     if (!m) return 'Choose a payment method';
+    if (m.type === 'external') return 'I’ve paid — submit for verification';
     return m.type === 'online' ? 'Pay ' + S.money(quote.total) + ' with ' + m.name + ' →' : 'Submit payment · ' + S.money(quote.total);
   }
 
@@ -60,8 +79,9 @@
     var free = quote.total === 0;
     var buyable = quote.items.filter(function (i) { return !i.owned; });
     var online = quote.methods.filter(function (m) { return m.type === 'online'; });
+    var external = quote.methods.filter(function (m) { return m.type === 'external'; });
     var manual = quote.methods.filter(function (m) { return m.type === 'manual'; });
-    var first = quote.methods[0];
+    var first = external[0] || quote.methods[0];
     var opt = function (m, i) {
       return '<label class="pay-opt"><input type="radio" name="payment_method" value="' + m.id + '"' + (first && m.id === first.id ? ' checked' : '') + '>' +
         '<span><i class="pay-ico">' + (ICON[m.id] || ICON.MANUAL) + '</i>' + esc(m.name) + '<small>' + esc(m.desc) + '</small></span></label>';
@@ -72,6 +92,7 @@
         : !quote.methods.length
           ? '<div class="notice bad">Payments are being set up. Please contact support on Discord to complete your order.</div>'
           : '<h2 style="font-size:20px;margin-bottom:14px">How would you like to pay?</h2>' +
+            (external.length ? '<div class="pay-group"><span class="pay-label">Pay with card · verified by our team</span><div class="pay-methods">' + external.map(opt).join('') + '</div></div>' : '') +
             (online.length ? '<div class="pay-group"><span class="pay-label">Pay online · instant delivery</span><div class="pay-methods">' + online.map(opt).join('') + '</div></div>' : '') +
             (manual.length ? '<div class="pay-group"><span class="pay-label">Bangladesh · manual transfer</span><div class="pay-methods">' + manual.map(opt).join('') + '</div></div>' : '') +
             '<div id="payInfo">' + (first ? details(first.id) : '') + '</div>') +
@@ -116,7 +137,11 @@
     box.innerHTML = steps(2) + '<div class="success panel panel-pad"><div class="ok-ico">✓</div>' +
       (status === 'VERIFIED'
         ? '<h1 class="section-title">Payment received — thank you!</h1><p class="muted" style="margin:10px 0 22px">Your items are in your library and ready to download.</p>'
-        : '<h1 class="section-title">Payment submitted</h1><p class="muted" style="margin:10px 0 22px">Order <b class="mono">' + esc(String(orderId).slice(0, 8)) + '</b> is waiting for a quick payment check. You can download as soon as it’s approved.</p>') +
+        : '<h1 class="section-title">Payment submitted — thank you!</h1><p class="muted" style="margin:10px 0 6px">Order <b class="mono">#' + esc(String(orderId).slice(0, 8).toUpperCase()) + '</b> is being verified. This usually takes <b>' +
+          esc((quote && quote.support && quote.support.verify_hours) || '2–3 hours') + '</b>. We’ll email you when your downloads are ready.</p>' +
+          '<div class="wait-help"><b>Need it faster or have an issue?</b><span>Create a ticket on our Discord or here on the website — we’ll help right away.</span><div>' +
+          ((quote && quote.support && quote.support.discord) ? '<a class="btn btn-sm discord-btn" href="' + esc(quote.support.discord) + '" target="_blank" rel="noopener">Discord support ticket ↗</a>' : '') +
+          '<a class="btn btn-sm btn-ghost" href="dashboard/buyer.html?tab=support&new=1&order=' + encodeURIComponent(orderId) + '">Open a website ticket</a></div></div>') +
       '<div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap"><a class="btn btn-primary" href="dashboard/buyer.html' + (status === 'VERIFIED' ? '' : '?tab=orders') + '">' + (status === 'VERIFIED' ? '⬇ Go to my downloads' : 'View my orders') + '</a>' +
       '<a class="btn btn-ghost" href="category.html?c=all">Keep shopping</a></div></div>';
     window.scrollTo(0, 0);
@@ -184,6 +209,17 @@
     if (quote.total > 0) {
       if (!m) { showErrors(f, 'Choose a payment method.'); return; }
       fd.append('payment_method', chosen);
+      if (m.type === 'external') {
+        var miss = {};
+        if (f.transaction_id.value.trim().length < 4) miss.transaction_id = 'Enter the transaction ID';
+        if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(f.payer_email.value.trim())) miss.payer_email = 'Enter the email you paid with';
+        if (!(parseFloat(f.paid_amount.value) > 0)) miss.paid_amount = 'Enter the amount you paid';
+        if (Object.keys(miss).length) { showErrors(f, 'Please complete the payment details.', miss); return; }
+        fd.append('transaction_id', f.transaction_id.value.trim());
+        fd.append('payer_email', f.payer_email.value.trim());
+        fd.append('paid_amount', f.paid_amount.value);
+        fd.append('note', f.note.value.trim());
+      }
       if (m.type === 'manual') {
         fd.append('transaction_id', f.transaction_id.value.trim());
         fd.append('sender_number', f.sender_number.value.trim());

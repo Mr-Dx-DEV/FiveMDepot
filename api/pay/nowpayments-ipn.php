@@ -5,6 +5,7 @@
  */
 require_once __DIR__ . '/../../core/bootstrap.php';
 require_once __DIR__ . '/../../core/gateways.php';
+require_once __DIR__ . '/../../core/mail.php';
 
 $payload = file_get_contents('php://input');
 $data = json_decode($payload, true);
@@ -35,6 +36,7 @@ if ($status === 'finished') {
   if (fulfil_order($orderId, null, 'Paid with crypto (' . strtoupper((string)($data['pay_currency'] ?? '')) . ')',
       ['ref' => (string)($data['payment_id'] ?? ''), 'amount' => $priceAmount, 'currency' => 'USD'])) {
     audit('order_paid_crypto', 'order', $orderId);
+    mail_order_approved($orderId);
   }
 } elseif ($status === 'partially_paid') {
   Db::pdo()->prepare("UPDATE orders SET admin_note = ? WHERE id = ? AND status = 'AWAITING_PAYMENT'")

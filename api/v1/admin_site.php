@@ -19,6 +19,7 @@ route('GET', 'admin/dashboard', function () {
     'users_30d'        => (int)Db::value("SELECT COUNT(*) FROM users WHERE created_at >= NOW() - INTERVAL 30 DAY"),
     'sellers_pending'  => (int)Db::value("SELECT COUNT(*) FROM seller_profiles WHERE status = 'PENDING'"),
     'withdrawals_pending' => (int)Db::value("SELECT COUNT(*) FROM withdrawals WHERE status = 'PENDING'"),
+    'tickets_open' => (int)Db::value("SELECT COUNT(*) FROM support_tickets WHERE status = 'open'"),
     'untagged_products'   => (int)Db::value("SELECT COUNT(*) FROM products p WHERE NOT EXISTS (SELECT 1 FROM product_tags t WHERE t.product_id = p.id)"),
   ];
 
@@ -128,7 +129,7 @@ const SETTING_KEYS = [
   'brand_color', 'discord_server_name', 'site_name', 'site_tagline', 'since_year', 'currency_symbol', 'topbar_text', 'topbar_link',
   'social_discord', 'social_github', 'social_youtube', 'discord_widget_server_id',
   'bkash_number', 'nagad_number', 'bank_name', 'bank_account', 'bank_branch',
-  'seller_auto_approve', 'platform_fee_percent', 'pay_stripe_enabled', 'pay_crypto_enabled', 'pay_sslcommerz_enabled', 'pay_manual_enabled', 'newsletter_enabled', 'free_assets_enabled', 'cookie_consent_text', 'download_expiry_days',
+  'seller_auto_approve', 'platform_fee_percent', 'pay_stripe_enabled', 'pay_crypto_enabled', 'pay_sslcommerz_enabled', 'pay_manual_enabled', 'pay_bmc_enabled', 'bmc_link', 'verify_hours', 'mail_from', 'admin_notify_email', 'newsletter_enabled', 'free_assets_enabled', 'cookie_consent_text', 'download_expiry_days',
 ];
 
 route('GET', 'admin/settings', function () {
@@ -201,5 +202,6 @@ route('GET', 'admin/payments/status', function () {
     'SSLCOMMERZ' => ['configured' => $has('SSLCZ_STORE_ID') && $has('SSLCZ_STORE_PASSWORD'), 'live' => gateway_ready('SSLCOMMERZ'),
                      'test_mode' => defined('SSLCZ_SANDBOX') && SSLCZ_SANDBOX, 'webhook' => site_root_url() . 'api/pay/sslcommerz.php?action=ipn'],
     'MANUAL' => ['configured' => true, 'live' => gateway_ready('MANUAL')],
+    'BMC' => ['configured' => true, 'live' => gateway_ready('BMC')],
   ]);
 });

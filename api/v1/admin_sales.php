@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/../../core/orders.php';
+require_once __DIR__ . '/../../core/mail.php';
 /**
  * Admin — orders & payment proofs, users, sellers, withdrawals, reviews, promo codes
  */
@@ -38,7 +39,7 @@ route('GET', 'admin/orders/{id}', function ($p) {
   $o = Db::one("SELECT o.*, u.name AS customer, u.email FROM orders o JOIN users u ON u.id = o.user_id WHERE o.id = ?", [$p['id']]);
   if (!$o) fail(404, 'Order not found');
   $o['items'] = Db::all("SELECT op.product_id, op.price_paid, p.title, p.slug FROM order_products op LEFT JOIN products p ON p.id = op.product_id WHERE op.order_id = ?", [$p['id']]);
-  $o['proofs'] = Db::all("SELECT id, transaction_id, sender_number, amount, status, review_note, created_at FROM payment_proofs WHERE order_id = ? ORDER BY created_at DESC", [$p['id']]);
+  $o['proofs'] = Db::all("SELECT id, transaction_id, sender_number, payer_email, note, amount, status, review_note, created_at, file_path IS NOT NULL AS has_file FROM payment_proofs WHERE order_id = ? ORDER BY created_at DESC", [$p['id']]);
   unset($o['download_code'], $o['payment_proof'], $o['product_ids']);
   ok($o);
 });
@@ -82,6 +83,7 @@ route('POST', 'admin/orders/{id}/verify', function ($p) {
     ->execute([$decision === 'approve' ? 'APPROVED' : 'REJECTED', $admin['id'], $note ?: null, $o['id']]);
   $pdo->commit();
   audit('order_' . $decision . 'd', 'order', $o['id'], $note ?: null);
+  if ($decision === 'approve') mail_order_approved($o['id']); else mail_order_rejected($o['id'], $note);
   ok(['status' => $decision === 'approve' ? 'VERIFIED' : 'REJECTED']);
 });
 

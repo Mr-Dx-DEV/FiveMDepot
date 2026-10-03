@@ -5,6 +5,7 @@
  */
 require_once __DIR__ . '/../../core/catalog.php';
 require_once __DIR__ . '/../../core/gateways.php';
+require_once __DIR__ . '/../../core/mail.php';
 
 /** Product ids this user can download (paid orders, own products, or free products). */
 function owned_product_ids(string $userId): array
@@ -245,7 +246,8 @@ function payment_info(): array
 route('POST', 'checkout/quote', function () {
   [$lines, $subtotal, $discount, $total, $promo] = price_cart(arr_in('ids'), str_in('promo_code', 50), current_user());
   ok(['items' => array_map(function ($l) { unset($l['seller_id']); return $l; }, $lines), 'subtotal' => $subtotal,
-      'discount' => $discount, 'total' => $total, 'promo' => $promo, 'payment' => payment_info(), 'methods' => payment_methods()]);
+      'discount' => $discount, 'total' => $total, 'promo' => $promo, 'payment' => payment_info(), 'methods' => payment_methods(),
+      'support' => ['discord' => setting('social_discord'), 'verify_hours' => setting('verify_hours', '2–3 hours')]]);
 });
 
 route('POST', 'checkout/order', function () {
@@ -260,11 +262,22 @@ route('POST', 'checkout/order', function () {
   $free = $total <= 0;
   $available = array_column(payment_methods(), 'type', 'id');
   $online = !$free && ($available[$method] ?? '') === 'online';
+  $external = !$free && ($available[$method] ?? '') === 'external';
+  $payerEmail = strtolower(str_in('payer_email', 255));
+  $paidAmount = input('paid_amount');
+  $note = str_in('note', 1000);
   $tx = str_in('transaction_id', 100);
   $sender = str_in('sender_number', 50);
   if (!$free) {
     if (!isset($available[$method])) fail(422, 'Choose a payment method', ['payment_method' => 'Choose a payment method']);
-    if (!$online) {
+    if ($external) {
+      $errors = [];
+      if (mb_strlen($tx) < 4) $errors['transaction_id'] = 'Enter the transaction ID from your Buy Me a Coffee receipt';
+      if (!filter_var($payerEmail, FILTER_VALIDATE_EMAIL)) $errors['payer_email'] = 'Enter the email you paid with';
+      if (!is_numeric($paidAmount) || (float)$paidAmount <= 0) $errors['paid_amount'] = 'Enter the amount you paid';
+      if ($errors) fail(422, 'Please complete the payment details', $errors);
+      if (Db::value("SELECT COUNT(*) FROM orders WHERE transaction_id = ? AND status <> 'REJECTED'", [$tx])) fail(422, 'This transaction ID was already used', ['transaction_id' => 'Already used']);
+    } elseif (!$online) {
       $errors = [];
       if (mb_strlen($tx) < 4) $errors['transaction_id'] = 'Enter the transaction ID from your payment';
       if (empty($_FILES['proof']) || $_FILES['proof']['error'] === UPLOAD_ERR_NO_FILE) $errors['proof'] = 'Upload a screenshot of your payment';
@@ -272,7 +285,7 @@ route('POST', 'checkout/order', function () {
       if (Db::value("SELECT COUNT(*) FROM orders WHERE transaction_id = ? AND status <> 'REJECTED'", [$tx])) fail(422, 'This transaction ID was already used', ['transaction_id' => 'Already used']);
     }
   }
-  $proofPath = ($free || $online) ? null : save_upload($_FILES['proof'], 'proofs', 'image');
+  $proofPath = ($free || $online || $external) ? null : save_upload($_FILES['proof'], 'proofs', 'image');
 
   // Spread the discount over the items so price_paid adds up to the total
   $remaining = $discount;
@@ -292,9 +305,9 @@ route('POST', 'checkout/order', function () {
                ($free || $online) ? null : $tx, $promo['id'] ?? null]);
   $ins = $pdo->prepare("INSERT INTO order_products (id, order_id, product_id, price_paid) VALUES (?, ?, ?, ?)");
   foreach ($lines as $l) $ins->execute([uuid(), $orderId, $l['id'], $l['paid']]);
-  if ($proofPath) {
-    $pdo->prepare("INSERT INTO payment_proofs (id, order_id, file_path, transaction_id, sender_number, amount) VALUES (?, ?, ?, ?, ?, ?)")
-      ->execute([uuid(), $orderId, $proofPath, $tx, $sender ?: null, $total]);
+  if ($proofPath || $external) {
+    $pdo->prepare("INSERT INTO payment_proofs (id, order_id, file_path, transaction_id, sender_number, amount, payer_email, note) VALUES (?, ?, ?, ?, ?, ?, ?, ?)")
+      ->execute([uuid(), $orderId, $proofPath, $tx, $sender ?: null, $external ? round((float)$paidAmount, 2) : $total, $external ? $payerEmail : null, $note ?: null]);
   }
   if ($free) {
     fulfil_order($orderId, null, 'Free order'); // same delivery path as paid orders
@@ -302,6 +315,7 @@ route('POST', 'checkout/order', function () {
   }
   $pdo->commit();
   audit('order_placed', 'order', $orderId, ($free ? 'free' : $method) . ' ' . $total);
+  if (!$free && !$online) mail_order_received($orderId); // manual + Buy Me a Coffee: waiting for verification
 
   // Online payment: send the buyer to the gateway's secure payment page
   if ($online) {
