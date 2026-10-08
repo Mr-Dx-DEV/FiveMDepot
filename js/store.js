@@ -567,7 +567,7 @@
         try { sessionStorage.setItem(seen, '1'); } catch (e) {}
         openWheel(st);
       };
-      if (!alreadySeen) setTimeout(autoOpen, 5500);
+      if (!alreadySeen) setTimeout(autoOpen, 1200);
     }).catch(function () {});
   }
   // Wheel face: 8 slices. The best prize is gold, the next best crimson.
