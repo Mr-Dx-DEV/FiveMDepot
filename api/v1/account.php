@@ -227,6 +227,10 @@ function price_cart(array $productIds, string $promoCode, ?array $user): array
     if (!$pr) $err = 'This promo code is not valid';
     elseif ($pr['expires_at'] && strtotime($pr['expires_at']) < time()) $err = 'This promo code has expired';
     elseif ((int)$pr['max_uses'] > 0 && (int)$pr['uses_count'] >= (int)$pr['max_uses']) $err = 'This promo code has been used up';
+    // Lucky-wheel codes are personal and single use (see wheel.php)
+    elseif (strpos($pr['code'], WHEEL_PREFIX) === 0 && !$user) $err = 'Sign in to use your lucky wheel code';
+    elseif (strpos($pr['code'], WHEEL_PREFIX) === 0 && $pr['created_by'] !== $user['id']) $err = 'This code belongs to another account';
+    elseif (strpos($pr['code'], WHEEL_PREFIX) === 0 && Db::value("SELECT COUNT(*) FROM orders WHERE promo_id = ? AND status NOT IN ('REJECTED', 'CANCELLED')", [$pr['id']])) $err = 'This code has already been used';
     elseif ($subtotal < (float)$pr['min_amount']) $err = 'Spend at least $' . number_format((float)$pr['min_amount'], 2) . ' to use this code';
     if ($err) fail(422, $err, ['promo_code' => $err]);
     $discount = $pr['type'] === 'percent' ? round($subtotal * (float)$pr['value'] / 100, 2) : min($subtotal, (float)$pr['value']);

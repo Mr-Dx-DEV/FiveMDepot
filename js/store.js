@@ -543,48 +543,45 @@
     });
   }
 
-  // Admin publishes eligible real codes in Settings. Checkout remains the pricing authority.
+  // Daily lucky wheel. The server picks the prize and issues a personal single-use code (api/v1/wheel.php).
+  var WHEEL_REOPEN = 'fdm-wheel-reopen';
   function initWheel() {
     if (document.getElementById('fd-wheel-launch')) return;
-    api('wheel').then(function (offers) {
-      if (!offers || !offers.length) return;
-      var day = new Date().toLocaleDateString('en-CA');
-      var key = 'fdm-wheel-' + day;
-      var previous = null;
-      try { previous = JSON.parse(localStorage.getItem(key) || 'null'); } catch (e) {}
+    v1('GET', 'wheel/status').then(function (st) {
+      if (!st || !st.enabled || !st.prizes || !st.prizes.length) return;
       var launch = document.createElement('button');
       launch.id = 'fd-wheel-launch'; launch.type = 'button'; launch.className = 'fd-wheel-launch';
-      launch.innerHTML = '<span aria-hidden="true">✦</span><span>Daily spin<small>Win a discount code</small></span>';
+      launch.innerHTML = '<span aria-hidden="true">✦</span><span>Daily spin<small>Win up to ' + Math.max.apply(null, st.prizes) + '% off</small></span>';
       document.body.appendChild(launch);
-      launch.addEventListener('click', function () { openWheel(offers, key, previous, function (v) { previous = v; }); });
-      if (!previous && document.getElementById('home')) {
-        var seen = 'fdm-wheel-seen-' + day;
-        var alreadySeen = false;
-        try { alreadySeen = sessionStorage.getItem(seen) === '1'; } catch (e) {}
-        var autoOpen = function () {
-          if (document.hidden) { document.addEventListener('visibilitychange', autoOpen, { once: true }); return; }
-          if (previous || document.querySelector('.fd-auth-wrap, .fd-wheel-wrap')) return;
-          try { sessionStorage.setItem(seen, '1'); } catch (e) {}
-          openWheel(offers, key, previous, function (v) { previous = v; });
-        };
-        if (!alreadySeen) setTimeout(autoOpen, 5500);
-      }
+      launch.addEventListener('click', function () { openWheel(st); });
+      var reopen = false;
+      try { reopen = sessionStorage.getItem(WHEEL_REOPEN) === '1'; sessionStorage.removeItem(WHEEL_REOPEN); } catch (e) {}
+      if (reopen && st.signed_in) { openWheel(st); return; }
+      if (st.spin || !document.getElementById('home')) return;
+      var seen = 'fdm-wheel-seen-' + new Date().toLocaleDateString('en-CA');
+      var alreadySeen = false;
+      try { alreadySeen = sessionStorage.getItem(seen) === '1'; } catch (e) {}
+      var autoOpen = function () {
+        if (document.hidden) { document.addEventListener('visibilitychange', autoOpen, { once: true }); return; }
+        if (st.spin || document.querySelector('.fd-auth-wrap, .fd-wheel-wrap')) return;
+        try { sessionStorage.setItem(seen, '1'); } catch (e) {}
+        openWheel(st);
+      };
+      if (!alreadySeen) setTimeout(autoOpen, 5500);
     }).catch(function () {});
   }
-  // Wheel face: 8 slices filled by repeating the live offers. The best offer is gold, the next best crimson.
+  // Wheel face: 8 slices. The best prize is gold, the next best crimson.
   var WHEEL_SLICES = 8;
-  function offerRank(o) { return o.type === 'percent' ? o.value : o.value / 2; }
   function wheelSvg(slices, best, second) {
     var C = 160, R = 136, step = 360 / slices.length;
     var pt = function (deg, r) { var a = deg * Math.PI / 180; return (C + r * Math.sin(a)).toFixed(2) + ' ' + (C - r * Math.cos(a)).toFixed(2); };
     var paths = '', labels = '';
-    slices.forEach(function (o, i) {
+    slices.forEach(function (v, i) {
       var a0 = i * step, a1 = a0 + step, mid = a0 + step / 2;
-      var fill = o === best ? 'url(#fdwGold)' : o === second ? 'url(#fdwRed)' : (i % 2 ? '#1d191e' : '#262027');
-      var ink = o === best ? '#2a1a05' : '#fff';
-      var big = o.type === 'percent' ? Math.round(o.value) + '%' : money(o.value);
+      var fill = v === best ? 'url(#fdwGold)' : v === second ? 'url(#fdwRed)' : (i % 2 ? '#1d191e' : '#262027');
+      var ink = v === best ? '#2a1a05' : '#fff';
       paths += '<path d="M' + C + ' ' + C + ' L' + pt(a0, R) + ' A' + R + ' ' + R + ' 0 0 1 ' + pt(a1, R) + ' Z" fill="' + fill + '"/>';
-      labels += '<g transform="rotate(' + mid + ' ' + C + ' ' + C + ')" fill="' + ink + '"><text x="' + C + '" y="' + (C - 92) + '" text-anchor="middle" class="fdw-big">' + esc(big) + '</text>' +
+      labels += '<g transform="rotate(' + mid + ' ' + C + ' ' + C + ')" fill="' + ink + '"><text x="' + C + '" y="' + (C - 92) + '" text-anchor="middle" class="fdw-big">' + v + '%</text>' +
         '<text x="' + C + '" y="' + (C - 76) + '" text-anchor="middle" class="fdw-off">OFF</text></g>';
     });
     var spokes = '', lights = '';
@@ -599,27 +596,42 @@
       '<g class="fdw-rotor">' + paths + '<g class="fdw-spokes">' + spokes + '</g>' + labels + '</g>' +
       '<circle cx="160" cy="160" r="137" fill="none" stroke="rgba(255,255,255,.08)"/></svg>';
   }
+  // Spread the prizes round the wheel: the smallest prize fills every other slice, the top prize appears once
+  // and the middle prizes fill the remaining slots.
+  function wheelSlices(prizes) {
+    var sorted = prizes.slice().sort(function (a, b) { return b - a; });
+    var low = sorted[sorted.length - 1], mid = sorted.slice(1, -1), out = [];
+    if (!mid.length) mid = [sorted[0]];
+    for (var i = 0; i < WHEEL_SLICES; i++) out.push(i % 2 ? low : i === 0 ? sorted[0] : mid[(i / 2 - 1) % mid.length]);
+    return out;
+  }
+  function untilText(iso) {
+    var left = Math.max(0, Math.round((new Date(iso).getTime() - Date.now()) / 60000));
+    var h = Math.floor(left / 60), m = left % 60;
+    return h ? h + 'h ' + (m < 10 ? '0' : '') + m + 'm' : m + 'm';
+  }
 
-  function openWheel(offers, key, previous, save) {
-    var sorted = offers.slice().sort(function (a, b) { return offerRank(b) - offerRank(a); });
-    var best = sorted[0], second = sorted[1] || null;
-    var slices = [];
-    for (var i = 0; i < WHEEL_SLICES; i++) slices.push(sorted[i % sorted.length]);
-    var top = best.type === 'percent' ? Math.round(best.value) + '% off' : money(best.value) + ' off';
+  function openWheel(st) {
+    if (document.querySelector('.fd-wheel-wrap')) return;
+    var sorted = st.prizes.slice().sort(function (a, b) { return b - a; });
+    var best = sorted[0], second = sorted[1];
+    var slices = wheelSlices(st.prizes);
     var wrap = document.createElement('div'); wrap.className = 'fd-wheel-wrap';
     wrap.innerHTML = '<div class="fd-wheel-scrim" data-wheel-close></div><section class="fd-wheel" role="dialog" aria-modal="true" aria-labelledby="fdWheelTitle">' +
       '<button type="button" class="icon-btn fd-wheel-close" data-wheel-close aria-label="Close daily lucky wheel">' + I.close + '</button>' +
       '<span class="fd-badge fdw-tag">✦ Daily lucky wheel</span>' +
-      '<h2 id="fdWheelTitle">Spin for <span class="fdw-grad">' + (sorted.length > 1 ? 'up to ' : '') + esc(top) + '</span></h2>' +
-      '<p>One free spin every day on this device. Use the code you win at checkout — the discount and its conditions are checked there.</p>' +
+      '<h2 id="fdWheelTitle">Spin for <span class="fdw-grad">up to ' + best + '% off</span></h2>' +
+      '<p>One free spin every ' + st.cooldown_hours + ' hours. Your code is personal, single use, and <b>expires ' + st.code_hours + ' hours</b> after you win it.</p>' +
       '<div class="fdw-stage"><span class="fdw-pointer" aria-hidden="true"></span>' + wheelSvg(slices, best, second) +
-        '<button type="button" class="fdw-hub" id="fdWheelHub" aria-label="Spin the wheel"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-2.6-6.4"/><path d="M21 3v6h-6"/></svg></button></div>' +
+        '<button type="button" class="fdw-hub" id="fdWheelHub" aria-label="Spin the wheel"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">' +
+        (st.signed_in ? '<path d="M21 12a9 9 0 1 1-2.6-6.4"/><path d="M21 3v6h-6"/>' : '<path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M10 17l5-5-5-5M15 12H3"/>') + '</svg></button></div>' +
       '<div class="fd-wheel-result" role="status" aria-live="polite"></div>' +
-      '<button type="button" class="btn btn-primary btn-lg fdw-spin" id="fdWheelSpin"' + (previous ? ' disabled' : '') + '>' + (previous ? 'Come back tomorrow for another spin' : 'Spin the wheel') + '</button>' +
-      '<a class="fd-wheel-shop" href="' + ROOT + 'category.html?c=all">Browse the marketplace &rarr;</a></section>';
+      '<button type="button" class="btn btn-primary btn-lg fdw-spin" id="fdWheelSpin"></button>' +
+      '<small class="fdw-note">' + (st.signed_in ? 'The code is tied to your account, so only you can use it.' : 'Sign in to spin. The code is tied to your account, so only you can use it.') + '</small></section>';
     document.body.appendChild(wrap); document.body.classList.add('fd-modal-lock');
     var opener = document.activeElement;
     var rotor = wrap.querySelector('.fdw-rotor'), btn = wrap.querySelector('#fdWheelSpin'), hub = wrap.querySelector('#fdWheelHub');
+    var box = wrap.querySelector('.fd-wheel');
     var spinning = false, timer = null;
     var close = function () { clearTimeout(timer); wrap.remove(); document.body.classList.remove('fd-modal-lock'); if (opener && opener.focus) opener.focus(); };
     wrap.addEventListener('click', function (e) { if (e.target.closest('[data-wheel-close]') && !spinning) close(); });
@@ -627,37 +639,51 @@
     var step = 360 / WHEEL_SLICES;
     // Rotation that puts slice j under the top pointer
     var restAt = function (j) { return -(j * step + step / 2); };
-    function show(offer) {
-      wrap.querySelector('.fd-wheel-result').innerHTML = '<span class="fdw-won">You won <b>' + esc(offer.label) + '</b></span>' +
-        '<button type="button" class="fdw-code" data-wheel-copy aria-label="Copy code ' + esc(offer.code) + '"><strong>' + esc(offer.code) + '</strong><span>Copy</span></button>' +
-        (offer.min_amount > 0 ? '<small>Minimum order ' + money(offer.min_amount) + '</small>' : '');
+    var sliceFor = function (v) { var spots = []; slices.forEach(function (s, j) { if (s === v) spots.push(j); }); return spots[Math.floor(Math.random() * spots.length)] || 0; };
+    function idle() {
+      if (!st.signed_in) { btn.textContent = 'Sign in to spin'; return; }
+      if (st.spin) { btn.disabled = true; hub.disabled = true; btn.textContent = 'Next spin in ' + untilText(st.spin.next_at); return; }
+      btn.disabled = false; hub.disabled = false; btn.textContent = 'Spin the wheel';
+    }
+    function show(spin) {
+      var expired = new Date(spin.expires_at).getTime() <= Date.now();
+      wrap.querySelector('.fd-wheel-result').innerHTML = '<span class="fdw-won">You won <b>' + esc(spin.label) + '</b></span>' +
+        '<button type="button" class="fdw-code" data-wheel-copy aria-label="Copy code ' + esc(spin.code) + '"><strong>' + esc(spin.code) + '</strong><span>Copy</span></button>' +
+        '<small>' + (spin.used ? 'This code has already been used.' : expired ? 'This code has expired.' : 'Use it at checkout. Expires in ' + untilText(spin.expires_at) + '.') + '</small>';
     }
     rotor.style.transform = 'rotate(' + restAt(0) + 'deg)';
-    if (previous) {
-      var existing = offers.filter(function (o) { return o.code === previous; })[0];
-      if (existing) { show(existing); rotor.style.transform = 'rotate(' + restAt(slices.indexOf(existing)) + 'deg)'; }
-      else wrap.querySelector('.fd-wheel-result').textContent = 'Today’s offer is no longer active. Check back tomorrow.';
+    if (st.spin) { show(st.spin); rotor.style.transform = 'rotate(' + restAt(sliceFor(st.spin.value)) + 'deg)'; }
+    idle();
+    function signIn() {
+      try { sessionStorage.setItem(WHEEL_REOPEN, '1'); } catch (e) {}
+      close();
+      openAuthModal();
     }
-    function spin() {
-      if (spinning || btn.disabled) return;
-      spinning = true; btn.disabled = true; hub.disabled = true; btn.textContent = 'Spinning…';
-      var pick = offers[Math.floor(Math.random() * offers.length)];
-      var spots = []; slices.forEach(function (o, j) { if (o === pick) spots.push(j); });
-      var j = spots[Math.floor(Math.random() * spots.length)];
-      var jitter = (Math.random() - .5) * step * .6;
+    function land(spin) {
       var calm = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
       var dur = calm ? 600 : 5200;
+      var jitter = (Math.random() - .5) * step * .6;
       rotor.style.transition = 'transform ' + dur + 'ms cubic-bezier(.12,.66,.12,1)';
-      rotor.style.transform = 'rotate(' + (360 * (calm ? 1 : 7) + restAt(j) + jitter) + 'deg)';
-      wrap.querySelector('.fd-wheel').classList.add('is-spinning');
+      rotor.style.transform = 'rotate(' + (360 * (calm ? 1 : 7) + restAt(sliceFor(spin.value)) + jitter) + 'deg)';
+      box.classList.add('is-spinning');
       timer = setTimeout(function () {
         spinning = false;
-        wrap.querySelector('.fd-wheel').classList.remove('is-spinning');
-        wrap.querySelector('.fd-wheel').classList.add('is-won');
-        show(pick); btn.textContent = 'Come back tomorrow for another spin';
-        try { localStorage.setItem(key, JSON.stringify(pick.code)); } catch (err) {}
-        save(pick.code);
+        box.classList.remove('is-spinning'); box.classList.add('is-won');
+        st.spin = spin; show(spin); idle();
+        toast('You won ' + spin.label + '!', 'success');
       }, dur + 80);
+    }
+    function spin() {
+      if (spinning) return;
+      if (!st.signed_in) { signIn(); return; }
+      if (st.spin || btn.disabled) return;
+      spinning = true; btn.disabled = true; hub.disabled = true; btn.textContent = 'Spinning…';
+      v1('POST', 'wheel/spin', {}).then(function (r) { land(r.spin); }).catch(function (err) {
+        spinning = false;
+        if (err.status === 401) { st.signed_in = false; signIn(); return; }
+        if (err.fields && err.fields.spin) { st.spin = err.fields.spin; show(st.spin); idle(); return; }
+        idle(); toast(err.message, 'error');
+      });
     }
     btn.addEventListener('click', spin);
     hub.addEventListener('click', spin);
@@ -668,7 +694,7 @@
       copyText(code).then(function () { c.classList.add('copied'); c.querySelector('span').textContent = 'Copied'; toast('Code ' + code + ' copied', 'success'); })
         .catch(function () { toast('Could not copy — the code is ' + code, 'error'); });
     });
-    (previous ? wrap.querySelector('[data-wheel-close]') : btn).focus();
+    (btn.disabled ? wrap.querySelector('[data-wheel-close]') : btn).focus();
   }
 
   // ---------- Promo bar ----------

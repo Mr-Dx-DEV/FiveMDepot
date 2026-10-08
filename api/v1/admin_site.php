@@ -126,7 +126,7 @@ route('POST', 'admin/faqs', function () {
 
 // ---------- Settings (allow-listed keys) ----------
 const SETTING_KEYS = [
-  'brand_color', 'discord_server_name', 'site_name', 'site_tagline', 'since_year', 'currency_symbol', 'topbar_text', 'topbar_link', 'wheel_promo_codes',
+  'brand_color', 'discord_server_name', 'site_name', 'site_tagline', 'since_year', 'currency_symbol', 'topbar_text', 'topbar_link', 'wheel_enabled',
   'promo_headline', 'promo_code', 'promo_ends_at', 'promo_free_install', 'promo_link',
   'social_discord', 'social_github', 'social_youtube', 'discord_widget_server_id',
   'bkash_number', 'nagad_number', 'bank_name', 'bank_account', 'bank_branch',

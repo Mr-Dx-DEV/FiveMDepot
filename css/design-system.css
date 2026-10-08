@@ -498,3 +498,5 @@ body::before, body::after { content: none; }
   -webkit-background-clip: text; background-clip: text; color: transparent; }
 .trust-item span { color: color-mix(in srgb, var(--tc) 30%, var(--text-2)); }
 :root[data-theme="light"] .trust-item b { background: none; color: color-mix(in srgb, var(--tc) 70%, #1a1a1a); }
+.fdw-note { color: var(--muted); font-size: 12.5px; }
+.fd-wheel p b { color: var(--text); }

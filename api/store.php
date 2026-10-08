@@ -24,7 +24,6 @@ header('Cache-Control: no-cache'); // always revalidate so admin changes show im
 try {
   switch ($_GET['r'] ?? '') {
     case 'nav':      $data = routeNav(); break;
-    case 'wheel':    $data = routeWheel(); break;
     case 'home':     $data = routeHome(); break;
     case 'category': $data = routeCategory(); break;
     case 'product':  $data = routeProduct(); break;
@@ -51,31 +50,6 @@ function respondError(int $status, string $message): void
 // ============================================================
 // Routes
 // ============================================================
-
-/** Only codes explicitly selected in Admin Settings can appear in the daily wheel. */
-function routeWheel(): array
-{
-  $configured = (string)(Db::value("SELECT `value` FROM site_settings WHERE `key` = 'wheel_promo_codes'") ?? '');
-  $codes = array_values(array_unique(array_filter(array_map(
-    fn($code) => strtoupper(trim($code)), explode(',', $configured)
-  ), fn($code) => preg_match('/^[A-Z0-9_-]{3,50}$/', $code))));
-  if (!$codes) return [];
-  $rows = Db::all(
-    "SELECT code, type, value, min_amount FROM promos WHERE code IN (" . Db::in($codes) . ")
-       AND is_active = 1 AND (expires_at IS NULL OR expires_at > NOW())
-       AND (max_uses = 0 OR uses_count < max_uses)", $codes
-  );
-  return array_map(function ($promo) {
-    $value = (float)$promo['value'];
-    return [
-      'code' => $promo['code'],
-      'type' => $promo['type'] === 'percent' ? 'percent' : 'fixed',
-      'value' => $value,
-      'label' => $promo['type'] === 'percent' ? rtrim(rtrim(number_format($value, 2), '0'), '.') . '% off' : '$' . number_format($value, 2) . ' off',
-      'min_amount' => (float)$promo['min_amount'],
-    ];
-  }, $rows);
-}
 
 function routeNav(): array
 {
