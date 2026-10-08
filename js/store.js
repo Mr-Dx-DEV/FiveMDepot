@@ -101,12 +101,26 @@
     { name: 'Docs', href: 'documentation.html?type=doc' }
   ];
 
+  // ---------- Promo bar config ----------
+  // The one place to edit the promo bar. Admin -> Settings -> Promo bar fills in the headline,
+  // coupon, end time and free-install flag at runtime (see promoBar() in api/store.php).
+  var PROMO = {
+    badge: 'Limited time',
+    headline: '',                 // empty = show the plain announcement bar instead
+    freeInstall: false,
+    freeInstallLabel: 'Free installation',
+    code: '',                     // the API only sends codes that are live in Promos
+    endsAt: null,                 // ISO date; no countdown when empty
+    cta: { label: 'Shop now', href: 'category.html?c=all' }
+  };
+
+
   // ---------- API ----------
   function api(route, params) {
     var url = 'api/store.php?' + qs(Object.assign({ r: route }, params || {}));
     return fetch(url, { credentials: 'same-origin' }).then(function (res) {
       return res.json().catch(function () { return {}; }).then(function (body) {
-        if (!res.ok || body.error) throw new Error((body.error && body.error.message) || ('HTTP ' + res.status));
+        if (!res.ok || body.error || body.data === undefined) throw new Error((body.error && body.error.message) || ('Invalid store response (' + res.status + ')'));
         return body.data;
       });
     });
@@ -134,7 +148,7 @@
     }).then(function (res) {
       return res.json().catch(function () { return {}; }).then(function (body) {
         if (res.status === 419 && !retried) return me(true).then(function () { return v1(method, path, data, true); });
-        if (!res.ok || body.error) {
+        if (!res.ok || body.error || body.data === undefined) {
           var e = new Error((body.error && body.error.message) || 'Something went wrong (' + res.status + ')');
           e.status = res.status; e.fields = (body.error && body.error.fields) || {};
           throw e;
@@ -305,6 +319,13 @@
           setTimeout(function () { Cart.remove(rm.getAttribute('data-cd-rm')); render(); }, 220);
         }
       });
+      el.addEventListener('submit', function (e) {
+        if (e.target.id !== 'cdPromoForm') return;
+        e.preventDefault();
+        var code = e.target.elements.code.value.trim().toUpperCase();
+        try { code ? localStorage.setItem('fivemdepot-promo', code) : localStorage.removeItem('fivemdepot-promo'); } catch (err) {}
+        render();
+      });
       document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && el.classList.contains('open')) close(); });
     }
     function lineHtml(i, idx) {
@@ -313,7 +334,7 @@
         '<a href="' + ROOT + productUrl(i.slug) + '"><img src="' + esc(i.image || 'images/photos/default-640.jpg') + '" alt="" data-fallback="images/store/cat-default.svg"></a>' +
         '<div class="cd-info"><a class="cd-title" href="' + ROOT + productUrl(i.slug) + '">' + esc(i.title) + '</a>' +
           (i.owned ? '<span class="cd-owned">✓ You already own this — not charged</span>'
-                   : save ? '<span class="cd-save">You save ' + money(save) + '</span>' : '<span class="cd-meta">Instant download · lifetime updates</span>') +
+                   : save ? '<span class="cd-save">You save ' + money(save) + '</span>' : '<span class="cd-meta">Digital resource</span>') +
         '</div>' +
         '<div class="cd-price">' + (i.owned ? '<s>' + money(i.price) + '</s>' : (i.price === 0 ? '<b class="up">Free</b>' : '<b>' + money(i.price) + '</b>' + (save ? '<s>' + money(i.original) + '</s>' : ''))) +
           '<button data-cd-rm="' + esc(i.id) + '" aria-label="Remove ' + esc(i.title) + '">Remove</button></div></div>';
@@ -330,34 +351,41 @@
       }
       // instant render from local data, then replace with server-checked prices
       draw(local.map(function (i) { return { id: i.id, slug: i.slug, title: i.title, image: i.image, price: +i.price, original: +(i.original != null ? i.original : i.price), owned: false }; }));
-      v1('POST', 'checkout/quote', { ids: local.map(function (i) { return i.id; }) }).then(function (q) {
+      var code = ''; try { code = localStorage.getItem('fivemdepot-promo') || ''; } catch (e) {}
+      v1('POST', 'checkout/quote', { ids: local.map(function (i) { return i.id; }), promo_code: code }).then(function (q) {
         var live = q.items.map(function (x) { return x.id; });
         local.forEach(function (i) { if (live.indexOf(i.id) === -1) Cart.remove(i.id); });
         if (!q.items.length) { render(); return; }
-        draw(q.items);
-      }).catch(function () {});
+        draw(q.items, q);
+      }).catch(function (e) {
+        if (e.fields && e.fields.promo_code) {
+          try { localStorage.removeItem('fivemdepot-promo'); } catch (err) {}
+          toast(e.fields.promo_code, 'error'); render();
+        }
+      });
     }
-    function draw(items) {
+    function draw(items, quote) {
       var body = el.querySelector('#cdBody'), foot = el.querySelector('#cdFoot');
       var charge = items.filter(function (i) { return !i.owned; });
       var original = charge.reduce(function (s, i) { return s + (i.original > i.price ? i.original : i.price); }, 0);
-      var total = charge.reduce(function (s, i) { return s + i.price; }, 0);
+      var total = quote ? quote.total : charge.reduce(function (s, i) { return s + i.price; }, 0);
       var saved = Math.max(0, original - total);
       body.innerHTML = items.map(lineHtml).join('') +
-        '<p class="cd-hint">🏷 Have a promo code? Add it on the <a href="' + ROOT + 'cart.html">cart page</a>.</p>';
+        '<form class="cd-promo" id="cdPromoForm"><label for="cdPromoInput">Promo code</label><div><input id="cdPromoInput" class="input" name="code" maxlength="50" value="' + esc(quote && quote.promo ? quote.promo.code : '') + '" placeholder="Enter code"><button class="btn btn-ghost btn-sm" type="submit">Apply</button></div><small>Final price and eligibility are checked at checkout.</small></form>';
       var checkoutBtn;
       if (!charge.length) checkoutBtn = '<a class="btn btn-ghost btn-block" href="' + ROOT + 'dashboard/buyer.html">You own everything — open library</a>';
       else if (Store.user) checkoutBtn = '<a class="btn btn-primary btn-lg btn-block cd-checkout" href="' + ROOT + 'checkout.html">' + (total === 0 ? 'Get them free' : 'Checkout · ' + money(total)) + ' →</a>';
       else checkoutBtn = '<div class="cd-login"><b>Log in to checkout</b><span>Your purchases are saved to your account so you can download them any time.</span>' +
-          '<div class="cd-login-btns"><a class="btn btn-primary" href="' + ROOT + 'auth.html?next=checkout.html">Log in</a>' +
+          '<div class="cd-login-btns"><a class="btn btn-primary" href="' + ROOT + 'auth.html?next=checkout.html" data-auth-open>Log in</a>' +
           '<a class="btn btn-ghost" href="' + ROOT + 'auth.html?mode=register&next=checkout.html">Sign up free</a></div></div>';
       foot.innerHTML =
         '<div class="cd-row"><span>Subtotal</span><span>' + money(original) + '</span></div>' +
-        (saved ? '<div class="cd-row up"><span>Discount</span><span>−' + money(saved) + '</span></div>' : '') +
+        (quote && quote.discount ? '<div class="cd-row up"><span>Promo ' + esc(quote.promo.code) + '</span><span>−' + money(quote.discount) + '</span></div>' : '') +
+        (saved && (!quote || saved > quote.discount) ? '<div class="cd-row up"><span>Product savings</span><span>−' + money(saved - (quote ? quote.discount : 0)) + '</span></div>' : '') +
         '<div class="cd-row cd-total"><span>Total</span><span>' + money(total) + '</span></div>' +
         (saved ? '<div class="cd-saved">🎉 You save ' + money(saved) + ' on this order</div>' : '') +
         checkoutBtn +
-        '<div class="cd-trust"><span>✓ Instant download after payment check</span><span>✓ bKash · Nagad · Bank</span></div>' +
+        '<div class="cd-trust"><span>Secure checkout</span><span>Available payment methods appear at checkout</span></div>' +
         '<a class="cd-viewcart" href="' + ROOT + 'cart.html">View full cart</a>';
     }
     function open(newId) {
@@ -389,7 +417,7 @@
     cardData[p.id] = p;
     var onSale = p.sale_price != null && p.sale_price < p.price;
     var price = onSale ? p.sale_price : p.price;
-    var badge = p.badge ? '<span class="pc-badge" style="background:' + esc(p.badge.color || 'var(--accent)') + '">' + esc(p.badge.name) + '</span>' : '';
+    var badge = p.badge ? '<span class="pc-badge">' + esc(p.badge.name) + '</span>' : '';
     var fw = (p.frameworks || []).slice(0, 3).map(function (t) {
       return '<span class="chip"><i style="background:' + esc(t.color || 'var(--accent)') + '"></i>' + esc(t.name) + '</span>';
     }).join('');
@@ -405,14 +433,13 @@
         '<div class="pc-body">' +
           '<div class="pc-fw">' + fw + '</div>' +
           '<a class="pc-title" href="' + productUrl(p.slug) + '">' + esc(p.title) + '</a>' +
-          '<div class="pc-rating"><span class="stars">' + stars(p.rating || 0) + '</span>' +
-            (p.review_count ? '(' + p.review_count + ')' : 'No reviews yet') + '</div>' +
+          '<div class="pc-rating">' + (p.review_count ? '<span class="stars">' + stars(p.rating || 0) + '</span><span>' + p.rating + ' (' + p.review_count + ')</span>' : '<span>No reviews yet</span>') + '</div>' +
           '<div class="pc-foot">' +
             '<div class="price' + (price === 0 ? ' free' : '') + '">' + (price === 0 ? 'Free' : money(price)) +
               (onSale ? '<s>' + money(p.price) + '</s>' : '') + '</div>' +
             (price === 0
               ? '<button class="pc-claim" data-claim="' + esc(p.id) + '">Claim</button>'
-              : '<button class="pc-add" data-add="' + esc(p.id) + '" aria-label="Add ' + esc(p.title) + ' to cart">' + I.plus + '</button>') +
+              : '<button class="pc-add" data-add="' + esc(p.id) + '" aria-label="Add ' + esc(p.title) + ' to cart">' + I.plus + '<span>Add to cart</span></button>') +
           '</div>' +
         '</div>' +
       '</article>';
@@ -433,7 +460,7 @@
     var cartLink = e.target.closest('[data-open-cart]');
     if (cartLink && !e.ctrlKey && !e.metaKey) { e.preventDefault(); Drawer.open(); return; }
     var add = e.target.closest('[data-add]');
-    if (add) { e.preventDefault(); var p = cardData[add.getAttribute('data-add')]; if (p) Cart.add(p); return; }
+    if (add) { e.preventDefault(); var p = cardData[add.getAttribute('data-add')]; if (p) { add.classList.add('added'); Cart.add(p); } return; }
     var wish = e.target.closest('[data-wish]');
     if (wish) { e.preventDefault(); toggleWish(wish, wish.getAttribute('data-wish')); }
   });
@@ -449,6 +476,277 @@
 
   function currentCat() {
     return new URLSearchParams(location.search).get('c');
+  }
+
+  // Sign-in uses the same session and CSRF-backed endpoint as auth.html.
+  var authModal = null;
+  function initAuthModal() {
+    document.addEventListener('click', function (e) {
+      var trigger = e.target.closest('[data-auth-open]');
+      if (!trigger) return;
+      e.preventDefault();
+      openAuthModal();
+    });
+  }
+  function openAuthModal() {
+    if (authModal) return;
+    var previous = document.activeElement;
+    authModal = document.createElement('div');
+    authModal.className = 'fd-auth-wrap';
+    authModal.innerHTML = '<div class="fd-auth-scrim" data-auth-close></div>' +
+      '<section class="fd-auth" role="dialog" aria-modal="true" aria-labelledby="fdAuthTitle">' +
+      '<button class="fd-auth-close icon-btn" type="button" data-auth-close aria-label="Close sign in">' + I.close + '</button>' +
+      '<div class="fd-auth-mark">F<span>D</span></div><span class="eyebrow">Your depot awaits</span>' +
+      '<h2 id="fdAuthTitle">Welcome back.</h2><p>Sign in to manage your library, wishlist and orders.</p>' +
+      '<form id="fdAuthForm"><label>Email address<input class="input" type="email" name="email" autocomplete="email" required></label>' +
+      '<label>Password<input class="input" type="password" name="password" autocomplete="current-password" required></label>' +
+      '<p class="fd-auth-error" role="alert" hidden></p><button class="btn btn-primary btn-lg btn-block" type="submit">Sign in</button></form>' +
+      '<div class="fd-auth-social" hidden></div><p class="fd-auth-bottom">New here? <a href="' + ROOT + 'auth.html?mode=register">Create an account</a></p>' +
+      '<p class="fd-auth-help"><a href="' + ROOT + 'auth.html">More sign-in options</a></p></section>';
+    document.body.appendChild(authModal);
+    document.body.classList.add('fd-modal-lock');
+    var close = function () {
+      authModal.remove(); authModal = null; document.body.classList.remove('fd-modal-lock');
+      if (previous && previous.focus) previous.focus();
+    };
+    authModal.addEventListener('click', function (e) { if (e.target.closest('[data-auth-close]')) close(); });
+    authModal.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape') close();
+      if (e.key === 'Tab') {
+        var focusable = Array.from(authModal.querySelectorAll('button, input, a')).filter(function (x) { return !x.closest('[hidden]'); });
+        var first = focusable[0], last = focusable[focusable.length - 1];
+        if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+        else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+      }
+    });
+    authModal.querySelector('[name=email]').focus();
+    fetch(ROOT + 'api/v1.php?r=auth/me', { credentials: 'same-origin' }).then(function (r) { return r.json(); }).then(function (r) {
+      if (!authModal || !r.data) return;
+      var methods = [];
+      var next = encodeURIComponent(location.href.slice(ROOT.length));
+      if (r.data.discord) methods.push('<a href="' + ROOT + 'api/discord-login.php?next=' + next + '">Continue with Discord</a>');
+      if (r.data.google) methods.push('<a href="' + ROOT + 'api/google-login.php?next=' + next + '">Continue with Google</a>');
+      if (methods.length) {
+        var social = authModal.querySelector('.fd-auth-social');
+        social.innerHTML = '<span>or continue with</span>' + methods.join(''); social.hidden = false;
+      }
+    }).catch(function () {});
+    authModal.querySelector('form').addEventListener('submit', function (e) {
+      e.preventDefault();
+      var form = e.currentTarget, button = form.querySelector('button[type=submit]'), error = form.querySelector('.fd-auth-error');
+      button.disabled = true; button.textContent = 'Signing in...'; error.hidden = true;
+      v1('POST', 'auth/login', { email: form.elements.email.value.trim(), password: form.elements.password.value }).then(function () {
+        location.reload();
+      }).catch(function (err) {
+        error.textContent = err.message; error.hidden = false; button.disabled = false; button.textContent = 'Sign in';
+      });
+    });
+  }
+
+  // Admin publishes eligible real codes in Settings. Checkout remains the pricing authority.
+  function initWheel() {
+    if (document.getElementById('fd-wheel-launch')) return;
+    api('wheel').then(function (offers) {
+      if (!offers || !offers.length) return;
+      var day = new Date().toLocaleDateString('en-CA');
+      var key = 'fdm-wheel-' + day;
+      var previous = null;
+      try { previous = JSON.parse(localStorage.getItem(key) || 'null'); } catch (e) {}
+      var launch = document.createElement('button');
+      launch.id = 'fd-wheel-launch'; launch.type = 'button'; launch.className = 'fd-wheel-launch';
+      launch.innerHTML = '<span aria-hidden="true">✦</span><span>Daily spin<small>Win a discount code</small></span>';
+      document.body.appendChild(launch);
+      launch.addEventListener('click', function () { openWheel(offers, key, previous, function (v) { previous = v; }); });
+      if (!previous && document.getElementById('home')) {
+        var seen = 'fdm-wheel-seen-' + day;
+        var alreadySeen = false;
+        try { alreadySeen = sessionStorage.getItem(seen) === '1'; } catch (e) {}
+        var autoOpen = function () {
+          if (document.hidden) { document.addEventListener('visibilitychange', autoOpen, { once: true }); return; }
+          if (previous || document.querySelector('.fd-auth-wrap, .fd-wheel-wrap')) return;
+          try { sessionStorage.setItem(seen, '1'); } catch (e) {}
+          openWheel(offers, key, previous, function (v) { previous = v; });
+        };
+        if (!alreadySeen) setTimeout(autoOpen, 5500);
+      }
+    }).catch(function () {});
+  }
+  // Wheel face: 8 slices filled by repeating the live offers. The best offer is gold, the next best crimson.
+  var WHEEL_SLICES = 8;
+  function offerRank(o) { return o.type === 'percent' ? o.value : o.value / 2; }
+  function wheelSvg(slices, best, second) {
+    var C = 160, R = 136, step = 360 / slices.length;
+    var pt = function (deg, r) { var a = deg * Math.PI / 180; return (C + r * Math.sin(a)).toFixed(2) + ' ' + (C - r * Math.cos(a)).toFixed(2); };
+    var paths = '', labels = '';
+    slices.forEach(function (o, i) {
+      var a0 = i * step, a1 = a0 + step, mid = a0 + step / 2;
+      var fill = o === best ? 'url(#fdwGold)' : o === second ? 'url(#fdwRed)' : (i % 2 ? '#1d191e' : '#262027');
+      var ink = o === best ? '#2a1a05' : '#fff';
+      var big = o.type === 'percent' ? Math.round(o.value) + '%' : money(o.value);
+      paths += '<path d="M' + C + ' ' + C + ' L' + pt(a0, R) + ' A' + R + ' ' + R + ' 0 0 1 ' + pt(a1, R) + ' Z" fill="' + fill + '"/>';
+      labels += '<g transform="rotate(' + mid + ' ' + C + ' ' + C + ')" fill="' + ink + '"><text x="' + C + '" y="' + (C - 92) + '" text-anchor="middle" class="fdw-big">' + esc(big) + '</text>' +
+        '<text x="' + C + '" y="' + (C - 76) + '" text-anchor="middle" class="fdw-off">OFF</text></g>';
+    });
+    var spokes = '', lights = '';
+    for (var i = 0; i < slices.length; i++) spokes += '<line x1="' + C + '" y1="' + C + '" x2="' + pt(i * step, R).replace(' ', '" y2="') + '" />';
+    for (var k = 0; k < 16; k++) { var p = pt(k * 22.5, 150).split(' '); lights += '<circle cx="' + p[0] + '" cy="' + p[1] + '" r="3.6" class="fdw-light' + (k % 2 ? ' alt' : '') + '"/>'; }
+    return '<svg viewBox="0 0 320 320" aria-hidden="true"><defs>' +
+      '<linearGradient id="fdwGold" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffe27a"/><stop offset="1" stop-color="#e9a72c"/></linearGradient>' +
+      '<linearGradient id="fdwRed" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ff4d6f"/><stop offset="1" stop-color="#b3123a"/></linearGradient>' +
+      '<linearGradient id="fdwRim" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#5a4318"/><stop offset=".5" stop-color="#2b2010"/><stop offset="1" stop-color="#4c3914"/></linearGradient></defs>' +
+      '<circle cx="160" cy="160" r="157" fill="#0d0b0d"/><circle cx="160" cy="160" r="150" fill="none" stroke="url(#fdwRim)" stroke-width="13"/>' +
+      '<g class="fdw-lights">' + lights + '</g>' +
+      '<g class="fdw-rotor">' + paths + '<g class="fdw-spokes">' + spokes + '</g>' + labels + '</g>' +
+      '<circle cx="160" cy="160" r="137" fill="none" stroke="rgba(255,255,255,.08)"/></svg>';
+  }
+
+  function openWheel(offers, key, previous, save) {
+    var sorted = offers.slice().sort(function (a, b) { return offerRank(b) - offerRank(a); });
+    var best = sorted[0], second = sorted[1] || null;
+    var slices = [];
+    for (var i = 0; i < WHEEL_SLICES; i++) slices.push(sorted[i % sorted.length]);
+    var top = best.type === 'percent' ? Math.round(best.value) + '% off' : money(best.value) + ' off';
+    var wrap = document.createElement('div'); wrap.className = 'fd-wheel-wrap';
+    wrap.innerHTML = '<div class="fd-wheel-scrim" data-wheel-close></div><section class="fd-wheel" role="dialog" aria-modal="true" aria-labelledby="fdWheelTitle">' +
+      '<button type="button" class="icon-btn fd-wheel-close" data-wheel-close aria-label="Close daily lucky wheel">' + I.close + '</button>' +
+      '<span class="fd-badge fdw-tag">✦ Daily lucky wheel</span>' +
+      '<h2 id="fdWheelTitle">Spin for <span class="fdw-grad">' + (sorted.length > 1 ? 'up to ' : '') + esc(top) + '</span></h2>' +
+      '<p>One free spin every day on this device. Use the code you win at checkout — the discount and its conditions are checked there.</p>' +
+      '<div class="fdw-stage"><span class="fdw-pointer" aria-hidden="true"></span>' + wheelSvg(slices, best, second) +
+        '<button type="button" class="fdw-hub" id="fdWheelHub" aria-label="Spin the wheel"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-2.6-6.4"/><path d="M21 3v6h-6"/></svg></button></div>' +
+      '<div class="fd-wheel-result" role="status" aria-live="polite"></div>' +
+      '<button type="button" class="btn btn-primary btn-lg fdw-spin" id="fdWheelSpin"' + (previous ? ' disabled' : '') + '>' + (previous ? 'Come back tomorrow for another spin' : 'Spin the wheel') + '</button>' +
+      '<a class="fd-wheel-shop" href="' + ROOT + 'category.html?c=all">Browse the marketplace &rarr;</a></section>';
+    document.body.appendChild(wrap); document.body.classList.add('fd-modal-lock');
+    var opener = document.activeElement;
+    var rotor = wrap.querySelector('.fdw-rotor'), btn = wrap.querySelector('#fdWheelSpin'), hub = wrap.querySelector('#fdWheelHub');
+    var spinning = false, timer = null;
+    var close = function () { clearTimeout(timer); wrap.remove(); document.body.classList.remove('fd-modal-lock'); if (opener && opener.focus) opener.focus(); };
+    wrap.addEventListener('click', function (e) { if (e.target.closest('[data-wheel-close]') && !spinning) close(); });
+    wrap.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !spinning) close(); });
+    var step = 360 / WHEEL_SLICES;
+    // Rotation that puts slice j under the top pointer
+    var restAt = function (j) { return -(j * step + step / 2); };
+    function show(offer) {
+      wrap.querySelector('.fd-wheel-result').innerHTML = '<span class="fdw-won">You won <b>' + esc(offer.label) + '</b></span>' +
+        '<button type="button" class="fdw-code" data-wheel-copy aria-label="Copy code ' + esc(offer.code) + '"><strong>' + esc(offer.code) + '</strong><span>Copy</span></button>' +
+        (offer.min_amount > 0 ? '<small>Minimum order ' + money(offer.min_amount) + '</small>' : '');
+    }
+    rotor.style.transform = 'rotate(' + restAt(0) + 'deg)';
+    if (previous) {
+      var existing = offers.filter(function (o) { return o.code === previous; })[0];
+      if (existing) { show(existing); rotor.style.transform = 'rotate(' + restAt(slices.indexOf(existing)) + 'deg)'; }
+      else wrap.querySelector('.fd-wheel-result').textContent = 'Today’s offer is no longer active. Check back tomorrow.';
+    }
+    function spin() {
+      if (spinning || btn.disabled) return;
+      spinning = true; btn.disabled = true; hub.disabled = true; btn.textContent = 'Spinning…';
+      var pick = offers[Math.floor(Math.random() * offers.length)];
+      var spots = []; slices.forEach(function (o, j) { if (o === pick) spots.push(j); });
+      var j = spots[Math.floor(Math.random() * spots.length)];
+      var jitter = (Math.random() - .5) * step * .6;
+      var calm = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+      var dur = calm ? 600 : 5200;
+      rotor.style.transition = 'transform ' + dur + 'ms cubic-bezier(.12,.66,.12,1)';
+      rotor.style.transform = 'rotate(' + (360 * (calm ? 1 : 7) + restAt(j) + jitter) + 'deg)';
+      wrap.querySelector('.fd-wheel').classList.add('is-spinning');
+      timer = setTimeout(function () {
+        spinning = false;
+        wrap.querySelector('.fd-wheel').classList.remove('is-spinning');
+        wrap.querySelector('.fd-wheel').classList.add('is-won');
+        show(pick); btn.textContent = 'Come back tomorrow for another spin';
+        try { localStorage.setItem(key, JSON.stringify(pick.code)); } catch (err) {}
+        save(pick.code);
+      }, dur + 80);
+    }
+    btn.addEventListener('click', spin);
+    hub.addEventListener('click', spin);
+    wrap.addEventListener('click', function (e) {
+      var c = e.target.closest('[data-wheel-copy]');
+      if (!c) return;
+      var code = c.querySelector('strong').textContent;
+      copyText(code).then(function () { c.classList.add('copied'); c.querySelector('span').textContent = 'Copied'; toast('Code ' + code + ' copied', 'success'); })
+        .catch(function () { toast('Could not copy — the code is ' + code, 'error'); });
+    });
+    (previous ? wrap.querySelector('[data-wheel-close]') : btn).focus();
+  }
+
+  // ---------- Promo bar ----------
+  function promoModel(data) {
+    var p = Object.assign({}, PROMO), live = data.promo;
+    if (live && live.headline) {
+      p.headline = live.headline; p.code = live.code || ''; p.endsAt = live.ends_at || null; p.freeInstall = !!live.free_install;
+      if (live.link) p.cta = { label: p.cta.label, href: live.link };
+    }
+    if (!p.headline) return null;
+    if (p.endsAt && !(new Date(p.endsAt).getTime() > Date.now())) return null;
+    return p;
+  }
+
+  function promoHtml(p, s) {
+    if (!p) {
+      return '<div class="topbar"><span class="topbar-signal" aria-hidden="true"></span><span class="topbar-label">From the depot</span><span class="topbar-copy">' + esc(s.topbar_text || 'Explore resources for your next FiveM world') + '</span>' +
+        '<a href="' + esc(s.topbar_link || 'category.html?c=all') + '">Explore <span aria-hidden="true">&rarr;</span></a></div>';
+    }
+    return '<div class="promo-bar" role="region" aria-label="Current promotion"><div class="promo-inner">' +
+      '<div class="promo-msg"><span class="fd-badge fd-badge--solid promo-badge">' + esc(p.badge) + '</span>' +
+        '<strong class="promo-headline">' + esc(p.headline) + '</strong>' +
+        (p.freeInstall ? '<span class="fd-badge fd-badge--warm promo-install">' + I.check + esc(p.freeInstallLabel) + '</span>' : '') + '</div>' +
+      '<div class="promo-actions">' +
+        (p.code ? '<button type="button" class="promo-code" data-promo-copy="' + esc(p.code) + '" aria-label="Copy coupon code ' + esc(p.code) + '">' +
+          '<span class="promo-code-label">Code</span><b>' + esc(p.code) + '</b><span class="promo-code-state" aria-hidden="true">Copy</span></button>' : '') +
+        (p.endsAt ? '<span class="promo-timer" data-promo-ends="' + esc(p.endsAt) + '" role="timer" aria-label="Offer ends in"></span>' : '') +
+        '<a class="promo-cta" href="' + esc(p.cta.href) + '">' + esc(p.cta.label) + '<span aria-hidden="true">&rarr;</span></a>' +
+      '</div></div></div>';
+  }
+
+  function copyText(text) {
+    if (navigator.clipboard && window.isSecureContext) return navigator.clipboard.writeText(text);
+    return new Promise(function (resolve, reject) {
+      var t = document.createElement('textarea');
+      t.value = text; t.setAttribute('readonly', ''); t.style.cssText = 'position:fixed;opacity:0';
+      document.body.appendChild(t); t.select();
+      var ok = false; try { ok = document.execCommand('copy'); } catch (e) {}
+      t.remove(); if (ok) resolve(); else reject(new Error('copy failed'));
+    });
+  }
+
+  function initPromo(bar) {
+    if (!bar || !bar.classList.contains('promo-bar')) return;
+    var btn = bar.querySelector('[data-promo-copy]');
+    if (btn) btn.addEventListener('click', function () {
+      var code = btn.getAttribute('data-promo-copy'), label = btn.querySelector('.promo-code-state');
+      copyText(code).then(function () {
+        btn.classList.add('copied'); label.textContent = 'Copied';
+        toast('Code ' + code + ' copied', 'success');
+        setTimeout(function () { btn.classList.remove('copied'); label.textContent = 'Copy'; }, 1800);
+      }).catch(function () { toast('Could not copy — the code is ' + code, 'error'); });
+    });
+    var timer = bar.querySelector('[data-promo-ends]');
+    if (!timer) return;
+    var end = new Date(timer.getAttribute('data-promo-ends')).getTime(), iv;
+    var pad = function (n) { return (n < 10 ? '0' : '') + n; };
+    var seg = function (v, u) { return '<span class="promo-seg"><b>' + v + '</b><small>' + u + '</small></span>'; };
+    var tick = function () {
+      var left = Math.max(0, Math.floor((end - Date.now()) / 1000));
+      if (!left) { clearInterval(iv); bar.remove(); return; }
+      var d = Math.floor(left / 86400), h = Math.floor(left / 3600) % 24, m = Math.floor(left / 60) % 60;
+      timer.innerHTML = '<span class="promo-timer-label">Ends in</span>' + (d ? seg(d, 'd') : '') + seg(pad(h), 'h') + seg(pad(m), 'm') + seg(pad(left % 60), 's');
+    };
+    iv = setInterval(tick, 1000);
+    tick();
+  }
+
+  // Navbar tightens once the page scrolls.
+  function initCompactHeader(el) {
+    var on = false, queued = false;
+    var check = function () {
+      queued = false;
+      var v = window.scrollY > 24;
+      if (v !== on) { on = v; el.classList.toggle('is-compact', v); }
+    };
+    window.addEventListener('scroll', function () { if (!queued) { queued = true; requestAnimationFrame(check); } }, { passive: true });
+    check();
   }
 
   function renderHeader(data) {
@@ -482,21 +780,25 @@
       (c.children || []).forEach(function (k) { drawerLinks += '<a class="sub" href="' + catUrl(k.slug) + '">' + esc(k.name) + '</a>'; });
     });
     STATIC_LINKS.forEach(function (l) { drawerLinks += '<a href="' + l.href + '">' + l.name + '</a>'; });
-    drawerLinks += '<div id="drawerAcct"><a href="auth.html">Log in</a><a href="auth.html?mode=register">Create account</a></div>';
+    drawerLinks += '<div id="drawerAcct"><a href="auth.html" data-auth-open>Log in</a><a href="auth.html?mode=register">Create account</a></div>';
 
     var name = (data.settings && data.settings.site_name) || 'FiveMDepot';
 
-    var s0 = data.settings || {};
-    var topbar = s0.topbar_text ? '<div class="topbar">' + (s0.topbar_link ? '<a href="' + esc(s0.topbar_link) + '">' + esc(s0.topbar_text) + '</a>' : esc(s0.topbar_text)) + '</div>' : '';
-    el.innerHTML = topbar +
+    // The promo bar scrolls away with the page; only the floating navbar is sticky.
+    var promo = document.getElementById('site-promo');
+    if (!promo) { promo = document.createElement('div'); promo.id = 'site-promo'; el.parentNode.insertBefore(promo, el); }
+    promo.innerHTML = promoHtml(promoModel(data), data.settings || {});
+    initPromo(promo.firstChild);
+
+    el.innerHTML =
       '<header class="header"><div class="container header-inner">' +
         '<a class="logo" href="index.html" aria-label="' + esc(name) + ' home">' + logoHtml(name) + '</a>' +
         '<nav class="nav" aria-label="Main">' + links + '</nav>' +
         '<div class="header-actions">' +
           '<button class="icon-btn" id="searchBtn" aria-label="Search (press /)" aria-haspopup="dialog">' + I.search + '</button>' +
           '<button class="icon-btn theme-btn" id="themeBtn" aria-label="Toggle light/dark theme">' + I.moon + I.sun + '</button>' +
-          '<a class="icon-btn cart-btn" href="cart.html" data-open-cart aria-label="Cart">' + I.cart + '<span class="badge-count" data-cart-count></span></a>' +
-          '<div class="acct-wrap hide-sm"><a class="icon-btn" href="auth.html" id="accountBtn" aria-label="Log in">' + I.user + '</a><div class="acct-menu" id="acctMenu" hidden></div></div>' +
+          '<a class="icon-btn cart-btn" href="cart.html" data-open-cart aria-label="Cart">' + I.cart + '<span class="cart-label">Cart</span><span class="badge-count" data-cart-count></span></a>' +
+          '<div class="acct-wrap hide-sm"><a class="icon-btn account-entry" href="auth.html" id="accountBtn" data-auth-open aria-label="Log in">' + I.user + '<span>Sign in</span></a><div class="acct-menu" id="acctMenu" hidden></div></div>' +
           '<div class="socials">' + socialLinks(data.settings || {}) + '</div>' +
           '<button class="icon-btn menu-btn" id="menuBtn" aria-label="Open menu" aria-expanded="false">' + I.menu + '</button>' +
         '</div>' +
@@ -538,8 +840,11 @@
     });
     document.addEventListener('keydown', function (e) { if (e.key === 'Escape') { open(false); document.body.classList.remove('filters-open'); } });
 
+    initCompactHeader(el);
     Cart.renderCount();
     checkAuth();
+    initAuthModal();
+    initWheel();
   }
 
   function initSearch() {
@@ -626,7 +931,6 @@
     var cats = data.categories.slice(0, 6).map(function (c) {
       return '<li><a href="' + catUrl(c.slug) + '">' + esc(c.name) + '</a></li>';
     }).join('');
-    var since = s.since_year || '2024';
     el.innerHTML =
       '<footer class="footer"><div class="container">' +
         '<div class="footer-grid">' +
@@ -640,7 +944,7 @@
             '<li><a href="auth.html?mode=register">Become a Seller</a></li></ul></div>' +
           '<div><h4>Legal</h4><ul><li><a href="documentation.html?type=doc&amp;slug=terms">Terms of Service</a></li><li><a href="documentation.html?type=doc&amp;slug=privacy">Privacy Policy</a></li><li><a href="documentation.html?type=doc&amp;slug=refunds">Refund Policy</a></li></ul></div>' +
         '</div>' +
-        '<div class="footer-badges"><span class="footer-badge">Official Store</span><span class="footer-badge">Verified Sellers</span><span class="footer-badge">Since ' + esc(since) + '</span></div>' +
+        '<div class="footer-badges"><span class="footer-badge">FiveM resources</span><span class="footer-badge">Scripts &amp; worlds</span><span class="footer-badge">Server packs</span></div>' +
         '<div class="footer-bottom"><span>© ' + new Date().getFullYear() + ' ' + esc(name) + '. All rights reserved.</span><span>Not affiliated with Rockstar Games or Cfx.re.</span></div>' +
       '</div></footer>';
   }

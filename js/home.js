@@ -2,16 +2,31 @@
 (function () {
   'use strict';
   var S = window.Store, esc = S.esc, I = S.icons;
+  var FEATURE_SECTION = { key: 'features', content: {
+    heading: 'Everything You Need to Build *Epic* FiveM Servers',
+    subheading: 'Explore the resources and details that help you plan your next build.',
+    items: [
+      { icon: 'code', title: 'Scripts & Systems', text: 'Browse jobs, economy systems and other server resources.' },
+      { icon: 'globe', title: 'Maps & MLOs', text: 'Explore interiors and locations for your server world.' },
+      { icon: 'zap', title: 'Vehicles', text: 'Compare vehicle resources and their listed requirements.' },
+      { icon: 'users', title: 'Clothing', text: 'Find clothing resources for your community.' },
+      { icon: 'layers', title: 'Server Packs', text: 'Review complete packs and the systems they include.' },
+      { icon: 'sliders', title: 'Framework Filters', text: 'Narrow the catalog by listed compatibility.' },
+      { icon: 'database', title: 'Product Details', text: 'Check screenshots, features and setup notes before checkout.' },
+      { icon: 'shield', title: 'Your Library', text: 'Access eligible purchases from your account dashboard.' }
+    ]
+  } };
 
   // Same content as the seeded homepage_sections — used until the API answers or if it fails.
   var DEFAULTS = {
     sections: [
       { key: 'hero', content: { badge: 'Premium Marketplace Now Live', headline: '*FiveM* Premium|*Scripts*, MLOs &|Server Packs', subtitle: '**Since 2024** — the **trusted** FiveM marketplace for QBCore, ESX and QBox: server packs, jobs, MLO maps, vehicles, clothing and more.', checks: ['100% Legal', 'Instant Download', 'Lifetime Updates'], primary_text: 'Explore Marketplace', primary_link: 'category.html?c=all', secondary_text: 'View Server Packs', secondary_link: 'server-packs.html' } },
-      { key: 'trust', content: { items: [{ value: '4.9/5', label: 'Customer rating' }, { value: '10K+', label: 'Discord members' }, { value: '98%', label: 'Satisfaction rate' }, { value: '500+', label: 'Premium resources' }] } },
+      { key: 'trust', content: { items: [] } },
       { key: 'categories', content: { heading: 'Shop by Category', subheading: 'Everything you need to build your server' } },
+      FEATURE_SECTION,
       { key: 'featured', content: { heading: 'Featured Resources' } },
-      { key: 'server_pack', content: { heading: 'Complete Server Packs', subheading: 'Launch a full server in minutes', stats: [{ value: '400+', label: 'Systems included' }, { value: '0.4-0.6ms', label: 'Idle resmon' }], benefits: ['Lifetime Access', 'No Hidden Fees', 'Free Updates', 'Setup Support'], cta_text: 'View Server Packs', cta_link: 'server-packs.html' } },
-      { key: 'reviews', content: { heading: 'Loved by server owners', subheading: 'Real reviews from verified buyers' } },
+      { key: 'server_pack', content: { heading: 'Complete Server Packs', subheading: 'Explore complete builds for your next server', stats: [], benefits: ['Compare included systems', 'Review framework support', 'Explore pack details'], cta_text: 'View Server Packs', cta_link: 'server-packs.html' } },
+      { key: 'reviews', content: { heading: 'From the community', subheading: 'Reviews from buyers when available' } },
       { key: 'about', content: { heading: 'About FiveMDepot', body: 'FiveMDepot serves FiveM server owners running QBCore, ESX, QBox or hybrid setups, with complete server packs, job and economy scripts, MLO interiors, vehicle packs and clothing.' } },
       { key: 'faq', content: { heading: 'Frequently Asked Questions' } },
       { key: 'community', content: { heading: 'Join the FiveMDepot community', text: 'Get support, early access to new releases, giveaways and help from other server owners.', button: 'Join our Discord' } }
@@ -86,6 +101,8 @@
         layers: '<path d="M4 4h6v6H4zM14 14h6v6h-6zM4 14h6M7 10v4M14 7h3a3 3 0 0 1 3 3v1"/>',
         code: '<path d="m8 8-4 4 4 4M16 8l4 4-4 4"/>', box: '<path d="m21 8-9-5-9 5v8l9 5 9-5z"/><path d="m3 8 9 5 9-5M12 13v8"/>'
       };
+      var seededClaims = (c.items || []).some(function (it) { return /0\.00ms|zero data loss|prevent exploits/i.test(it.text || ''); });
+      if (seededClaims) c = FEATURE_SECTION.content;
       var items = (c.items || []).slice(0, 12);
       if (!items.length) return '';
       var sub = esc(c.subheading || '')
@@ -125,18 +142,27 @@
       if (demo || !items.length) {
         items = [
           { value: st.products ? String(st.products) : 'Browse', label: st.products ? 'Published resources' : 'FiveM resources' },
-          { value: nav.categories.length ? String(nav.categories.length) : 'Explore', label: 'Resource categories' },
+          { value: st.products && nav.categories.length ? String(nav.categories.length) : 'Explore', label: 'Resource categories' },
           { value: st.sellers ? String(st.sellers) : 'Compare', label: st.sellers ? 'Active creators' : 'Framework compatibility' },
           { value: st.reviews >= 5 ? st.rating + '/5' : 'Discover', label: st.reviews >= 5 ? 'Buyer rating (' + st.reviews + ' reviews)' : 'Scripts, maps and more' }
         ];
       }
       if (!items.length) return '';
       var fws = ['QBCore', 'ESX', 'QBox', 'Standalone', 'ox_lib', 'oxmysql'];
+      // One colour + icon per tile, cycling: crimson, blue, green, amber
+      var tones = ['t-red', 't-blue', 't-green', 't-amber'];
+      var icons = [
+        '<path d="m21 8-9-5-9 5v8l9 5 9-5z"/><path d="m3 8 9 5 9-5M12 13v8"/>',
+        '<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/>',
+        '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.9M16 3.1a4 4 0 0 1 0 7.8"/>',
+        '<path d="m12 2 3.1 6.3 6.9 1-5 4.9 1.2 6.8L12 17.8 5.8 21l1.2-6.8-5-4.9 6.9-1z"/>'
+      ];
       return '<section class="trust"><div class="container"><div class="trust-grid reveal">' +
-        items.map(function (it) {
+        items.map(function (it, i) {
           var m = String(it.value).match(/^([\d.]+)(.*)$/);
           var val = m ? '<b data-count="' + esc(m[1]) + '" data-suffix="' + esc(m[2]) + '">' + esc(it.value) + '</b>' : '<b>' + esc(it.value) + '</b>';
-          return '<div class="trust-item">' + val + '<span>' + esc(it.label) + '</span></div>';
+          return '<div class="trust-item ' + tones[i % 4] + '"><i class="trust-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">' + icons[i % 4] + '</svg></i>' +
+            val + '<span>' + esc(it.label) + '</span></div>';
         }).join('') +
         '</div><div class="fw-strip reveal"><span>Works with</span>' + fws.map(function (f) { return '<b>' + f + '</b>'; }).join('') + '</div></div></section>';
     },
@@ -185,7 +211,9 @@
         return !(s.value === '400+' && s.label === 'Systems included') &&
           !(s.value === '0.4-0.6ms' && s.label === 'Idle resmon');
       }).map(function (s) { return '<div><b>' + esc(s.value) + '</b><span>' + esc(s.label) + '</span></div>'; }).join('');
-      var benefits = (c.benefits || []).map(function (b) { return '<div class="pack-benefit">' + I.check + esc(b) + '</div>'; }).join('');
+      var seededBenefits = (c.benefits || []).join('|') === 'Lifetime Access|No Hidden Fees|Free Updates|Setup Support';
+      var benefitList = seededBenefits ? ['Compare included systems', 'Review framework support', 'Explore pack details'] : (c.benefits || []);
+      var benefits = benefitList.map(function (b) { return '<div class="pack-benefit">' + I.check + esc(b) + '</div>'; }).join('');
       var packs = (d.packs || []).length
         ? '<div class="product-grid" style="margin-top:24px">' + d.packs.map(S.productCard).join('') + '</div>' : '';
       return '<section class="section" id="server-packs"><div class="container">' +
@@ -203,9 +231,9 @@
 
     about: function (c) {
       var points = [
-        ['&#9889;', 'Optimized performance', 'Every resource is reviewed for low idle resmon before it goes live.'],
-        ['&#128737;', 'Verified sellers', 'Sellers are approved by our team, and products are checked before publishing.'],
-        ['&#128260;', 'Lifetime updates', 'Buy once and get every future update from your dashboard.']
+        ['&#9889;', 'Find your fit', 'Explore product details before adding a resource to your server.'],
+        ['&#128737;', 'Browse by framework', 'Use compatibility details to compare resources for your setup.'],
+        ['&#128260;', 'Keep your library close', 'Access eligible purchases from your account dashboard.']
       ].map(function (p) {
         return '<div class="about-point"><span class="ico">' + p[0] + '</span><div><b>' + p[1] + '</b><span>' + p[2] + '</span></div></div>';
       }).join('');
@@ -217,14 +245,14 @@
     },
 
     reviews: function (c, d) {
-      if (!d.reviews || d.reviews.length < 2) return '';
-      return '<section class="section"><div class="container">' + head(c.heading || 'Loved by server owners', c.subheading, 'Reviews', true) +
-        '<div class="rv-grid">' + d.reviews.map(function (r) {
+      var reviews = d.reviews || [];
+      return '<section class="section fd-reviews"><div class="container">' + head(reviews.length ? (c.heading || 'From the community') : 'Your stories, soon.', reviews.length ? c.subheading : 'Buyer reviews will appear here as customers share their experience.', 'Community / Reviews', true) +
+        (reviews.length ? '<div class="rv-grid">' + reviews.map(function (r) {
           return '<figure class="rv-card reveal"><div class="stars">' + '★★★★★'.slice(0, r.rating) + '</div>' +
             '<blockquote>“' + esc(r.comment) + '”</blockquote>' +
             '<figcaption><span class="av">' + esc(r.name.charAt(0).toUpperCase()) + '</span><span><b>' + esc(r.name) + '</b>' +
             '<a href="' + S.productUrl(r.slug) + '">' + esc(r.product) + '</a></span><span class="vb">✓ Verified buyer</span></figcaption></figure>';
-        }).join('') + '</div></div></section>';
+        }).join('') + '</div>' : '<div class="fd-review-empty"><span>COMMUNITY WALL / AWAITING FIRST REVIEW</span><strong>Built for the people behind the servers.</strong><a href="category.html?c=all">Explore the collection &rarr;</a></div>') + '</div></section>';
     },
 
     community: function (c, d, nav) {
@@ -376,9 +404,14 @@
   }
 
   function render(data, nav) {
-    var hasTrust = data.sections.some(function (x) { return x.key === 'trust'; });
+    var sections = data.sections.slice();
+    if (data.features_configured === false && !sections.some(function (x) { return x.key === 'features'; })) {
+      var afterCategories = sections.findIndex(function (x) { return x.key === 'categories'; });
+      sections.splice(afterCategories + 1, 0, FEATURE_SECTION);
+    }
+    var hasTrust = sections.some(function (x) { return x.key === 'trust'; });
     COMMUNITY = false;
-    var html = data.sections.map(function (s) {
+    var html = sections.map(function (s) {
       var fn = R[s.key];
       var out = fn ? fn(s.content || {}, data, nav) : '';
       // Image showcase strip follows the trust stats (or the hero when trust is disabled)

@@ -5,13 +5,10 @@
   var check = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>';
 
   function kpis(t, packs) {
-    var resmon = packs.map(function (p) { return p.pack.resmon_idle_ms; }).filter(Boolean)[0] || '0.4–0.6ms';
-    var items = [
-      [(t.resources ? t.resources + '+' : '400+'), 'Systems included'],
-      [resmon, 'Idle resmon'],
-      ['Lifetime', 'Free updates'],
-      ['24/7', 'Discord support']
-    ];
+    var resmon = packs.map(function (p) { return p.pack.resmon_idle_ms; }).filter(Boolean)[0];
+    var items = [[String(packs.length), packs.length === 1 ? 'Server pack' : 'Server packs']];
+    if (t.resources) items.push([String(t.resources), 'Listed systems']);
+    if (resmon) items.push([resmon, 'Listed idle resmon']);
     document.getElementById('kpis').innerHTML = items.map(function (k) { return '<div><b>' + esc(k[0]) + '</b><span>' + esc(k[1]) + '</span></div>'; }).join('');
   }
 
@@ -22,7 +19,7 @@
     var more = Math.max(0, (p.features.length || (p.pack.features || []).length) - feats.length);
     var fw = (p.pack.frameworks && p.pack.frameworks.length ? p.pack.frameworks : p.compatibility);
     S.productCard(p); // registers the product for the shared cart handler
-    return '<article class="pack-card' + (best ? ' best' : '') + '">' + (best ? '<span class="ribbon">MOST POPULAR</span>' : '') +
+    return '<article class="pack-card' + (best ? ' best' : '') + '">' + (best ? '<span class="ribbon">FEATURED</span>' : '') +
       '<a class="media" href="' + S.productUrl(p.slug) + '"><img src="' + esc(p.image || 'images/photos/server-packs-640.jpg') + '" alt="' + esc(p.title) + '" data-fallback="images/photos/server-packs-640.jpg"></a>' +
       '<div class="body"><h3>' + esc(p.title) + '</h3>' +
       '<div class="mini">' + (p.pack.resources ? '<span>' + esc(p.pack.resources) + '+ systems</span>' : '') +
@@ -84,7 +81,7 @@
       document.getElementById('compare').hidden = true;
       return;
     }
-    var best = packs.length >= 3 ? 1 : packs.findIndex(function (p) { return p.featured; });
+    var best = packs.findIndex(function (p) { return p.featured; });
     list.innerHTML = packs.map(function (p, i) { return packCard(p, i === best); }).join('');
     compare(packs);
     included(packs);
