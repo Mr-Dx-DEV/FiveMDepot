@@ -2,8 +2,8 @@
 /**
  * FiveMDepot — Configuration
  *
- * IMPORTANT: Fill in your database credentials below.
- * This file must NOT be committed to Git with real credentials.
+ * This file is in Git: never put passwords or keys here.
+ * Secrets go in config.local.php (not in Git) — copy config.local.example.php to create it.
  */
 
 // === Paddle settings from environment variables (see .env.example) — these win over config.local.php ===
@@ -20,7 +20,11 @@ if (is_file(__DIR__ . '/config.local.php')) {
 defined('DB_HOST') || define('DB_HOST', 'localhost:3306');
 defined('DB_NAME') || define('DB_NAME', 'fivemdepot');
 defined('DB_USER') || define('DB_USER', 'fivemdepot');
-defined('DB_PASS') || define('DB_PASS', 'FIVVEM@22316');
+if (!defined('DB_PASS')) {
+  // No default on purpose: the password must come from config.local.php
+  error_log('[config] DB_PASS is not set — add it to config.local.php');
+  define('DB_PASS', '');
+}
 define('DB_CHARSET', 'utf8mb4');
 
 // === Site ===
