@@ -23,10 +23,12 @@ defined('DISCORD_CLIENT_SECRET') || define('DISCORD_CLIENT_SECRET', '');
 // Paddle -> Developer tools -> Notifications -> New destination: https://YOUR-DOMAIN/api/pay/paddle-webhook.php
 //   events transaction.completed, adjustment.created, adjustment.updated -> copy its secret key here.
 // Test with a sandbox account first (sandbox-vendors.paddle.com): its API key contains "_sdbx_" and the client token starts with "test_".
-defined('PADDLE_API_KEY') || define('PADDLE_API_KEY', '');
-defined('PADDLE_CLIENT_TOKEN') || define('PADDLE_CLIENT_TOKEN', '');
+// Which Paddle account to use: 'sandbox' or 'production'. Required by the pricing page (pricing.html): it refuses
+// to load when this is missing or doesn't match the client token, so the site never talks to the wrong account.
+defined('PADDLE_ENVIRONMENT') || define('PADDLE_ENVIRONMENT', 'sandbox');
+defined('PADDLE_API_KEY') || define('PADDLE_API_KEY', '');                 // server only — never sent to the browser
+defined('PADDLE_CLIENT_TOKEN') || define('PADDLE_CLIENT_TOKEN', '');       // test_… (sandbox) / live_… (production); public
 defined('PADDLE_WEBHOOK_SECRET') || define('PADDLE_WEBHOOK_SECRET', '');   // pdl_ntfset_...
-// defined('PADDLE_SANDBOX') || define('PADDLE_SANDBOX', true);            // optional: force sandbox/live
 
 // ---- Email (optional but recommended: emails from PHP mail() often land in spam)
 // Plesk: Mail -> create e.g. noreply@your-domain, then use its login here.

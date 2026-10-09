@@ -53,6 +53,10 @@
       `https://YOUR-DOMAIN/checkout.html`.
    6. Put the three values in `config.local.php` (`PADDLE_API_KEY`, `PADDLE_CLIENT_TOKEN`,
       `PADDLE_WEBHOOK_SECRET`). Checkout appears automatically; *Admin → Settings → Payments* shows the status.
+   7. Also set `PADDLE_ENVIRONMENT` to `'sandbox'` or `'production'`. The **pricing page** (`/pricing`,
+      subscription plans) requires it and refuses to load if it is missing or doesn't match the client token.
+      Plan copy and price IDs live in `js/pricing-tiers.js` — the IDs there are sandbox IDs; replace them with
+      your live `pri_…` IDs when you switch to production. After checkout, Paddle sends buyers to `/welcome`.
    Test everything with a **sandbox** account (sandbox-vendors.paddle.com) first, then swap in the live keys.
    - **Email:** set *Settings → Email → Your email* to get alerts for new tickets.
      PHP `mail()` is used by default; for reliable delivery create a mailbox in Plesk (e.g.

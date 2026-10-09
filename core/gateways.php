@@ -52,8 +52,29 @@ function start_gateway_payment(array $o): array
 // ============================================================
 // Paddle Billing
 // ============================================================
+/**
+ * 'sandbox' or 'production', from the PADDLE_ENVIRONMENT environment variable or config.local.php (see config.php).
+ * Never guessed: throws when it is missing, invalid, or doesn't match the client-side token
+ * (test_… = sandbox, live_… = production).
+ */
+function paddle_environment(): string
+{
+  $env = defined('PADDLE_ENVIRONMENT') ? (string)PADDLE_ENVIRONMENT : '';
+  if ($env !== 'sandbox' && $env !== 'production') {
+    throw new RuntimeException('PADDLE_ENVIRONMENT must be "sandbox" or "production" (env var or config.local.php)');
+  }
+  $token = defined('PADDLE_CLIENT_TOKEN') ? (string)PADDLE_CLIENT_TOKEN : '';
+  if ($token === '') throw new RuntimeException('PADDLE_CLIENT_TOKEN is not set (env var or config.local.php)');
+  $prefix = $env === 'sandbox' ? 'test_' : 'live_';
+  if (strpos($token, $prefix) !== 0) {
+    throw new RuntimeException("PADDLE_CLIENT_TOKEN does not match PADDLE_ENVIRONMENT={$env} (expected a {$prefix}… token)");
+  }
+  return $env;
+}
+
 function paddle_sandbox(): bool
 {
+  if (defined('PADDLE_ENVIRONMENT')) return paddle_environment() === 'sandbox';
   if (defined('PADDLE_SANDBOX')) return (bool)PADDLE_SANDBOX;
   return defined('PADDLE_API_KEY') && strpos((string)PADDLE_API_KEY, '_sdbx_') !== false;
 }

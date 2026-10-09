@@ -2,10 +2,16 @@
 
 
 # Keep secrets and tooling private
-<FilesMatch "^(config\.local\.php|config\.local\.example\.php|database\.sql|.*\.md|bump-version\.py)$">
+<FilesMatch "^(config\.local\.php|config\.local\.example\.php|\.env.*|database\.sql|.*\.md|bump-version\.py)$">
   Require all denied
 </FilesMatch>
 RedirectMatch 404 ^/(migrations|tools|docs|core)/
+
+# Clean URLs for the pricing page and the post-checkout page (Paddle successUrl = /welcome)
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteRule ^(pricing|welcome)$ $1.html [L]
+</IfModule>
 
 <IfModule mod_headers.c>
   # HTML pages: always check for a new version (CSS/JS links carry ?v= so updates load instantly)

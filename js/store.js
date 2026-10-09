@@ -919,11 +919,14 @@
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
 
   // ---------- Paddle checkout ----------
-  // Loads Paddle.js once and opens the overlay checkout for a transaction created by the server.
-  // info = { transaction_id, client_token, environment, email, success_url }; onClose runs if the buyer closes it unpaid.
+  // Loads and initializes Paddle.js once per page (it refuses a second Initialize).
+  // info = { client_token, environment: 'sandbox' | 'production' } — anything else throws, so we never hit the wrong account.
   var paddleReady = null, paddleClose = null, paddlePaid = false;
-  function paddleCheckout(info, onClose) {
+  function loadPaddle(info) {
     if (!paddleReady) {
+      if (info.environment !== 'sandbox' && info.environment !== 'production') {
+        return Promise.reject(new Error('Paddle environment is not configured (got ' + JSON.stringify(info.environment) + ').'));
+      }
       paddleReady = new Promise(function (resolve, reject) {
         var s = document.createElement('script');
         s.src = 'https://cdn.paddle.com/paddle/v2/paddle.js';
@@ -942,7 +945,13 @@
         document.head.appendChild(s);
       });
     }
-    return paddleReady.then(function (P) {
+    return paddleReady;
+  }
+
+  // Opens the overlay checkout for a transaction created by the server.
+  // info = { transaction_id, client_token, environment, email, success_url }; onClose runs if the buyer closes it unpaid.
+  function paddleCheckout(info, onClose) {
+    return loadPaddle(info).then(function (P) {
       paddleClose = onClose || null; paddlePaid = false;
       P.Checkout.open({
         transactionId: info.transaction_id,
@@ -956,6 +965,6 @@
     api: api, nav: nav, esc: esc, icon: icon, money: money, qs: qs,
     catUrl: catUrl, productUrl: productUrl, icons: I, catIcon: catIcon, catArt: catArt,
     productCard: productCard, cart: Cart, toast: toast, reveal: reveal, user: null,
-    v1: v1, me: me, loginUrl: loginUrl, syncWishlist: syncWishlist, claim: claim, drawer: Drawer, logout: logout, paddleCheckout: paddleCheckout
+    v1: v1, me: me, loginUrl: loginUrl, syncWishlist: syncWishlist, claim: claim, drawer: Drawer, logout: logout, loadPaddle: loadPaddle, paddleCheckout: paddleCheckout
   };
 })();

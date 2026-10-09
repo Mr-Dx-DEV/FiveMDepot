@@ -6,6 +6,12 @@
  * This file must NOT be committed to Git with real credentials.
  */
 
+// === Paddle settings from environment variables (see .env.example) — these win over config.local.php ===
+foreach (['PADDLE_ENVIRONMENT', 'PADDLE_CLIENT_TOKEN'] as $k) {
+  $v = getenv($k);
+  if ($v !== false && $v !== '' && !defined($k)) define($k, $v);
+}
+
 // === Database (MariaDB) ===
 // Real credentials live in config.local.php (not in git). Copy config.local.example.php to create it.
 if (is_file(__DIR__ . '/config.local.php')) {
