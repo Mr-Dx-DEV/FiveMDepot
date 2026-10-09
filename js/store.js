@@ -932,13 +932,16 @@
         s.src = 'https://cdn.paddle.com/paddle/v2/paddle.js';
         s.onload = function () {
           if (info.environment === 'sandbox') window.Paddle.Environment.set('sandbox');
-          window.Paddle.Initialize({
+          var init = {
             token: info.client_token,
             eventCallback: function (ev) {
               if (ev.name === 'checkout.completed') paddlePaid = true;
               if (ev.name === 'checkout.closed' && !paddlePaid && paddleClose) paddleClose();
             }
-          });
+          };
+          // Paddle Retain: the signed-in buyer's Paddle customer ID (ctm_…), never our user ID or email
+          if (info.paddle_customer_id) init.pwCustomer = { id: info.paddle_customer_id };
+          window.Paddle.Initialize(init);
           resolve(window.Paddle);
         };
         s.onerror = function () { paddleReady = null; reject(new Error('Could not load the secure checkout. Check your connection or disable ad blockers and try again.')); };

@@ -1,17 +1,19 @@
 /* FiveMDepot — Pricing page: localized prices via Paddle.PricePreview, overlay checkout via Paddle.Checkout.open.
+ * Plans (copy + price IDs for the current Paddle environment) come from the server: edit them in core/plans.php.
  * Prices shown are Paddle's formattedTotals as-is: no math or re-formatting here. */
 (function () {
   'use strict';
   var S = window.Store, esc = S.esc;
-  var TIERS = window.PRICING_TIERS;
   var box = document.getElementById('pricing');
   var ROOT = (document.currentScript && document.currentScript.src || location.href).replace(/js\/pricing\.js.*$/, '');
 
   var state = { frequency: 'month', prices: {}, loading: true, error: '', paddle: null, config: null };
 
+  function tiers() { return (state.config && state.config.tiers) || []; }
+
   function lineItems() {
     var items = [];
-    TIERS.forEach(function (t) {
+    tiers().forEach(function (t) {
       items.push({ priceId: t.priceId.month, quantity: 1 }, { priceId: t.priceId.year, quantity: 1 });
     });
     return items;
@@ -45,45 +47,50 @@
 
   function render() {
     var f = state.frequency;
+    var trial = state.config ? state.config.trial_days : null;
     var toggle = '<div class="pr-toggle" role="radiogroup" aria-label="Billing frequency">' +
       [['month', 'Monthly'], ['year', 'Yearly']].map(function (o) {
         return '<button type="button" role="radio" data-freq="' + o[0] + '" aria-checked="' + (f === o[0]) + '">' + o[1] + '</button>';
       }).join('') + '</div>';
 
-    var cards = TIERS.map(function (t, i) {
-      var price = state.prices[t.priceId[f]];
-      var ready = !state.loading && price && state.paddle;
-      return '<article class="panel pr-card' + (t.featured ? ' is-featured' : '') + '">' +
-        (t.featured ? '<span class="pr-badge">Most popular</span>' : '') +
-        '<h2 class="pr-name">' + esc(t.name) + '</h2>' +
-        '<p class="muted pr-desc">' + esc(t.description) + '</p>' +
-        '<p class="pr-price" aria-live="polite">' +
-          (ready ? '<span class="pr-amount" data-price-id="' + esc(t.priceId[f]) + '">' + esc(price) + '</span>'
-                 : '<span class="skeleton pr-amount-skel"></span>') +
-          '<span class="muted">/' + f + '</span></p>' +
-        '<ul class="pr-features">' + t.features.map(function (x) { return '<li>' + esc(x) + '</li>'; }).join('') + '</ul>' +
-        '<button type="button" class="btn btn-primary btn-lg btn-block" data-tier="' + i + '"' + (ready ? '' : ' disabled') + '>Subscribe</button>' +
-      '</article>';
-    }).join('');
+    var cards = !tiers().length && !state.error
+      ? [0, 1, 2].map(function () { return '<div class="panel pr-card skeleton" style="height:360px"></div>'; }).join('')
+      : tiers().map(function (t, i) {
+        var price = state.prices[t.priceId[f]];
+        var ready = !state.loading && price && state.paddle;
+        return '<article class="panel pr-card' + (t.featured ? ' is-featured' : '') + '">' +
+          (t.featured ? '<span class="pr-badge">Most popular</span>' : '') +
+          '<h2 class="pr-name">' + esc(t.name) + '</h2>' +
+          '<p class="muted pr-desc">' + esc(t.description) + '</p>' +
+          '<p class="pr-price" aria-live="polite">' +
+            (ready ? '<span class="pr-amount" data-price-id="' + esc(t.priceId[f]) + '">' + esc(price) + '</span>'
+                   : '<span class="skeleton pr-amount-skel"></span>') +
+            '<span class="muted">/' + f + '</span></p>' +
+          '<ul class="pr-features">' + t.features.map(function (x) { return '<li>' + esc(x) + '</li>'; }).join('') + '</ul>' +
+          '<button type="button" class="btn btn-primary btn-lg btn-block" data-tier="' + i + '"' + (ready ? '' : ' disabled') + '>Subscribe</button>' +
+        '</article>';
+      }).join('');
 
     box.innerHTML = '<header class="pr-head"><h1 class="section-title">Plans and pricing</h1>' +
-      '<p class="muted">Every plan starts with a ' + window.PRICING_TRIAL_DAYS + '-day free trial. Cancel anytime.</p>' + toggle + '</header>' +
+      '<p class="muted">Unlimited downloads from the store while you’re subscribed' + (trial ? ' — every plan starts with a ' + trial + '-day free trial' : '') + '. Cancel anytime.</p>' + toggle + '</header>' +
       (state.error ? '<div class="notice bad" role="alert">' + esc(state.error) + '</div>' : '') +
       '<div class="pr-grid">' + cards + '</div>' +
-      '<p class="pay-secure">🔒 Our order process is conducted by our online reseller <b>Paddle.com</b>. Paddle.com is the Merchant of Record for all our orders and handles order inquiries and returns.</p>';
+      '<p class="pay-secure">🔒 Our order process is conducted by our online reseller <b>Paddle.com</b>. Paddle.com is the Merchant of Record for all our orders and handles order inquiries and returns. ' +
+      'See our <a href="documentation.html?type=doc&slug=refunds">Refund &amp; Cancellation Policy</a>.</p>';
   }
 
   box.addEventListener('click', function (e) {
     var freq = e.target.closest('[data-freq]');
     if (freq) { state.frequency = freq.getAttribute('data-freq'); render(); return; }
     var btn = e.target.closest('[data-tier]');
-    if (btn && !btn.disabled) subscribe(TIERS[+btn.getAttribute('data-tier')]);
+    if (btn && !btn.disabled) subscribe(tiers()[+btn.getAttribute('data-tier')]);
   });
 
   render();
   S.v1('GET', 'pricing/config')
     .then(function (config) {
       state.config = config;
+      render();
       return S.loadPaddle(config);
     })
     .then(function (paddle) {

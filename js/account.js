@@ -243,14 +243,6 @@
 
   // ---------- Subscription (pricing page plans) ----------
   var SUB_STATUS = { active: ['st-ok', 'Active'], trialing: ['st-ok', 'Free trial'], past_due: ['st-warn', 'Payment due'], paused: ['st-muted', 'Paused'], canceled: ['st-muted', 'Canceled'] };
-  function planName(priceId) {
-    var hit = null;
-    (window.PRICING_TIERS || []).forEach(function (t) {
-      if (t.priceId.month === priceId) hit = t.name + ' · Monthly';
-      if (t.priceId.year === priceId) hit = t.name + ' · Yearly';
-    });
-    return hit || 'Subscription';
-  }
   function subscription() {
     page.innerHTML = '<h1>Subscription</h1><div class="skeleton" style="height:160px"></div>';
     S.v1('GET', 'account/subscription').then(function (r) {
@@ -264,7 +256,7 @@
         var when = s.scheduled_change_action === 'cancel' ? 'Ends on ' + date(s.scheduled_change_at)
           : s.scheduled_change_action === 'pause' ? 'Pauses on ' + date(s.scheduled_change_at)
           : s.status === 'canceled' ? '' : (s.status === 'trialing' ? 'First payment on ' : 'Renews on ') + date(s.current_period_end);
-        return '<div class="panel panel-pad" style="max-width:560px;margin-bottom:14px"><h2 style="font-size:18px">' + esc(planName(s.price_id)) +
+        return '<div class="panel panel-pad" style="max-width:560px;margin-bottom:14px"><h2 style="font-size:18px">' + esc(s.plan_name) +
           ' <span class="st ' + st[0] + '">' + st[1] + '</span></h2>' + (when ? '<p class="muted" style="margin-top:6px">' + esc(when) + '</p>' : '') + '</div>';
       }).join('') +
         '<p class="muted small" style="max-width:560px;margin-bottom:14px">Change your card, cancel, or download invoices in Paddle’s secure portal.</p>' +

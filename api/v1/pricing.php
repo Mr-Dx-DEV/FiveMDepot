@@ -3,7 +3,7 @@
  * Pricing page (pricing.html): what the browser needs to show localized prices and open Paddle checkout.
  * Only public values are returned — the server API key never leaves PHP.
  */
-require_once __DIR__ . '/../../core/gateways.php';
+require_once __DIR__ . '/../../core/plans.php';
 
 /**
  * Visitor's country from CDN / server geo headers, or null when unknown.
@@ -19,6 +19,15 @@ function visitor_country(): ?string
   return null;
 }
 
+/** Signed-in user's Paddle customer ID (ctm_…) for Paddle Retain, or null. Never the email or our own ID. */
+function paddle_customer_id_for(?array $user): ?string
+{
+  if (!$user) return null;
+  $c = Db::one("SELECT customer_id FROM paddle_customers WHERE user_id = ? OR LOWER(email) = LOWER(?) ORDER BY updated_at DESC LIMIT 1",
+    [$user['id'], $user['email']]);
+  return $c['customer_id'] ?? null;
+}
+
 route('GET', 'pricing/config', function () {
   $user = current_user();
   ok([
@@ -26,5 +35,8 @@ route('GET', 'pricing/config', function () {
     'client_token' => PADDLE_CLIENT_TOKEN,
     'country' => visitor_country(),
     'email' => $user['email'] ?? null,
+    'paddle_customer_id' => paddle_customer_id_for($user),
+    'trial_days' => PLAN_TRIAL_DAYS,
+    'tiers' => plans_public(),
   ]);
 });

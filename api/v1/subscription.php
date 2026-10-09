@@ -4,11 +4,16 @@
  * The Paddle customer is always resolved server-side from the session — never taken from the client.
  */
 require_once __DIR__ . '/../../core/subscriptions.php';
+require_once __DIR__ . '/../../core/plans.php';
 
 route('GET', 'account/subscription', function () {
   $u = require_user();
   $subs = user_subscriptions($u);
-  foreach ($subs as &$s) $s['has_access'] = subscription_grants_access($s);
+  foreach ($subs as &$s) {
+    $s['has_access'] = subscription_grants_access($s);
+    $plan = plan_for_price((string)$s['price_id']);
+    $s['plan_name'] = $plan ? $plan['name'] . ' · ' . ($plan['interval'] === 'year' ? 'Yearly' : 'Monthly') : 'Subscription';
+  }
   ok(['subscriptions' => $subs, 'pricing_url' => 'pricing']);
 });
 

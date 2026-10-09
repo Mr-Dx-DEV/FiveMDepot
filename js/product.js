@@ -4,7 +4,7 @@
   var S = window.Store, esc = S.esc, I = S.icons;
   var root = document.getElementById('product');
   var slug = new URLSearchParams(location.search).get('slug') || new URLSearchParams(location.search).get('product') || '';
-  var p = null, owned = false, staff = false;
+  var p = null, owned = false, staff = false, included = null; // included = plan name when a subscription unlocks it
 
   function stars(r) { var f = Math.round(r || 0); return '<span class="stars">' + '★★★★★'.slice(0, f) + '<span style="opacity:.3">' + '★★★★★'.slice(0, 5 - f) + '</span></span>'; }
   function date(s) { var d = new Date(String(s || '').replace(' ', 'T')); return isNaN(d) ? '' : d.toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }); }
@@ -194,7 +194,7 @@
     var price = onSale ? p.sale_price : p.price;
     var compat = (p.compatibility.length ? p.compatibility : p.frameworks.map(function (f) { return f.name; }));
     var action;
-    if (owned) action = '<a class="btn btn-primary btn-lg" href="api/v1.php?r=account/download/' + encodeURIComponent(p.id) + '">⬇ Download v' + esc(p.version) + '</a>';
+    if (owned || included) action = '<a class="btn btn-primary btn-lg" href="api/v1.php?r=account/download/' + encodeURIComponent(p.id) + '">⬇ Download v' + esc(p.version) + '</a>';
     else if (price === 0) action = '<button class="btn btn-lg pc-claim" data-free>🎁 Claim for free</button>';
     else action = '<button class="btn btn-primary btn-lg" data-buy>Buy now</button>';
     return '<aside class="buybox">' +
@@ -211,6 +211,7 @@
         '<button class="wish-btn" data-wishbtn aria-label="Save to wishlist">' + I.heart + '</button></div>' +
       (!owned && price > 0 ? '<button class="btn btn-ghost btn-block" data-add>' + (S.cart.has(p.id) ? 'In your cart ✓ — view cart' : 'Add to cart') + '</button>' : '') +
       (!owned && price === 0 ? '<p class="small muted" style="margin:0">Free with a FiveMDepot account — it’s added to your library with lifetime updates.</p>' : '') +
+      (included && !owned ? '<p class="small up" style="margin:0">✓ Included in your <b>' + esc(included) + '</b> plan — download it while you’re subscribed. <a class="link-more" href="dashboard/buyer.html?tab=subscription">Your plan</a></p>' : '') +
       (owned ? '<p class="small up" style="margin:0">✓ You own this — downloads and updates are in <a class="link-more" href="dashboard/buyer.html">your library</a></p>' : '') +
       (staff && !owned ? '<p class="small muted" style="margin:0">👁 You see the customer view. <a class="link-more" href="api/v1.php?r=account/download/' + encodeURIComponent(p.id) + '">⬇ Download (admin)</a></p>' : '') +
       '<div class="facts"><div><small>Version</small><b>' + esc(p.version) + '</b></div><div><small>Updated</small><b>' + date(p.updated_at) + '</b></div>' +
@@ -329,6 +330,7 @@
         if (!user) return;
         return S.v1('GET', 'account/status&ids=' + encodeURIComponent(p.id)).then(function (st) {
           owned = st.owned.indexOf(p.id) !== -1 || claimedId === p.id;
+          included = (st.included || []).indexOf(p.id) !== -1 ? st.plan : null;
           staff = user.role === 'ADMIN' || (p.seller_info && p.seller_info.id === user.id);
           wished = st.wishlist.indexOf(p.id) !== -1;
         }).catch(function () {});

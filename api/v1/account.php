@@ -6,6 +6,7 @@
 require_once __DIR__ . '/../../core/catalog.php';
 require_once __DIR__ . '/../../core/gateways.php';
 require_once __DIR__ . '/../../core/mail.php';
+require_once __DIR__ . '/../../core/plans.php';
 
 /** Product ids this user can download (paid orders, own products, or free products). */
 function owned_product_ids(string $userId): array
@@ -19,6 +20,7 @@ function user_can_download(array $u, array $product): bool
 {
   if ($u['role'] === 'ADMIN' || $product['user_id'] === $u['id']) return true;
   if ((float)$product['price'] == 0 && $product['status'] === 'PUBLISHED') return true;
+  if (user_plan_covers($u, $product)) return true; // included in their subscription plan
   return (bool)Db::value(
     "SELECT COUNT(*) FROM order_products op JOIN orders o ON o.id = op.order_id
      WHERE o.user_id = ? AND op.product_id = ? AND o.status IN ('VERIFIED','COMPLETED')", [$u['id'], $product['id']]);
@@ -156,11 +158,19 @@ route('POST', 'account/wishlist/{id}', function ($p) {
 route('GET', 'account/status', function () {
   $u = current_user();
   $ids = array_values(array_filter(explode(',', (string)($_GET['ids'] ?? ''))));
-  if (!$u || !$ids) ok(['owned' => [], 'wishlist' => []]);
+  if (!$u || !$ids) ok(['owned' => [], 'wishlist' => [], 'included' => [], 'plan' => null]);
   $ids = array_slice($ids, 0, 100);
   $owned = array_values(array_intersect($ids, owned_product_ids($u['id'])));
   $wish = array_column(Db::all("SELECT product_id FROM wishlist WHERE user_id = ? AND product_id IN (" . Db::in($ids) . ")", array_merge([$u['id']], $ids)), 'product_id');
-  ok(['owned' => $owned, 'wishlist' => $wish]);
+  // Products this user can download through their subscription plan (not bought)
+  $planKey = user_plan_key($u);
+  $included = [];
+  if ($planKey !== null) {
+    foreach (Db::all("SELECT id, status FROM products WHERE id IN (" . Db::in($ids) . ")", $ids) as $pr) {
+      if (!in_array($pr['id'], $owned, true) && user_plan_covers($u, $pr)) $included[] = $pr['id'];
+    }
+  }
+  ok(['owned' => $owned, 'wishlist' => $wish, 'included' => $included, 'plan' => $planKey ? PLANS[$planKey]['name'] : null]);
 });
 
 // ============================================================

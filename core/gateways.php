@@ -115,6 +115,76 @@ function paddle_create_transaction(array $o): string
   return $id;
 }
 
+// ---------- Webhook source allowlist ----------
+/** True when $ip is inside $cidr (IPv4 or IPv6). */
+function ip_in_cidr(string $ip, string $cidr): bool
+{
+  [$net, $bits] = array_pad(explode('/', $cidr, 2), 2, null);
+  $ipBin = @inet_pton($ip); $netBin = @inet_pton((string)$net);
+  if ($ipBin === false || $netBin === false || strlen($ipBin) !== strlen($netBin)) return false;
+  $bits = $bits === null ? strlen($ipBin) * 8 : (int)$bits;
+  $bytes = intdiv($bits, 8); $rest = $bits % 8;
+  if (substr($ipBin, 0, $bytes) !== substr($netBin, 0, $bytes)) return false;
+  if ($rest === 0) return true;
+  $mask = chr((0xFF << (8 - $rest)) & 0xFF);
+  return ($ipBin[$bytes] & $mask) === ($netBin[$bytes] & $mask);
+}
+
+/** Fetch a remote list with a file cache; on failure fall back to the last good copy (or []). */
+function cached_remote_list(string $key, int $ttl, callable $fetch): array
+{
+  $file = sys_get_temp_dir() . '/fivemdepot_' . preg_replace('/[^a-z0-9_]/i', '_', $key) . '.json';
+  $cached = is_file($file) ? json_decode((string)@file_get_contents($file), true) : null;
+  if (is_array($cached) && filemtime($file) > time() - $ttl) return $cached;
+  $fresh = $fetch();
+  if ($fresh) { @file_put_contents($file, json_encode($fresh), LOCK_EX); return $fresh; }
+  return is_array($cached) ? $cached : [];
+}
+
+/** Paddle's webhook sender IPs for the current environment — from Paddle's /ips endpoint, never hard-coded. */
+function paddle_webhook_cidrs(): array
+{
+  return cached_remote_list('paddle_ips_' . (paddle_sandbox() ? 'sandbox' : 'live'), 21600, function () {
+    [$status, $res] = http_request('GET', paddle_base() . '/ips', [], ['Accept: application/json']);
+    $list = $status === 200 ? ($res['data']['ipv4_cidrs'] ?? []) : [];
+    if (!$list) error_log("[paddle] could not load webhook IPs ($status)");
+    return array_values(array_filter($list, 'is_string'));
+  });
+}
+
+/** Cloudflare edge ranges, so CF-Connecting-IP is only trusted when the request really came through Cloudflare. */
+function cloudflare_cidrs(): array
+{
+  return cached_remote_list('cloudflare_ips', 86400, function () {
+    $out = [];
+    foreach (['https://www.cloudflare.com/ips-v4', 'https://www.cloudflare.com/ips-v6'] as $u) {
+      [$status, , $raw] = http_request('GET', $u);
+      if ($status === 200) $out = array_merge($out, preg_split('/\s+/', trim($raw)));
+    }
+    return array_values(array_filter($out));
+  });
+}
+
+/** Real sender IP: Cloudflare's CF-Connecting-IP when the TCP peer is a Cloudflare edge, else REMOTE_ADDR. */
+function request_source_ip(): string
+{
+  $peer = (string)($_SERVER['REMOTE_ADDR'] ?? '');
+  $cf = (string)($_SERVER['HTTP_CF_CONNECTING_IP'] ?? '');
+  if ($cf !== '') foreach (cloudflare_cidrs() as $c) if (ip_in_cidr($peer, $c)) return $cf;
+  return $peer;
+}
+
+/** Is this webhook delivery coming from one of Paddle's published IPs? */
+function paddle_source_allowed(): bool
+{
+  // Emergency switch in config.local.php if a proxy in front of the server hides the real IP
+  if (defined('PADDLE_WEBHOOK_IP_CHECK') && !PADDLE_WEBHOOK_IP_CHECK) return true;
+  $ip = request_source_ip();
+  foreach (paddle_webhook_cidrs() as $c) if (ip_in_cidr($ip, $c)) return true;
+  error_log("[paddle] webhook rejected from $ip (not a Paddle IP)");
+  return false;
+}
+
 /** Verify the Paddle-Signature header ("ts=…;h1=…", HMAC-SHA256 of "ts:body"), 5-minute tolerance. */
 function paddle_verify(string $payload, string $header, string $secret, int $tolerance = 300): bool
 {

@@ -12,6 +12,13 @@ require_once __DIR__ . '/../../core/gateways.php';
 require_once __DIR__ . '/../../core/mail.php';
 require_once __DIR__ . '/../../core/subscriptions.php';
 
+// Only Paddle's published sender IPs (fetched from Paddle's /ips endpoint, cached) may deliver here.
+// 403 (not 2xx) so a genuine delivery that was wrongly blocked is retried by Paddle.
+if (!paddle_source_allowed()) {
+  http_response_code(403);
+  exit('forbidden');
+}
+
 $payload = file_get_contents('php://input');
 $sig = $_SERVER['HTTP_PADDLE_SIGNATURE'] ?? '';
 if (!defined('PADDLE_WEBHOOK_SECRET') || PADDLE_WEBHOOK_SECRET === '' || !paddle_verify($payload, $sig, PADDLE_WEBHOOK_SECRET)) {

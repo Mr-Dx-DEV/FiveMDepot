@@ -55,13 +55,20 @@
       `PADDLE_WEBHOOK_SECRET`). Checkout appears automatically; *Admin → Settings → Payments* shows the status.
    7. Also set `PADDLE_ENVIRONMENT` to `'sandbox'` or `'production'`. The **pricing page** (`/pricing`,
       subscription plans) requires it and refuses to load if it is missing or doesn't match the client token.
-      Plan copy and price IDs live in `js/pricing-tiers.js` — the IDs there are sandbox IDs; replace them with
-      your live `pri_…` IDs when you switch to production. After checkout, Paddle sends buyers to `/welcome`.
-   8. **Subscriptions:** run `migrations/014_subscriptions.sql` and `015_subscription_order.sql`. The webhook
-      destination must also send `subscription.*` and `customer.*` events. Buyers see their plan and a
-      *Manage subscription* button (Paddle customer portal) under *My account → Subscription*; that needs
-      `PADDLE_API_KEY`. Access rule (`core/subscriptions.php`): active, trialing and past_due grant access.
-      While `PADDLE_ENVIRONMENT` is `sandbox`, only admins can pay for store products (test cards are fake).
+      Plans live in `core/plans.php`: copy, features, which categories each plan unlocks, and the Paddle
+      product/price IDs for **both** sandbox and production. The site uses the set matching
+      `PADDLE_ENVIRONMENT`, so going live is a config change. After checkout, Paddle sends buyers to `/welcome`.
+   8. **Subscriptions:** run `migrations/014`, `015` and `016` (016 adds the subscription section to the
+      Refund Policy). The webhook destination must also send `subscription.*` and `customer.*` events.
+      Buyers see their plan and a *Manage subscription* button (Paddle customer portal) under
+      *My account → Subscription*; that needs `PADDLE_API_KEY`. Access rule (`core/subscriptions.php`):
+      active, trialing and past_due grant access; subscribers can download every published product in their
+      plan's categories. While `PADDLE_ENVIRONMENT` is `sandbox`, only admins can pay for store products or
+      download through a plan (test cards are fake).
+   9. **Webhook IP allowlist:** the webhook only accepts deliveries from Paddle's IPs, loaded from
+      `https://api.paddle.com/ips` (or sandbox) and cached for 6 hours; behind Cloudflare it reads
+      `CF-Connecting-IP`. If a proxy hides the real IP and every delivery gets 403, set
+      `define('PADDLE_WEBHOOK_IP_CHECK', false);` in `config.local.php` and tell your developer.
    Test everything with a **sandbox** account (sandbox-vendors.paddle.com) first, then swap in the live keys.
    - **Email:** set *Settings → Email → Your email* to get alerts for new tickets.
      PHP `mail()` is used by default; for reliable delivery create a mailbox in Plesk (e.g.
