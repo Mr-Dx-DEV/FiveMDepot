@@ -18,6 +18,7 @@
        Admin → Products (files are not included), and review the products left as Draft.
    11. `migrations/011_store_wording.sql` (homepage says “store”, not “marketplace”; hides the test products)
    12. `migrations/012_product_images.sql` (only if you ran an older 010: points product images at `images/products/`)
+   13. `migrations/013_resources.sql` (19 new blog posts, tutorials, tools and docs; new cover images in `images/articles/`)
 
    Both are safe to run more than once and delete nothing.
 3. **Upload** all files. Make sure `config.local.php` is uploaded next to `config.php`

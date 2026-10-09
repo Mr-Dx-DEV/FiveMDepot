@@ -55,7 +55,22 @@ function routeNav(): array
     'categories' => categoryTree(),
     'settings'   => publicSettings(),
     'promo'      => promoBar(),
+    'resources'  => resourceHighlights(),
   ];
+}
+
+/** Resources menu: per section (blog, tutorial, tool, doc) the article count and the most-read articles. */
+function resourceHighlights(): array
+{
+  $out = [];
+  foreach (['blog', 'tutorial', 'tool', 'doc'] as $type) {
+    $out[$type] = [
+      'count' => (int)Db::value("SELECT COUNT(*) FROM documentation WHERE type = ? AND is_published = 1", [$type]),
+      'top' => Db::all("SELECT title, slug FROM documentation WHERE type = ? AND is_published = 1
+                        ORDER BY views DESC, created_at DESC LIMIT 3", [$type]),
+    ];
+  }
+  return $out;
 }
 
 /** Promo bar from Admin Settings. A coupon is only advertised while it is a live, usable code. */

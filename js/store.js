@@ -95,11 +95,26 @@
     { name: 'Maps & MLOs', slug: 'mlos-maps', show_in_nav: true, children: [] }
   ];
   var STATIC_LINKS = [
-    { name: 'Blog', href: 'documentation.html?type=blog' },
-    { name: 'Tutorials', href: 'documentation.html?type=tutorial' },
-    { name: 'Tools', href: 'documentation.html?type=tool' },
-    { name: 'Docs', href: 'documentation.html?type=doc' }
+    { type: 'blog', name: 'Blog', href: 'documentation.html?type=blog', desc: 'News, guides and server-owner stories', icon: 'M4 4h12l4 4v12H4zM8 10h8M8 14h8M8 18h5' },
+    { type: 'tutorial', name: 'Tutorials', href: 'documentation.html?type=tutorial', desc: 'Step-by-step server setup guides', icon: 'M4 5h16v11H4zM9 20h6M12 16v4M10 8.5l4 2.5-4 2.5z' },
+    { type: 'tool', name: 'Tools', href: 'documentation.html?type=tool', desc: 'oxmysql, MariaDB, txAdmin and more', icon: 'M14.7 6.3a4 4 0 0 0-5.4 5.4L3 18l3 3 6.3-6.3a4 4 0 0 0 5.4-5.4l-2.6 2.6-2.4-.6-.6-2.4z' },
+    { type: 'doc', name: 'Docs', href: 'documentation.html?type=doc', desc: 'Buying, installing, policies', icon: 'M6 2h9l5 5v15H6zM14 2v6h6M9 13h8M9 17h8' }
   ];
+
+  // "Resources" mega menu: one entry in the top bar that slides down with every section and its most-read articles
+  function resourcesMenu(res, active) {
+    var cols = STATIC_LINKS.map(function (l) {
+      var r = (res && res[l.type]) || { count: 0, top: [] };
+      return '<div class="mega-col"><a class="mega-head" href="' + l.href + '"><span class="di"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="' + l.icon + '"/></svg></span>' +
+        '<span><b>' + l.name + (r.count ? ' <small>' + r.count + '</small>' : '') + '</b><small>' + l.desc + '</small></span></a>' +
+        (r.top || []).map(function (a) {
+          return '<a class="mega-link" href="documentation.html?type=' + l.type + '&amp;slug=' + encodeURIComponent(a.slug) + '">' + esc(a.title) + '</a>';
+        }).join('') +
+        '<a class="mega-all" href="' + l.href + '">View all ' + l.name.toLowerCase() + ' →</a></div>';
+    }).join('');
+    return '<div class="nav-item nav-mega-item"><a class="nav-link' + (active ? ' active' : '') + '" href="documentation.html?type=blog" aria-haspopup="true">Resources' + I.caret + '</a>' +
+      '<div class="nav-drop nav-mega">' + cols + '</div></div>';
+  }
 
   // ---------- Promo bar config ----------
   // The one place to edit the promo bar. Admin -> Settings -> Promo bar fills in the headline,
@@ -524,7 +539,7 @@
       if (!authModal || !r.data) return;
       var methods = [];
       var next = encodeURIComponent(location.href.slice(ROOT.length));
-      if (r.data.discord) methods.push('<a href="' + ROOT + 'api/discord-login.php?next=' + next + '">Continue with Discord</a>');
+      if (r.data.discord) methods.push('<a class="discord-signin" href="' + ROOT + 'api/discord-login.php?next=' + next + '">' + I.discord + 'Continue with Discord<span class="go" aria-hidden="true">→</span></a>');
       if (r.data.google) methods.push('<a href="' + ROOT + 'api/google-login.php?next=' + next + '">Continue with Google</a>');
       if (methods.length) {
         var social = authModal.querySelector('.fd-auth-social');
@@ -642,9 +657,7 @@
       }
       links += '</div>';
     });
-    STATIC_LINKS.forEach(function (l) {
-      links += '<div class="nav-item"><a class="nav-link" href="' + l.href + '">' + l.name + '</a></div>';
-    });
+    links += resourcesMenu(data.resources, path === 'documentation.html');
 
     var drawerLinks = '<a href="index.html">Home</a><a href="category.html?c=all">All Products</a>';
     navCats.forEach(function (c) {
@@ -712,6 +725,7 @@
     });
     document.addEventListener('keydown', function (e) { if (e.key === 'Escape') { open(false); document.body.classList.remove('filters-open'); } });
 
+    danceNav(el);
     initCompactHeader(el);
     Cart.renderCount();
     checkAuth();
@@ -754,6 +768,23 @@
       try { pending = sessionStorage.getItem(CLAIM_KEY); sessionStorage.removeItem(CLAIM_KEY); } catch (e) {}
       if (pending) claim({ id: pending }, null);
       document.dispatchEvent(new CustomEvent('store:user', { detail: user }));
+    });
+  }
+
+  // Top bar: split each link's label into letters so they can bounce one by one on hover (CSS .nl-ch)
+  function danceNav(root) {
+    root.querySelectorAll('.nav > .nav-item > .nav-link').forEach(function (link) {
+      var node = link.firstChild;
+      if (!node || node.nodeType !== 3 || !node.nodeValue.trim()) return;
+      var text = node.nodeValue;
+      var wrap = document.createElement('span');
+      wrap.className = 'nl-txt';
+      wrap.setAttribute('aria-hidden', 'true');
+      wrap.innerHTML = Array.prototype.map.call(text, function (ch, i) {
+        return ch === ' ' ? '<span class="nl-sp">&nbsp;</span>' : '<span class="nl-ch" style="--i:' + i + '">' + esc(ch) + '</span>';
+      }).join('');
+      link.setAttribute('aria-label', text.trim());
+      link.replaceChild(wrap, node);
     });
   }
 

@@ -34,8 +34,10 @@
     document.head.appendChild(ld);
   }
 
-  // ---------- Gallery ----------
-  function gallery() {
+  // ---------- Gallery: sliding track + lightbox ----------
+  // Slides sit side by side and the track moves; YouTube loads only when the visitor presses play.
+  var REDUCED = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+  function mediaList() {
     var media = p.screenshots.map(function (s) { return { type: 'img', src: s }; });
     if (p.video_embed) {
       // YouTube gives every video a thumbnail; use it so the video tile never depends on the screenshots
@@ -43,27 +45,146 @@
       media.splice(media.length ? 1 : 0, 0, { type: 'video', src: p.video_embed, thumb: yt ? 'https://i.ytimg.com/vi/' + yt[1] + '/hqdefault.jpg' : p.screenshots[0] });
     }
     if (!media.length) media.push({ type: 'img', src: S.catArt({ slug: (p.badge && p.badge.slug) || 'box' }) });
-    var idx = 0;
-    var wrap = document.createElement('div');
-    function draw() {
-      var m = media[idx];
-      wrap.innerHTML = '<div class="gallery-main">' +
-        (m.type === 'video'
-          ? '<iframe src="' + esc(m.src) + '" title="Video preview" allow="accelerometer; autoplay; encrypted-media; picture-in-picture" allowfullscreen loading="lazy"></iframe>'
-          : '<img src="' + esc(m.src) + '" alt="' + esc(p.title) + ' screenshot ' + (idx + 1) + '" data-fallback="images/store/cat-default.svg">') +
-        (media.length > 1 ? '<button class="gallery-nav prev" data-step="-1" aria-label="Previous">‹</button><button class="gallery-nav next" data-step="1" aria-label="Next">›</button>' : '') +
-        (p.badge ? '<span class="pc-badge" style="background:' + esc(p.badge.color || 'var(--accent)') + '">' + esc(p.badge.name) + '</span>' : '') + '</div>' +
-        (media.length > 1 ? '<div class="gallery-thumbs">' + media.map(function (x, i) {
-          return '<button class="' + (i === idx ? 'on' : '') + '" data-i="' + i + '" aria-label="Show media ' + (i + 1) + '"><img src="' + esc(x.type === 'video' ? (x.thumb || S.catArt({ slug: 'box' })) : x.src) + '" alt="" loading="lazy">' +
-            (x.type === 'video' ? '<span class="play">▶</span>' : '') + '</button>';
-        }).join('') + '</div>' : '');
+    return media;
+  }
+
+  function slideHtml(m, i, big) {
+    if (m.type === 'video') {
+      return '<div class="g-slide g-video" data-slide="' + i + '"><img src="' + esc(m.thumb || '') + '" alt="' + esc(p.title) + ' video" loading="lazy" draggable="false" data-fallback="images/store/cat-default.svg">' +
+        '<button type="button" class="g-play" data-play="' + i + '" aria-label="Play video"><span>▶</span></button></div>';
     }
-    wrap.addEventListener('click', function (e) {
-      var t = e.target.closest('[data-i]'), s = e.target.closest('[data-step]');
-      if (t) { idx = +t.dataset.i; draw(); }
-      if (s) { idx = (idx + +s.dataset.step + media.length) % media.length; draw(); }
+    return '<div class="g-slide" data-slide="' + i + '"><img src="' + esc(m.src) + '" alt="' + esc(p.title) + ' screenshot ' + (i + 1) + '"' +
+      (i && !big ? ' loading="lazy"' : '') + ' draggable="false" data-fallback="images/store/cat-default.svg"' + (big ? '' : ' data-zoom="' + i + '"') + '></div>';
+  }
+
+  // Shared slider behaviour for the page gallery and the lightbox
+  function slider(root, media, opts) {
+    var track = root.querySelector('.g-track'), idx = opts.start || 0, timer = null;
+    function stopVideos() {
+      root.querySelectorAll('.g-video iframe').forEach(function (f) { f.parentNode.classList.remove('playing'); f.remove(); });
+    }
+    function go(n, user) {
+      if (user) stopAuto();
+      idx = (n + media.length) % media.length;
+      stopVideos();
+      track.style.transform = 'translate3d(' + (-idx * 100) + '%,0,0)';
+      root.querySelectorAll('.g-slide').forEach(function (el, i) { el.classList.toggle('on', i === idx); });
+      var c = root.querySelector('.g-count');
+      if (c) c.textContent = (idx + 1) + ' / ' + media.length;
+      if (opts.onChange) opts.onChange(idx);
+    }
+    function play(i) {
+      var v = root.querySelector('.g-video[data-slide="' + i + '"]');
+      if (!v || v.querySelector('iframe')) return;
+      stopAuto();
+      var f = document.createElement('iframe');
+      f.src = media[i].src + (media[i].src.indexOf('?') === -1 ? '?' : '&') + 'autoplay=1&rel=0';
+      f.title = p.title + ' video';
+      f.allow = 'accelerometer; autoplay; encrypted-media; picture-in-picture';
+      f.allowFullscreen = true;
+      v.appendChild(f);
+      v.classList.add('playing');
+    }
+    function startAuto() {
+      if (!opts.auto || REDUCED || media.length < 2 || timer) return;
+      timer = setInterval(function () { go(idx + 1); }, 5000);
+    }
+    function stopAuto() { clearInterval(timer); timer = null; }
+    root.addEventListener('click', function (e) {
+      var s = e.target.closest('[data-step]'), pl = e.target.closest('[data-play]');
+      if (s) go(idx + +s.dataset.step, true);
+      if (pl) play(+pl.dataset.play);
     });
-    draw();
+    // Swipe / drag with the finger or mouse
+    var x0 = null, dx = 0;
+    track.addEventListener('pointerdown', function (e) {
+      if (e.target.closest('iframe, button')) return;
+      x0 = e.clientX; dx = 0;
+      track.classList.add('drag');
+    });
+    window.addEventListener('pointermove', function (e) {
+      if (x0 === null) return;
+      dx = e.clientX - x0;
+      track.style.transform = 'translate3d(calc(' + (-idx * 100) + '% + ' + dx + 'px),0,0)';
+    });
+    window.addEventListener('pointerup', function () {
+      if (x0 === null) return;
+      track.classList.remove('drag');
+      x0 = null;
+      root.dataset.dragged = Math.abs(dx) > 6 ? '1' : '';
+      if (Math.abs(dx) > root.clientWidth * 0.12) go(idx + (dx < 0 ? 1 : -1), true); else go(idx);
+    });
+    root.addEventListener('mouseenter', stopAuto);
+    root.addEventListener('mouseleave', startAuto);
+    root.addEventListener('keydown', function (e) {
+      if (e.key === 'ArrowRight') { e.preventDefault(); go(idx + 1, true); }
+      if (e.key === 'ArrowLeft') { e.preventDefault(); go(idx - 1, true); }
+    });
+    go(idx);
+    startAuto();
+    return { go: go, index: function () { return idx; }, stop: function () { stopAuto(); stopVideos(); } };
+  }
+
+  function lightbox(media, start) {
+    var box = document.createElement('div');
+    box.className = 'g-lightbox';
+    box.setAttribute('role', 'dialog');
+    box.setAttribute('aria-modal', 'true');
+    box.setAttribute('aria-label', p.title + ' gallery');
+    box.tabIndex = -1;
+    box.innerHTML = '<button type="button" class="g-lb-close" aria-label="Close">✕</button>' +
+      '<div class="g-stage"><div class="g-track">' + media.map(function (m, i) { return slideHtml(m, i, true); }).join('') + '</div>' +
+      (media.length > 1 ? '<button class="gallery-nav prev" data-step="-1" aria-label="Previous">‹</button><button class="gallery-nav next" data-step="1" aria-label="Next">›</button>' : '') +
+      '<span class="g-count"></span></div>';
+    document.body.appendChild(box);
+    document.body.classList.add('g-lock');
+    var sl = slider(box.querySelector('.g-stage'), media, { start: start });
+    function close() {
+      sl.stop();
+      document.removeEventListener('keydown', onKey);
+      box.classList.remove('open');
+      document.body.classList.remove('g-lock');
+      setTimeout(function () { box.remove(); }, 250);
+    }
+    function onKey(e) {
+      if (e.key === 'Escape') close();
+      if (e.key === 'ArrowRight') sl.go(sl.index() + 1, true);
+      if (e.key === 'ArrowLeft') sl.go(sl.index() - 1, true);
+    }
+    document.addEventListener('keydown', onKey);
+    box.addEventListener('click', function (e) {
+      if (box.querySelector('.g-stage').dataset.dragged) return;
+      if (e.target.closest('.g-lb-close') || e.target === box || e.target.classList.contains('g-slide')) close();
+    });
+    requestAnimationFrame(function () { box.classList.add('open'); box.focus(); });
+  }
+
+  function gallery() {
+    var media = mediaList();
+    var wrap = document.createElement('div');
+    wrap.innerHTML = '<div class="gallery-main g-stage" tabindex="0" aria-roledescription="carousel" aria-label="' + esc(p.title) + ' images">' +
+        '<div class="g-track">' + media.map(function (m, i) { return slideHtml(m, i, false); }).join('') + '</div>' +
+        (media.length > 1 ? '<button class="gallery-nav prev" data-step="-1" aria-label="Previous">‹</button><button class="gallery-nav next" data-step="1" aria-label="Next">›</button><span class="g-count"></span>' : '') +
+        (p.badge ? '<span class="pc-badge" style="background:' + esc(p.badge.color || 'var(--accent)') + '">' + esc(p.badge.name) + '</span>' : '') +
+        '<span class="g-hint">⤢ Click to enlarge</span></div>' +
+      (media.length > 1 ? '<div class="gallery-thumbs">' + media.map(function (x, i) {
+        return '<button type="button" data-i="' + i + '" aria-label="Show media ' + (i + 1) + '"><img src="' + esc(x.type === 'video' ? (x.thumb || S.catArt({ slug: 'box' })) : x.src) + '" alt="" loading="lazy">' +
+          (x.type === 'video' ? '<span class="play">▶</span>' : '') + '</button>';
+      }).join('') + '</div>' : '');
+    var stage = wrap.querySelector('.g-stage');
+    var thumbs = wrap.querySelectorAll('.gallery-thumbs button');
+    var sl = slider(stage, media, { auto: true, onChange: function (i) {
+      thumbs.forEach(function (t, k) { t.classList.toggle('on', k === i); });
+      var row = thumbs[i] && thumbs[i].parentNode;
+      if (row && row.scrollWidth > row.clientWidth) {
+        row.scrollTo({ left: thumbs[i].offsetLeft - row.clientWidth / 2 + thumbs[i].clientWidth / 2, behavior: REDUCED ? 'auto' : 'smooth' });
+      }
+    } });
+    wrap.addEventListener('click', function (e) {
+      var t = e.target.closest('[data-i]'), z = e.target.closest('[data-zoom]');
+      if (t) sl.go(+t.dataset.i, true);
+      if (z && !stage.dataset.dragged) { sl.stop(); lightbox(media, +z.dataset.zoom); }
+    });
     return wrap;
   }
 

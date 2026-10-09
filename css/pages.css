@@ -28,6 +28,58 @@ textarea.input { height: auto; padding: 10px 12px; line-height: 1.5; resize: ver
 .pd { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, .75fr); gap: 32px; align-items: start; padding: 18px 0 40px; }
 .gallery-main { position: relative; aspect-ratio: 16 / 9; border-radius: var(--radius-lg); overflow: hidden; background: var(--surface); border: 1px solid var(--border); }
 .gallery-main img, .gallery-main iframe { width: 100%; height: 100%; object-fit: cover; border: 0; display: block; }
+/* Sliding track: slides sit side by side, the track moves */
+.g-stage { position: relative; overflow: hidden; outline: none; }
+.g-stage:focus-visible { box-shadow: 0 0 0 2px var(--accent); }
+.g-track { display: flex; height: 100%; transition: transform .6s cubic-bezier(.22, .8, .24, 1); will-change: transform; touch-action: pan-y; cursor: grab; }
+.g-track.drag { transition: none; cursor: grabbing; }
+.g-slide { position: relative; flex: 0 0 100%; height: 100%; overflow: hidden; user-select: none; }
+.g-slide img { width: 100%; height: 100%; object-fit: cover; display: block; transform: scale(1.06); filter: brightness(.82);
+  transition: transform 1.2s cubic-bezier(.22, .8, .24, 1), filter .8s ease; pointer-events: auto; cursor: zoom-in; }
+.g-slide.on img { transform: scale(1); filter: none; }
+/* Soft light sweep across the slide that just arrived */
+.g-slide::after { content: ""; position: absolute; inset: 0; pointer-events: none; opacity: 0;
+  background: linear-gradient(105deg, transparent 35%, rgba(255, 255, 255, .22) 48%, rgba(255, 255, 255, .06) 55%, transparent 68%);
+  transform: translateX(-100%); }
+.g-slide.on::after { animation: g-shine 1.4s .15s ease-out; }
+@keyframes g-shine { 0% { opacity: 0; transform: translateX(-100%); } 25% { opacity: 1; } 100% { opacity: 0; transform: translateX(100%); } }
+.g-video img { cursor: default; }
+.g-video iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+.g-video.playing img, .g-video.playing .g-play { visibility: hidden; }
+.g-play { position: absolute; inset: 0; margin: auto; width: 76px; height: 76px; border-radius: 50%; display: grid; place-items: center;
+  background: var(--accent); color: #fff; font-size: 26px; box-shadow: 0 0 0 10px rgba(255, 255, 255, .12), 0 12px 30px rgba(0, 0, 0, .45);
+  transition: transform .25s ease, box-shadow .25s ease; }
+.g-play span { margin-left: 4px; }
+.g-play:hover { transform: scale(1.08); box-shadow: 0 0 0 16px rgba(255, 255, 255, .14), 0 14px 34px rgba(0, 0, 0, .5); }
+.g-count { position: absolute; right: 12px; bottom: 12px; padding: 4px 10px; border-radius: 999px; background: rgba(10, 14, 23, .65);
+  color: #fff; font-size: 12px; font-weight: 600; backdrop-filter: blur(6px); pointer-events: none; }
+.g-hint { position: absolute; left: 12px; bottom: 12px; padding: 4px 10px; border-radius: 999px; background: rgba(10, 14, 23, .65);
+  color: #fff; font-size: 12px; opacity: 0; transition: opacity .25s ease; pointer-events: none; }
+.gallery-main:hover .g-hint { opacity: 1; }
+.gallery-main .gallery-nav { z-index: 2; opacity: 0; transition: opacity .25s ease, background .2s ease; }
+.gallery-main:hover .gallery-nav, .gallery-main:focus-within .gallery-nav { opacity: 1; }
+.gallery-nav:hover { background: var(--accent); }
+.gallery-thumbs button { transition: border-color .2s ease, transform .2s ease, opacity .2s ease; opacity: .6; }
+.gallery-thumbs button:hover, .gallery-thumbs button.on { opacity: 1; }
+.gallery-thumbs button.on { transform: translateY(-2px); }
+/* Lightbox */
+body.g-lock { overflow: hidden; }
+.g-lightbox { position: fixed; inset: 0; z-index: 400; display: grid; place-items: center; padding: 56px 16px 24px;
+  background: rgba(4, 3, 6, .92); backdrop-filter: blur(10px); opacity: 0; transition: opacity .25s ease; outline: none; }
+.g-lightbox.open { opacity: 1; }
+.g-lightbox .g-stage { width: min(100%, 1280px); aspect-ratio: 16 / 9; max-height: calc(100vh - 100px); border-radius: 14px;
+  transform: scale(.96); transition: transform .3s cubic-bezier(.22, .8, .24, 1); }
+.g-lightbox.open .g-stage { transform: none; }
+.g-lightbox .g-slide img { object-fit: contain; cursor: grab; background: #000; }
+.g-lightbox .gallery-nav { width: 48px; height: 48px; font-size: 24px; }
+.g-lb-close { position: absolute; top: 12px; right: 16px; width: 42px; height: 42px; border-radius: 50%;
+  background: rgba(255, 255, 255, .1); color: #fff; font-size: 18px; transition: background .2s ease; }
+.g-lb-close:hover { background: var(--accent); }
+@media (hover: none) { .gallery-main .gallery-nav { opacity: 1; } .g-hint { display: none; } }
+@media (prefers-reduced-motion: reduce) {
+  .g-track, .g-slide img, .g-lightbox, .g-lightbox .g-stage { transition: none; }
+  .g-slide.on::after { animation: none; }
+}
 .gallery-thumbs { display: flex; gap: 10px; margin-top: 12px; overflow-x: auto; padding-bottom: 4px; }
 .gallery-thumbs button { flex: 0 0 110px; aspect-ratio: 16 / 10; border-radius: 10px; overflow: hidden; border: 2px solid transparent; background: var(--surface); position: relative; }
 .gallery-thumbs button.on { border-color: var(--accent); }
