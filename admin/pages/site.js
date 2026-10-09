@@ -247,7 +247,12 @@
       var g = gw[k] || {};
       var st = g.live ? '<span class="st st-ok">active' + (g.test_mode ? ' · test mode' : '') + '</span>'
         : g.configured ? '<span class="st st-muted">keys set · switched off</span>' : '<span class="st st-warn">keys missing in config.local.php</span>';
-      return '<div class="pay-row"><b>' + names[k] + '</b>' + st + (g.webhook ? '<span class="mono small muted" title="Webhook / IPN URL">' + h(g.webhook) + '</span>' : '') + '</div>';
+      var keys = (g.keys || []).map(function (x) {
+        var cls = x.state === 'ok' ? 'st-ok' : 'st-warn';
+        return '<div class="pay-row small"><span class="mono">' + h(x.key) + '</span><span class="st ' + cls + '">' + h(x.state) + '</span>' +
+          (x.hint ? '<span class="muted">' + h(x.hint) + '</span>' : '') + '</div>';
+      }).join('');
+      return '<div class="pay-row"><b>' + names[k] + '</b>' + st + (g.webhook ? '<span class="mono small muted" title="Webhook / IPN URL">' + h(g.webhook) + '</span>' : '') + '</div>' + keys;
     }).join('') + '<p class="small muted">Keys are read from config.local.php on the server (never stored in the database). See docs/DEPLOY.md.</p></div>';
   }
 

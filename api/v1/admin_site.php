@@ -200,9 +200,23 @@ route('GET', 'admin/activity', function () {
 route('GET', 'admin/payments/status', function () {
   require_role('ADMIN');
   require_once __DIR__ . '/../../core/gateways.php';
-  $has = fn($k) => defined($k) && constant($k) !== '';
+  // Per-setting diagnosis: missing / empty / wrong format / ok — never the value itself
+  $sandbox = defined('PADDLE_ENVIRONMENT') && PADDLE_ENVIRONMENT === 'sandbox';
+  $check = function (string $k, callable $valid, string $hint) {
+    if (!defined($k)) return ['key' => $k, 'state' => 'missing', 'hint' => 'Not set in config.local.php'];
+    $v = (string)constant($k);
+    if ($v === '') return ['key' => $k, 'state' => 'empty', 'hint' => 'Defined but empty: an earlier empty line in config.local.php wins — delete it'];
+    return $valid($v) ? ['key' => $k, 'state' => 'ok', 'hint' => ''] : ['key' => $k, 'state' => 'wrong format', 'hint' => $hint];
+  };
+  $keys = [
+    $check('PADDLE_ENVIRONMENT', fn($v) => in_array($v, ['sandbox', 'production'], true), 'Must be sandbox or production'),
+    $check('PADDLE_CLIENT_TOKEN', fn($v) => strpos($v, $sandbox ? 'test_' : 'live_') === 0, 'Should start with ' . ($sandbox ? 'test_' : 'live_')),
+    $check('PADDLE_API_KEY', fn($v) => strpos($v, 'pdl_') === 0 && (strpos($v, '_sdbx_') !== false) === $sandbox,
+      'Should start with ' . ($sandbox ? 'pdl_sdbx_' : 'pdl_live_') . ' to match PADDLE_ENVIRONMENT'),
+    $check('PADDLE_WEBHOOK_SECRET', fn($v) => strpos($v, 'pdl_ntfset_') === 0, 'Should start with pdl_ntfset_'),
+  ];
   ok([
     'PADDLE' => ['configured' => paddle_configured(), 'live' => gateway_ready('PADDLE'),
-                 'test_mode' => paddle_sandbox(), 'webhook' => site_root_url() . 'api/pay/paddle-webhook.php'],
+                 'test_mode' => paddle_sandbox(), 'webhook' => site_root_url() . 'api/pay/paddle-webhook.php', 'keys' => $keys],
   ]);
 });
