@@ -41,6 +41,7 @@
     library: { label: 'My library', render: library },
     orders: { label: 'Orders', render: orders },
     wishlist: { label: 'Wishlist', render: wishlist },
+    subscription: { label: 'Subscription', render: subscription },
     support: { label: 'Support', render: support },
     settings: { label: 'Account settings', render: settings }
   };
@@ -52,6 +53,7 @@
       '<button data-tab="library" class="' + (active === 'library' ? 'on' : '') + '">My library<span class="n">' + st.purchases + '</span></button>' +
       '<button data-tab="orders" class="' + (active === 'orders' ? 'on' : '') + '">Orders' + (st.pending ? '<span class="n">' + st.pending + ' pending</span>' : '') + '</button>' +
       '<button data-tab="wishlist" class="' + (active === 'wishlist' ? 'on' : '') + '">Wishlist<span class="n">' + st.wishlist + '</span></button>' +
+      '<button data-tab="subscription" class="' + (active === 'subscription' ? 'on' : '') + '">Subscription</button>' +
       '<button data-tab="support" class="' + (active === 'support' ? 'on' : '') + '">Support</button>' +
       '<button data-tab="settings" class="' + (active === 'settings' ? 'on' : '') + '">Account settings</button>' + adminLink +
       '<button data-logout>Log out</button>';
@@ -237,6 +239,42 @@
           .then(function () { S.toast('Reply sent', 'success'); ticket(t.id); }).catch(function (err) { btn.disabled = false; fail(err); });
       };
     }).catch(function (e) { S.toast(e.message, 'error'); show('support'); });
+  }
+
+  // ---------- Subscription (pricing page plans) ----------
+  var SUB_STATUS = { active: ['st-ok', 'Active'], trialing: ['st-ok', 'Free trial'], past_due: ['st-warn', 'Payment due'], paused: ['st-muted', 'Paused'], canceled: ['st-muted', 'Canceled'] };
+  function planName(priceId) {
+    var hit = null;
+    (window.PRICING_TIERS || []).forEach(function (t) {
+      if (t.priceId.month === priceId) hit = t.name + ' · Monthly';
+      if (t.priceId.year === priceId) hit = t.name + ' · Yearly';
+    });
+    return hit || 'Subscription';
+  }
+  function subscription() {
+    page.innerHTML = '<h1>Subscription</h1><div class="skeleton" style="height:160px"></div>';
+    S.v1('GET', 'account/subscription').then(function (r) {
+      if (!r.subscriptions.length) {
+        page.innerHTML = '<h1>Subscription</h1><div class="empty"><b>No subscription yet</b>Every plan starts with a free trial.' +
+          '<p style="margin-top:14px"><a class="btn btn-primary" href="pricing">See plans</a></p></div>';
+        return;
+      }
+      page.innerHTML = '<h1>Subscription</h1>' + r.subscriptions.map(function (s) {
+        var st = SUB_STATUS[s.status] || ['st-muted', s.status];
+        var when = s.scheduled_change_action === 'cancel' ? 'Ends on ' + date(s.scheduled_change_at)
+          : s.scheduled_change_action === 'pause' ? 'Pauses on ' + date(s.scheduled_change_at)
+          : s.status === 'canceled' ? '' : (s.status === 'trialing' ? 'First payment on ' : 'Renews on ') + date(s.current_period_end);
+        return '<div class="panel panel-pad" style="max-width:560px;margin-bottom:14px"><h2 style="font-size:18px">' + esc(planName(s.price_id)) +
+          ' <span class="st ' + st[0] + '">' + st[1] + '</span></h2>' + (when ? '<p class="muted" style="margin-top:6px">' + esc(when) + '</p>' : '') + '</div>';
+      }).join('') +
+        '<p class="muted small" style="max-width:560px;margin-bottom:14px">Change your card, cancel, or download invoices in Paddle’s secure portal.</p>' +
+        '<button class="btn btn-primary" id="portalBtn">Manage subscription</button>';
+      document.getElementById('portalBtn').onclick = function () {
+        var b = this; b.disabled = true;
+        S.v1('POST', 'account/subscription/portal', {}).then(function (p) { location.href = p.url; })
+          .catch(function (e) { b.disabled = false; fail(e); });
+      };
+    }).catch(fail);
   }
 
   // ---------- Settings ----------

@@ -45,7 +45,14 @@ function gateway_ready(string $id): bool
 {
   if ($id !== 'PADDLE') return false;
   require_once __DIR__ . '/gateways.php';
-  return setting('pay_paddle_enabled', '1') === '1' && paddle_configured();
+  if (setting('pay_paddle_enabled', '1') !== '1' || !paddle_configured()) return false;
+  // Sandbox payments are fake (test cards): never let the public buy store products with them —
+  // that would hand out real downloads for free. Admins can still test the store checkout.
+  if (paddle_sandbox()) {
+    $u = current_user();
+    return $u !== null && $u['role'] === 'ADMIN';
+  }
+  return true;
 }
 
 /** Payment methods shown at checkout. Paddle is the only processor (Merchant of Record). */

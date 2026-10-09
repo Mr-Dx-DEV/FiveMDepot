@@ -7,7 +7,7 @@
  */
 
 // === Paddle settings from environment variables (see .env.example) — these win over config.local.php ===
-foreach (['PADDLE_ENVIRONMENT', 'PADDLE_CLIENT_TOKEN'] as $k) {
+foreach (['PADDLE_ENVIRONMENT', 'PADDLE_CLIENT_TOKEN', 'PADDLE_API_KEY', 'PADDLE_WEBHOOK_SECRET'] as $k) {
   $v = getenv($k);
   if ($v !== false && $v !== '' && !defined($k)) define($k, $v);
 }

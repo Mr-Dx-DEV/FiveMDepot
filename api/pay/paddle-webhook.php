@@ -2,12 +2,15 @@
 /**
  * Paddle webhook — add this URL in Paddle → Developer tools → Notifications → New destination:
  *   https://YOUR-DOMAIN/api/pay/paddle-webhook.php
- * Events: transaction.completed, adjustment.created, adjustment.updated
- * Copy the destination's secret key into PADDLE_WEBHOOK_SECRET (config.local.php).
+ * Events: transaction.completed, adjustment.created, adjustment.updated (store orders) and
+ *         subscription.created/updated/canceled, customer.created/updated (pricing page plans)
+ * Copy the destination's secret key into PADDLE_WEBHOOK_SECRET (env var or config.local.php).
+ * Anything other than a 2xx makes Paddle retry, so failures must not answer 200.
  */
 require_once __DIR__ . '/../../core/bootstrap.php';
 require_once __DIR__ . '/../../core/gateways.php';
 require_once __DIR__ . '/../../core/mail.php';
+require_once __DIR__ . '/../../core/subscriptions.php';
 
 $payload = file_get_contents('php://input');
 $sig = $_SERVER['HTTP_PADDLE_SIGNATURE'] ?? '';
@@ -18,6 +21,19 @@ if (!defined('PADDLE_WEBHOOK_SECRET') || PADDLE_WEBHOOK_SECRET === '' || !paddle
 $event = json_decode($payload, true) ?: [];
 $type = (string)($event['event_type'] ?? '');
 $d = $event['data'] ?? [];
+
+// Plans (pricing page): upserts keyed on Paddle IDs are idempotent and ignore older payloads, so they run
+// on every delivery — a failure throws (500) and Paddle retries. The event is logged after success.
+if (sub_handle_event($type, $d)) {
+  record_payment_event('PADDLE', (string)($event['event_id'] ?? uniqid('evt_', true)), null, $type, $d['status'] ?? null, null, null, $payload);
+  exit('ok');
+}
+// A plan's transaction.completed: the subscription.* events carry the state, nothing else to do
+if ($type === 'transaction.completed' && !empty($d['subscription_id'])) {
+  record_payment_event('PADDLE', (string)($event['event_id'] ?? uniqid('evt_', true)), null, $type, $d['status'] ?? null, null, null, $payload);
+  exit('ok');
+}
+
 $isAdjustment = strpos($type, 'adjustment.') === 0;
 $txnId = (string)($isAdjustment ? ($d['transaction_id'] ?? '') : ($d['id'] ?? ''));
 $o = $txnId !== '' ? Db::one("SELECT id, status, payment_method FROM orders WHERE gateway_ref = ?", [$txnId]) : null;

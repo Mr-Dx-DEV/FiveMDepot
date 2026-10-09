@@ -57,6 +57,11 @@
       subscription plans) requires it and refuses to load if it is missing or doesn't match the client token.
       Plan copy and price IDs live in `js/pricing-tiers.js` — the IDs there are sandbox IDs; replace them with
       your live `pri_…` IDs when you switch to production. After checkout, Paddle sends buyers to `/welcome`.
+   8. **Subscriptions:** run `migrations/014_subscriptions.sql` and `015_subscription_order.sql`. The webhook
+      destination must also send `subscription.*` and `customer.*` events. Buyers see their plan and a
+      *Manage subscription* button (Paddle customer portal) under *My account → Subscription*; that needs
+      `PADDLE_API_KEY`. Access rule (`core/subscriptions.php`): active, trialing and past_due grant access.
+      While `PADDLE_ENVIRONMENT` is `sandbox`, only admins can pay for store products (test cards are fake).
    Test everything with a **sandbox** account (sandbox-vendors.paddle.com) first, then swap in the live keys.
    - **Email:** set *Settings → Email → Your email* to get alerts for new tickets.
      PHP `mail()` is used by default; for reliable delivery create a mailbox in Plesk (e.g.
