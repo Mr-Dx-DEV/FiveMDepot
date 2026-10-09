@@ -37,7 +37,11 @@
   // ---------- Gallery ----------
   function gallery() {
     var media = p.screenshots.map(function (s) { return { type: 'img', src: s }; });
-    if (p.video_embed) media.splice(media.length ? 1 : 0, 0, { type: 'video', src: p.video_embed, thumb: p.screenshots[0] });
+    if (p.video_embed) {
+      // YouTube gives every video a thumbnail; use it so the video tile never depends on the screenshots
+      var yt = /youtube(?:-nocookie)?\.com\/embed\/([\w-]+)/.exec(p.video_embed);
+      media.splice(media.length ? 1 : 0, 0, { type: 'video', src: p.video_embed, thumb: yt ? 'https://i.ytimg.com/vi/' + yt[1] + '/hqdefault.jpg' : p.screenshots[0] });
+    }
     if (!media.length) media.push({ type: 'img', src: S.catArt({ slug: (p.badge && p.badge.slug) || 'box' }) });
     var idx = 0;
     var wrap = document.createElement('div');

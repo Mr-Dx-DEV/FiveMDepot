@@ -7,3 +7,4 @@ uploads/*
 uploads/*/*
 !uploads/*/.htaccess
 !uploads/*/.gitkeep
+product-images.zip
