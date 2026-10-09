@@ -20,7 +20,7 @@ const PLANS = [
     'categories' => ['scripts'],
     'featured' => false,
     'sandbox' => ['product' => 'pro_01m4gznzmwtgbp2r22ywqg4rdc', 'month' => 'pri_01m4gznzzdq34sz7j6ds9y3429', 'year' => 'pri_01m4gzp15saagb53s9wrm8c9ft'],
-    'production' => ['product' => '', 'month' => '', 'year' => ''],
+    'production' => ['product' => 'pro_01m4h3ktab7bv2bt0y4tkgpz63', 'month' => 'pri_01m4h3ktqj753qwvzhb0k9g1b9', 'year' => 'pri_01m4h3kv607027pfdf20wezrp0'],
   ],
   'pro' => [
     'name' => 'Pro',
@@ -29,7 +29,7 @@ const PLANS = [
     'categories' => ['scripts', 'vehicles', 'clothing', 'mlos-maps', 'maps'],
     'featured' => true,
     'sandbox' => ['product' => 'pro_01m4gzp1hafk5nx1kb5bpj8938', 'month' => 'pri_01m4gzp1vv1f9xjhzmecd0zscm', 'year' => 'pri_01m4gzp25pthjybnh1djmn1we8'],
-    'production' => ['product' => '', 'month' => '', 'year' => ''],
+    'production' => ['product' => 'pro_01m4h3kvmnjd4q8sjccc643w61', 'month' => 'pri_01m4h3kw1sawmfshjej0a0885t', 'year' => 'pri_01m4h3kwhjwhz78mnnw7cgn91r'],
   ],
   'advanced' => [
     'name' => 'Advanced',
@@ -38,7 +38,7 @@ const PLANS = [
     'categories' => ['*'],
     'featured' => false,
     'sandbox' => ['product' => 'pro_01m4gzp2h2kcphyqxe4arva4gg', 'month' => 'pri_01m4gzp2t3k0az9rf06nv13g84', 'year' => 'pri_01m4gzp33cc86y6vhnkfztm1jx'],
-    'production' => ['product' => '', 'month' => '', 'year' => ''],
+    'production' => ['product' => 'pro_01m4h3kx079cf9f5as48yc3d5e', 'month' => 'pri_01m4h3kxdywn03c7wx0k5j46x2', 'year' => 'pri_01m4h3kxzkrc68f6ysprrdm120'],
   ],
 ];
 
