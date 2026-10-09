@@ -13,6 +13,10 @@
    8. `migrations/008_discord.sql` (Discord sign-in: stores the Discord handle)
    9. `migrations/009_paddle.sql` (Paddle-only checkout, business details, Paddle-ready Terms / Privacy /
       Refund / Contact pages; switches off the old payment methods, the lucky wheel and the seller program)
+   10. `migrations/010_products.sql` (the 24-product catalogue). Upload the `uploads/products/` folder
+       with it — the product images live there. Then upload each product's download file in
+       Admin → Products (files are not included), and review the products left as Draft.
+   11. `migrations/011_store_wording.sql` (homepage says “store”, not “marketplace”; hides the test products)
 
    Both are safe to run more than once and delete nothing.
 3. **Upload** all files. Make sure `config.local.php` is uploaded next to `config.php`

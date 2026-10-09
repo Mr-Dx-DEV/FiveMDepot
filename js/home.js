@@ -20,7 +20,7 @@
   // Same content as the seeded homepage_sections — used until the API answers or if it fails.
   var DEFAULTS = {
     sections: [
-      { key: 'hero', content: { badge: 'Premium Marketplace Now Live', headline: '*FiveM* Premium|*Scripts*, MLOs &|Server Packs', subtitle: '**Since 2024** — the **trusted** FiveM marketplace for QBCore, ESX and QBox: server packs, jobs, MLO maps, vehicles, clothing and more.', checks: ['100% Legal', 'Instant Download', 'Lifetime Updates'], primary_text: 'Explore Marketplace', primary_link: 'category.html?c=all', secondary_text: 'View Server Packs', secondary_link: 'server-packs.html' } },
+      { key: 'hero', content: { badge: 'Made in-house · Instant download', headline: '*FiveM* Premium|*Scripts*, MLOs &|Server Packs', subtitle: '**Since 2024** — **our own** FiveM resources for QBCore, ESX and QBox: server packs, jobs, MLO maps, vehicles, clothing and more.', checks: ['Secure checkout', 'Instant Download', 'Lifetime Updates'], primary_text: 'Browse the store', primary_link: 'category.html?c=all', secondary_text: 'View Server Packs', secondary_link: 'server-packs.html' } },
       { key: 'trust', content: { items: [] } },
       { key: 'categories', content: { heading: 'Shop by Category', subheading: 'Everything you need to build your server' } },
       FEATURE_SECTION,

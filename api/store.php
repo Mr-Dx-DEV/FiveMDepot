@@ -564,10 +564,12 @@ function routeDocs(): array
 /** Business details from Admin → Settings, filled into the legal pages ({{legal_name}} etc.). */
 function business_details(): array
 {
+  $keys = ['legal_name', 'business_address', 'support_email'];
+  $v = array_column(Db::all("SELECT `key`, `value` FROM site_settings WHERE `key` IN (" . Db::in($keys) . ")", $keys), 'value', 'key');
   return [
-    'legal_name' => setting('legal_name') ?: 'Tanvir Anjum Neon',
-    'business_address' => setting('business_address') ?: 'Dhaka, Bangladesh',
-    'support_email' => setting('support_email') ?: 'fivemdepot@gmail.com',
+    'legal_name' => trim((string)($v['legal_name'] ?? '')) ?: 'Tanvir Anjum Neon',
+    'business_address' => trim((string)($v['business_address'] ?? '')) ?: 'Dhaka, Bangladesh',
+    'support_email' => trim((string)($v['support_email'] ?? '')) ?: 'fivemdepot@gmail.com',
     'site_name' => SITE_NAME,
     'site_url' => SITE_URL,
   ];
