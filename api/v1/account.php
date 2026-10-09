@@ -29,7 +29,6 @@ function user_can_download(array $u, array $product): bool
 // ============================================================
 route('GET', 'account/overview', function () {
   $u = require_user();
-  $seller = Db::one("SELECT status, rejection_reason FROM seller_profiles WHERE user_id = ?", [$u['id']]);
   ok([
     'user' => $u,
     'stats' => [
@@ -38,7 +37,6 @@ route('GET', 'account/overview', function () {
       'pending' => (int)Db::value("SELECT COUNT(*) FROM orders WHERE user_id = ? AND status = 'PENDING'", [$u['id']]),
       'wishlist' => (int)Db::value("SELECT COUNT(*) FROM wishlist WHERE user_id = ?", [$u['id']]),
     ],
-    'seller' => $seller,
   ]);
 });
 
@@ -182,20 +180,6 @@ route('POST', 'account/refunds', function () {
   ok(['requested' => true], [], 201);
 });
 
-route('POST', 'account/seller-apply', function () {
-  $u = require_user();
-  if ($u['role'] !== 'BUYER') fail(422, 'You already have seller access');
-  $bio = str_in('bio', 1000);
-  $discord = str_in('discord_tag', 100);
-  if (mb_strlen($bio) < 20) fail(422, 'Tell us a bit about what you make (20+ characters)', ['bio' => 'Too short']);
-  $auto = setting('seller_auto_approve', '0') === '1';
-  Db::pdo()->prepare("INSERT INTO seller_profiles (id, user_id, bio, discord_tag, status, approved_at) VALUES (?, ?, ?, ?, ?, ?)
-                      ON DUPLICATE KEY UPDATE bio = VALUES(bio), discord_tag = VALUES(discord_tag), status = VALUES(status), rejection_reason = NULL")
-    ->execute([uuid(), $u['id'], $bio, $discord ?: null, $auto ? 'APPROVED' : 'PENDING', $auto ? date('Y-m-d H:i:s') : null]);
-  if ($auto) Db::pdo()->prepare("UPDATE users SET role = 'SELLER' WHERE id = ?")->execute([$u['id']]);
-  ok(['status' => $auto ? 'APPROVED' : 'PENDING']);
-});
-
 // ============================================================
 // Checkout
 // ============================================================
@@ -227,10 +211,6 @@ function price_cart(array $productIds, string $promoCode, ?array $user): array
     if (!$pr) $err = 'This promo code is not valid';
     elseif ($pr['expires_at'] && strtotime($pr['expires_at']) < time()) $err = 'This promo code has expired';
     elseif ((int)$pr['max_uses'] > 0 && (int)$pr['uses_count'] >= (int)$pr['max_uses']) $err = 'This promo code has been used up';
-    // Lucky-wheel codes are personal and single use (see wheel.php)
-    elseif (strpos($pr['code'], WHEEL_PREFIX) === 0 && !$user) $err = 'Sign in to use your lucky wheel code';
-    elseif (strpos($pr['code'], WHEEL_PREFIX) === 0 && $pr['created_by'] !== $user['id']) $err = 'This code belongs to another account';
-    elseif (strpos($pr['code'], WHEEL_PREFIX) === 0 && Db::value("SELECT COUNT(*) FROM orders WHERE promo_id = ? AND status NOT IN ('REJECTED', 'CANCELLED')", [$pr['id']])) $err = 'This code has already been used';
     elseif ($subtotal < (float)$pr['min_amount']) $err = 'Spend at least $' . number_format((float)$pr['min_amount'], 2) . ' to use this code';
     if ($err) fail(422, $err, ['promo_code' => $err]);
     $discount = $pr['type'] === 'percent' ? round($subtotal * (float)$pr['value'] / 100, 2) : min($subtotal, (float)$pr['value']);
@@ -239,57 +219,22 @@ function price_cart(array $productIds, string $promoCode, ?array $user): array
   return [$lines, $subtotal, $discount, max(0, round($subtotal - $discount, 2)), $promo];
 }
 
-function payment_info(): array
-{
-  return [
-    'bkash' => setting('bkash_number'), 'nagad' => setting('nagad_number'),
-    'bank_name' => setting('bank_name'), 'bank_account' => setting('bank_account'), 'bank_branch' => setting('bank_branch'),
-  ];
-}
-
 route('POST', 'checkout/quote', function () {
   [$lines, $subtotal, $discount, $total, $promo] = price_cart(arr_in('ids'), str_in('promo_code', 50), current_user());
   ok(['items' => array_map(function ($l) { unset($l['seller_id']); return $l; }, $lines), 'subtotal' => $subtotal,
-      'discount' => $discount, 'total' => $total, 'promo' => $promo, 'payment' => payment_info(), 'methods' => payment_methods(),
-      'support' => ['discord' => setting('social_discord'), 'verify_hours' => setting('verify_hours', '2–3 hours')]]);
+      'discount' => $discount, 'total' => $total, 'promo' => $promo, 'methods' => payment_methods(),
+      'support' => ['discord' => setting('social_discord'), 'email' => setting('support_email', 'fivemdepot@gmail.com')]]);
 });
 
 route('POST', 'checkout/order', function () {
   $u = require_user();
   rate_limit('checkout', 10, 600);
-  $ids = arr_in('ids');
-  [$lines, $subtotal, $discount, $total, $promo] = price_cart($ids, str_in('promo_code', 50), $u);
+  [$lines, $subtotal, $discount, $total, $promo] = price_cart(arr_in('ids'), str_in('promo_code', 50), $u);
   $lines = array_values(array_filter($lines, fn($l) => !$l['owned']));
   if (!$lines) fail(422, 'You already own everything in your cart');
 
-  $method = strtoupper(str_in('payment_method', 20));
   $free = $total <= 0;
-  $available = array_column(payment_methods(), 'type', 'id');
-  $online = !$free && ($available[$method] ?? '') === 'online';
-  $external = !$free && ($available[$method] ?? '') === 'external';
-  $payerEmail = strtolower(str_in('payer_email', 255));
-  $paidAmount = input('paid_amount');
-  $note = str_in('note', 1000);
-  $tx = str_in('transaction_id', 100);
-  $sender = str_in('sender_number', 50);
-  if (!$free) {
-    if (!isset($available[$method])) fail(422, 'Choose a payment method', ['payment_method' => 'Choose a payment method']);
-    if ($external) {
-      $errors = [];
-      if (mb_strlen($tx) < 4) $errors['transaction_id'] = 'Enter the transaction ID from your Buy Me a Coffee receipt';
-      if (!filter_var($payerEmail, FILTER_VALIDATE_EMAIL)) $errors['payer_email'] = 'Enter the email you paid with';
-      if (!is_numeric($paidAmount) || (float)$paidAmount <= 0) $errors['paid_amount'] = 'Enter the amount you paid';
-      if ($errors) fail(422, 'Please complete the payment details', $errors);
-      if (Db::value("SELECT COUNT(*) FROM orders WHERE transaction_id = ? AND status <> 'REJECTED'", [$tx])) fail(422, 'This transaction ID was already used', ['transaction_id' => 'Already used']);
-    } elseif (!$online) {
-      $errors = [];
-      if (mb_strlen($tx) < 4) $errors['transaction_id'] = 'Enter the transaction ID from your payment';
-      if (empty($_FILES['proof']) || $_FILES['proof']['error'] === UPLOAD_ERR_NO_FILE) $errors['proof'] = 'Upload a screenshot of your payment';
-      if ($errors) fail(422, 'Please complete the payment details', $errors);
-      if (Db::value("SELECT COUNT(*) FROM orders WHERE transaction_id = ? AND status <> 'REJECTED'", [$tx])) fail(422, 'This transaction ID was already used', ['transaction_id' => 'Already used']);
-    }
-  }
-  $proofPath = ($free || $online || $external) ? null : save_upload($_FILES['proof'], 'proofs', 'image');
+  if (!$free && !gateway_ready('PADDLE')) fail(422, 'Checkout is not available right now. Please contact support.');
 
   // Spread the discount over the items so price_paid adds up to the total
   $remaining = $discount;
@@ -303,30 +248,21 @@ route('POST', 'checkout/order', function () {
   $pdo = Db::pdo();
   $pdo->beginTransaction();
   $orderId = uuid();
-  $status = $free ? 'PENDING' : ($online ? 'AWAITING_PAYMENT' : 'PENDING');
-  $pdo->prepare("INSERT INTO orders (id, user_id, product_ids, total_amount, status, payment_method, transaction_id, promo_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)")
-    ->execute([$orderId, $u['id'], json_encode(array_column($lines, 'id')), $total, $status, $free ? 'FREE' : $method,
-               ($free || $online) ? null : $tx, $promo['id'] ?? null]);
+  $status = $free ? 'PENDING' : 'AWAITING_PAYMENT';
+  $pdo->prepare("INSERT INTO orders (id, user_id, product_ids, total_amount, status, payment_method, promo_id) VALUES (?, ?, ?, ?, ?, ?, ?)")
+    ->execute([$orderId, $u['id'], json_encode(array_column($lines, 'id')), $total, $status, $free ? 'FREE' : 'PADDLE', $promo['id'] ?? null]);
   $ins = $pdo->prepare("INSERT INTO order_products (id, order_id, product_id, price_paid) VALUES (?, ?, ?, ?)");
   foreach ($lines as $l) $ins->execute([uuid(), $orderId, $l['id'], $l['paid']]);
-  if ($proofPath || $external) {
-    $pdo->prepare("INSERT INTO payment_proofs (id, order_id, file_path, transaction_id, sender_number, amount, payer_email, note) VALUES (?, ?, ?, ?, ?, ?, ?, ?)")
-      ->execute([uuid(), $orderId, $proofPath, $tx, $sender ?: null, $external ? round((float)$paidAmount, 2) : $total, $external ? $payerEmail : null, $note ?: null]);
-  }
   if ($free) {
     fulfil_order($orderId, null, 'Free order'); // same delivery path as paid orders
     $status = 'VERIFIED';
   }
   $pdo->commit();
-  audit('order_placed', 'order', $orderId, ($free ? 'free' : $method) . ' ' . $total);
-  if (!$free && !$online) mail_order_received($orderId); // manual + Buy Me a Coffee: waiting for verification
+  audit('order_placed', 'order', $orderId, ($free ? 'free' : 'paddle') . ' ' . $total);
 
-  // Online payment: send the buyer to the gateway's secure payment page
-  if ($online) {
-    $url = start_gateway_payment(order_for_payment($orderId));
-    ok(['order_id' => $orderId, 'status' => $status, 'total' => $total, 'redirect_url' => $url], [], 201);
-  }
-  ok(['order_id' => $orderId, 'status' => $status, 'total' => $total], [], 201);
+  if ($free) ok(['order_id' => $orderId, 'status' => $status, 'total' => $total], [], 201);
+  // Paid: the browser opens Paddle checkout for this order's transaction
+  ok(['order_id' => $orderId, 'status' => $status, 'total' => $total] + start_gateway_payment(order_for_payment($orderId)), [], 201);
 });
 
 // One order of the current user (checkout polls this after returning from a gateway)
@@ -337,21 +273,19 @@ route('GET', 'account/orders/{id}', function ($p) {
   ok($o);
 });
 
-// Resume an unfinished online payment ("Pay now" in My account → Orders)
+// Resume an unfinished payment ("Pay now" in My account → Orders)
 route('POST', 'account/orders/{id}/pay', function ($p) {
   $u = require_user();
   rate_limit('pay', 10, 600);
   $o = order_for_payment($p['id']);
   if (!$o || $o['user_id'] !== $u['id']) fail(404, 'Order not found');
   if ($o['status'] !== 'AWAITING_PAYMENT') fail(409, 'This order does not need payment');
-  $method = strtoupper(str_in('payment_method', 20)) ?: $o['payment_method'];
-  $available = array_column(payment_methods(), 'type', 'id');
-  if (($available[$method] ?? '') !== 'online') fail(422, 'This payment method is not available right now');
-  if ($method !== $o['payment_method']) {
-    Db::pdo()->prepare("UPDATE orders SET payment_method = ? WHERE id = ?")->execute([$method, $o['id']]);
-    $o['payment_method'] = $method;
+  if (!gateway_ready('PADDLE')) fail(422, 'Checkout is not available right now. Please contact support.');
+  if ($o['payment_method'] !== 'PADDLE') {
+    Db::pdo()->prepare("UPDATE orders SET payment_method = 'PADDLE', gateway_ref = NULL WHERE id = ?")->execute([$o['id']]);
+    $o['payment_method'] = 'PADDLE'; $o['gateway_ref'] = null;
   }
-  ok(['redirect_url' => start_gateway_payment($o)]);
+  ok(start_gateway_payment($o));
 });
 
 route('POST', 'account/orders/{id}/cancel', function ($p) {

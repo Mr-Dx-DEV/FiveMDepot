@@ -18,18 +18,15 @@ defined('GOOGLE_CLIENT_SECRET') || define('GOOGLE_CLIENT_SECRET', '');
 defined('DISCORD_CLIENT_ID') || define('DISCORD_CLIENT_ID', '');
 defined('DISCORD_CLIENT_SECRET') || define('DISCORD_CLIENT_SECRET', '');
 
-// ---- Payments (leave empty to hide a method). Webhook URLs are shown in Admin -> Settings.
-// Stripe (cards): Dashboard -> Developers -> API keys / Webhooks. Use sk_test_... while testing.
-defined('STRIPE_SECRET_KEY') || define('STRIPE_SECRET_KEY', '');
-defined('STRIPE_WEBHOOK_SECRET') || define('STRIPE_WEBHOOK_SECRET', '');   // whsec_...
-// NOWPayments (crypto): Settings -> API keys and Settings -> Payments -> IPN secret
-defined('NOWPAYMENTS_API_KEY') || define('NOWPAYMENTS_API_KEY', '');
-defined('NOWPAYMENTS_IPN_SECRET') || define('NOWPAYMENTS_IPN_SECRET', '');
-defined('NOWPAYMENTS_SANDBOX') || define('NOWPAYMENTS_SANDBOX', false);
-// SSLCommerz: store ID / password from your merchant panel (sandbox account first)
-defined('SSLCZ_STORE_ID') || define('SSLCZ_STORE_ID', '');
-defined('SSLCZ_STORE_PASSWORD') || define('SSLCZ_STORE_PASSWORD', '');
-defined('SSLCZ_SANDBOX') || define('SSLCZ_SANDBOX', true);
+// ---- Payments: Paddle Billing (Merchant of Record). Leave empty to hide checkout.
+// Paddle -> Developer tools -> Authentication: API key (server side) + client-side token.
+// Paddle -> Developer tools -> Notifications -> New destination: https://YOUR-DOMAIN/api/pay/paddle-webhook.php
+//   events transaction.completed, adjustment.created, adjustment.updated -> copy its secret key here.
+// Test with a sandbox account first (sandbox-vendors.paddle.com): its API key contains "_sdbx_" and the client token starts with "test_".
+defined('PADDLE_API_KEY') || define('PADDLE_API_KEY', '');
+defined('PADDLE_CLIENT_TOKEN') || define('PADDLE_CLIENT_TOKEN', '');
+defined('PADDLE_WEBHOOK_SECRET') || define('PADDLE_WEBHOOK_SECRET', '');   // pdl_ntfset_...
+// defined('PADDLE_SANDBOX') || define('PADDLE_SANDBOX', true);            // optional: force sandbox/live
 
 // ---- Email (optional but recommended: emails from PHP mail() often land in spam)
 // Plesk: Mail -> create e.g. noreply@your-domain, then use its login here.

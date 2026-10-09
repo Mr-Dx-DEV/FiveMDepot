@@ -51,7 +51,7 @@
       (owned.length === q.items.length
         ? '<p class="small muted">You already own everything here. <a class="link-more" href="dashboard/buyer.html">Go to your library →</a></p>'
         : '<a class="btn btn-primary btn-lg btn-block" href="checkout.html">' + (q.total === 0 ? 'Get it free' : 'Checkout') + '</a>') +
-      '<p class="small muted" style="text-align:center;margin-top:12px">Pay with bKash, Nagad or bank transfer</p></aside></div>';
+      '<p class="small muted" style="text-align:center;margin-top:12px">Card, PayPal, Apple Pay &amp; Google Pay · secure checkout by Paddle</p></aside></div>';
   }
 
   box.addEventListener('click', function (e) {

@@ -214,7 +214,7 @@ function safe_next(?string $next): ?string
 /** Where each role lands after logging in. */
 function dashboard_url(string $role): string
 {
-  return ['ADMIN' => 'admin/', 'SELLER' => 'dashboard/seller.html'][$role] ?? 'dashboard/buyer.html';
+  return $role === 'ADMIN' ? 'admin/' : 'dashboard/buyer.html';
 }
 
 function uuid(): string

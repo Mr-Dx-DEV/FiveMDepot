@@ -274,7 +274,7 @@ route('POST', 'admin/tags/{id}/delete', function ($p) {
 
 // Live preview for the product editor
 route('GET', 'admin/catalog/categories-for-tags', function () {
-  require_role('ADMIN', 'SELLER');
+  require_role('ADMIN');
   $ids = array_values(array_filter(explode(',', (string)($_GET['tag_ids'] ?? ''))));
   ok(categories_for_tags($ids));
 });
@@ -556,7 +556,7 @@ route('POST', 'admin/products/{id}/review', function ($p) {
 // ============================================================
 
 route('POST', 'admin/upload', function () {
-  $u = require_role('ADMIN', 'SELLER');
+  $u = require_role('ADMIN');
   rate_limit('upload', 60, 300);
   $kind = in_array(input('kind', 'image'), ['archive', 'video'], true) ? input('kind') : 'image';
   if ($kind === 'video' && $u['role'] !== 'ADMIN') $kind = 'image'; // background videos are a site setting

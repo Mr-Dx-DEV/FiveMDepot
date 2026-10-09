@@ -1,4 +1,4 @@
-/* FiveMDepot — Buyer account: library, orders, wishlist, settings, become a seller */
+/* FiveMDepot — Buyer account: library, orders, wishlist, support, settings */
 (function () {
   'use strict';
   var S = window.Store, esc = S.esc;
@@ -47,24 +47,22 @@
 
   function drawNav(active) {
     var st = overview.stats;
-    var sellerLink = user.role === 'SELLER' || user.role === 'ADMIN'
-      ? '<a href="' + (user.role === 'ADMIN' ? 'admin/' : 'dashboard/seller.html') + '">' + (user.role === 'ADMIN' ? 'Admin panel →' : 'Seller dashboard →') + '</a>'
-      : '<button data-tab="sell" class="' + (active === 'sell' ? 'on' : '') + '">Become a seller</button>';
+    var adminLink = user.role === 'ADMIN' ? '<a href="admin/">Admin panel →</a>' : '';
     nav.innerHTML = '<div class="who"><b>' + esc(user.name) + '</b><span class="muted small">' + esc(user.email) + '</span></div>' +
       '<button data-tab="library" class="' + (active === 'library' ? 'on' : '') + '">My library<span class="n">' + st.purchases + '</span></button>' +
       '<button data-tab="orders" class="' + (active === 'orders' ? 'on' : '') + '">Orders' + (st.pending ? '<span class="n">' + st.pending + ' pending</span>' : '') + '</button>' +
       '<button data-tab="wishlist" class="' + (active === 'wishlist' ? 'on' : '') + '">Wishlist<span class="n">' + st.wishlist + '</span></button>' +
       '<button data-tab="support" class="' + (active === 'support' ? 'on' : '') + '">Support</button>' +
-      '<button data-tab="settings" class="' + (active === 'settings' ? 'on' : '') + '">Account settings</button>' + sellerLink +
+      '<button data-tab="settings" class="' + (active === 'settings' ? 'on' : '') + '">Account settings</button>' + adminLink +
       '<button data-logout>Log out</button>';
   }
 
   function show(tab, extra) {
-    if (!TABS[tab] && tab !== 'sell') tab = 'library';
+    if (!TABS[tab]) tab = 'library';
     history.replaceState(null, '', location.pathname + '?tab=' + tab + (extra || ''));
     drawNav(tab);
     page.innerHTML = '<div class="skeleton" style="height:260px"></div>';
-    (tab === 'sell' ? sell : TABS[tab].render)();
+    TABS[tab].render();
   }
 
   nav.addEventListener('click', function (e) {
@@ -105,7 +103,7 @@
   function orders() {
     S.v1('GET', 'account/orders').then(function (rows) {
       page.innerHTML = '<h1>Orders</h1>' + (rows.length ? rows.map(function (o) {
-        return '<div class="panel order"><div class="order-head"><span><b class="mono">#' + esc(o.id.slice(0, 8)) + '</b> · ' + date(o.created_at) + ' · ' + esc(o.payment_method || 'Free') +
+        return '<div class="panel order"><div class="order-head"><span><b class="mono">#' + esc(o.id.slice(0, 8)) + '</b> · ' + date(o.created_at) + ' · ' + esc(o.payment_method === 'PADDLE' ? 'Paddle' : (o.payment_method || 'Free')) +
           (o.transaction_id ? ' · <span class="mono">' + esc(o.transaction_id) + '</span>' : '') + '</span>' + badge(o.status) + '</div>' +
           o.items.map(function (i) {
             return '<div class="order-line"><span>' + (i.slug ? '<a href="' + S.productUrl(i.slug) + '">' + esc(i.title) + '</a>' : '<span class="muted">Removed product</span>') + '</span><span>' + S.money(i.price_paid) + '</span></div>';
@@ -117,15 +115,20 @@
             '<div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap"><button class="btn btn-primary btn-sm" data-pay="' + esc(o.id) + '">Pay now</button>' +
             '<button class="btn btn-ghost btn-sm" data-cancel="' + esc(o.id) + '">Cancel order</button></div></div>' : '') +
           (o.status === 'REJECTED' && o.admin_note ? '<div class="order-note down">Reason: ' + esc(o.admin_note) + '. <a class="link" href="dashboard/buyer.html?tab=support&new=1&order=' + encodeURIComponent(o.id) + '">Open a ticket</a> if you think this is a mistake.</div>' : '') +
-          ((o.status === 'VERIFIED' || o.status === 'COMPLETED') && o.total_amount > 0 ? '<div style="padding:0 18px 14px;text-align:right"><button class="btn btn-ghost btn-sm" data-refund="' + esc(o.id) + '">Request refund</button></div>' : '') +
+          ((o.status === 'VERIFIED' || o.status === 'COMPLETED') && o.total_amount > 0 ? '<div style="padding:0 18px 14px;text-align:right">' +
+            (o.payment_method === 'PADDLE'
+              ? '<a class="btn btn-ghost btn-sm" href="https://paddle.net" target="_blank" rel="noopener">Request refund at paddle.net ↗</a>'
+              : '<button class="btn btn-ghost btn-sm" data-refund="' + esc(o.id) + '">Request refund</button>') + '</div>' : '') +
+          (o.status === 'REFUNDED' ? '<div class="order-note">This order was refunded. The licence has ended and the download was removed from your library.</div>' : '') +
           '</div>';
       }).join('') : '<div class="empty"><b>No orders yet</b><a class="link-more" href="category.html?c=all">Start shopping →</a></div>');
       page.onclick = function (e) {
         var pay = e.target.closest('[data-pay]'), cancel = e.target.closest('[data-cancel]');
         if (pay) {
           pay.disabled = true;
-          S.v1('POST', 'account/orders/' + encodeURIComponent(pay.dataset.pay) + '/pay', {}).then(function (r) { location.href = r.redirect_url; })
-            .catch(function (err) { pay.disabled = false; fail(err); });
+          S.v1('POST', 'account/orders/' + encodeURIComponent(pay.dataset.pay) + '/pay', {}).then(function (r) {
+            return S.paddleCheckout(r.paddle, function () { pay.disabled = false; });
+          }).catch(function (err) { pay.disabled = false; fail(err); });
           return;
         }
         if (cancel) {
@@ -293,25 +296,6 @@
           .catch(function (err) { b.disabled = false; fail(err); });
       };
     }).catch(function () { box.remove(); });
-  }
-
-  // ---------- Become a seller ----------
-  function sell() {
-    var sp = overview.seller;
-    if (sp && sp.status === 'PENDING') { page.innerHTML = '<h1>Become a seller</h1><div class="notice">⏳ Your application is being reviewed. We’ll upgrade your account as soon as it’s approved.</div>'; return; }
-    page.innerHTML = '<h1>Become a seller</h1>' + (sp && sp.status === 'REJECTED' ? '<div class="notice bad">Your last application was not approved' + (sp.rejection_reason ? ': ' + esc(sp.rejection_reason) : '') + '. You can apply again.</div>' : '') +
-      '<div class="panel panel-pad" style="max-width:620px"><p class="muted" style="margin-bottom:16px">Sell your scripts, MLOs, vehicles or clothing to thousands of server owners. Every product is reviewed before it goes live; earnings go to your wallet and can be withdrawn by bKash, Nagad or bank.</p>' +
-      '<form id="sellForm"><label class="field"><span>About you & what you make</span><textarea class="input" name="bio" rows="4" maxlength="1000" placeholder="I build optimized QBCore job scripts…"></textarea></label>' +
-      '<label class="field"><span>Discord username</span><input class="input" name="discord_tag" maxlength="100" placeholder="yourname"></label>' +
-      '<button class="btn btn-primary" type="submit">Apply to sell</button></form></div>';
-    page.onsubmit = function (e) {
-      e.preventDefault();
-      var f = e.target;
-      S.v1('POST', 'account/seller-apply', { bio: f.bio.value, discord_tag: f.discord_tag.value }).then(function (r) {
-        if (r.status === 'APPROVED') { S.toast('You’re a seller now!', 'success'); location.href = 'dashboard/seller.html'; return; }
-        overview.seller = { status: 'PENDING' }; S.toast('Application sent', 'success'); sell();
-      }).catch(fail);
-    };
   }
 
   function fail(e) { S.toast(e.message, 'error'); if (/log in/i.test(e.message)) location.href = S.loginUrl(); }

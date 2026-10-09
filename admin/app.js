@@ -351,8 +351,6 @@
     ] },
     { group: 'People', items: [
       { href: '#/users', label: 'Users', icon: 'M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM22 21v-2a4 4 0 0 0-3-3.9M16 3.1a4 4 0 0 1 0 7.8' },
-      { href: '#/sellers', label: 'Sellers', icon: 'M3 9l1-5h16l1 5M3 9h18v2a3 3 0 0 1-6 0 3 3 0 0 1-6 0 3 3 0 0 1-6 0zM5 13v8h14v-8', count: 'sellers_pending' },
-      { href: '#/withdrawals', label: 'Withdrawals', icon: 'M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6', count: 'withdrawals_pending' },
       { href: '#/reviews', label: 'Reviews', icon: 'm12 2 3.1 6.3 6.9 1-5 4.9 1.2 6.8L12 17.8 5.8 21l1.2-6.8-5-4.9 6.9-1z' }
     ] },
     { group: 'Website', items: [

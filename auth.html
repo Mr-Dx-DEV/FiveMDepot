@@ -12,9 +12,9 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Lexend:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/store.css?v=202610080947">
-  <link rel="stylesheet" href="css/modern.css?v=202610080947">
-  <link rel="stylesheet" href="css/design-system.css?v=202610080947">
+  <link rel="stylesheet" href="css/store.css?v=202610091316">
+  <link rel="stylesheet" href="css/modern.css?v=202610091316">
+  <link rel="stylesheet" href="css/design-system.css?v=202610091316">
   <style>
     .auth { min-height: calc(100vh - var(--header-h)); display: grid; grid-template-columns: 1fr 1fr; }
     .auth-art { position: relative; overflow: hidden; isolation: isolate; background: var(--bg-2); border-right: 1px solid var(--border); display: flex; align-items: flex-end; padding: 48px; }
@@ -95,7 +95,7 @@
         <span class="auth-kicker" data-text="WELCOME TO FIVEMDEPOT">WELCOME TO FIVEMDEPOT</span>
         <h2>Build your dream server.</h2>
         <p>Premium scripts, MLOs, vehicles and complete server packs — trusted by FiveM server owners.</p>
-        <ul><li>Instant downloads after payment is verified</li><li>Free updates for everything you buy</li><li>Sell your own resources as a verified seller</li></ul>
+        <ul><li>Instant downloads after payment</li><li>Free updates for everything you buy</li><li>Secure checkout by Paddle</li></ul>
       </div>
     </section>
 
@@ -126,15 +126,14 @@
           <label class="f"><span>Email</span><input class="input" name="email" type="email" autocomplete="email" required></label>
           <label class="f"><span>Password <small class="muted" style="font-weight:400">— at least 8 characters</small></span><span class="pw"><input class="input" name="password" type="password" autocomplete="new-password" minlength="8" required><button type="button" data-toggle-pw>Show</button></span></label>
           <label class="f"><span>Confirm password</span><input class="input" name="confirm_password" type="password" autocomplete="new-password" required></label>
-          <label class="check"><input type="checkbox" name="want_seller"><span>I also want to <b>sell</b> my resources (our team reviews seller applications)</span></label>
           <button class="btn btn-primary btn-block btn-lg" type="submit">Create account</button>
-          <p class="small-note">By creating an account you agree to our terms and refund policy.</p>
+          <p class="small-note">By creating an account you agree to our <a href="documentation.html?type=doc&slug=terms">Terms</a>, <a href="documentation.html?type=doc&slug=privacy">Privacy Policy</a> and <a href="documentation.html?type=doc&slug=refunds">Refund Policy</a>.</p>
         </form>
       </div>
     </section>
   </main>
 
-  <script src="js/auth-scene.js?v=202610080947"></script>
+  <script src="js/auth-scene.js?v=202610091316"></script>
   <script>
     // Background video for the left panel (Admin -> Settings -> Login page). Skipped on phones, data-saver and reduced motion.
     (function () {
@@ -180,7 +179,7 @@
       }
     })();
   </script>
-  <script src="js/store.js?v=202610080947"></script>
+  <script src="js/store.js?v=202610091316"></script>
   <script>
   (function () {
     'use strict';
@@ -258,7 +257,7 @@
       e.preventDefault();
       var f = e.target;
       if (f.password.value !== f.confirm_password.value) { showErrors(f, 'Passwords do not match.', { confirm_password: 'Does not match' }); return; }
-      submit(f, 'auth/register', { name: f.name.value.trim(), email: f.email.value.trim(), password: f.password.value, confirm_password: f.confirm_password.value, want_seller: f.want_seller.checked });
+      submit(f, 'auth/register', { name: f.name.value.trim(), email: f.email.value.trim(), password: f.password.value, confirm_password: f.confirm_password.value });
     });
 
     // Discord / Google sign-in: show configured buttons, keep ?next for the redirect back, remember the last method

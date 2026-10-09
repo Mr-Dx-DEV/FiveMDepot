@@ -92,12 +92,6 @@ route('POST', 'auth/register', function () {
   Db::pdo()->prepare("INSERT INTO users (id, name, email, password, role) VALUES (?, ?, ?, ?, 'BUYER')")
     ->execute([$id, $name, $email, password_hash($password, PASSWORD_DEFAULT)]);
 
-  if (bool_in('want_seller')) {
-    $auto = setting('seller_auto_approve', '0') === '1';
-    Db::pdo()->prepare("INSERT INTO seller_profiles (id, user_id, status, approved_at) VALUES (?, ?, ?, ?)")
-      ->execute([uuid(), $id, $auto ? 'APPROVED' : 'PENDING', $auto ? date('Y-m-d H:i:s') : null]);
-    if ($auto) Db::pdo()->prepare("UPDATE users SET role = 'SELLER' WHERE id = ?")->execute([$id]);
-  }
 
   start_session();
   session_regenerate_id(true);

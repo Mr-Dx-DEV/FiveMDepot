@@ -8,7 +8,6 @@
  *        &tags=qbcore,police  &min=0&max=50  &q=search  &sort=featured|newest|price-low|price-high|popular
  *        &page=1&per_page=24
  *   GET api/store.php?r=product&slug=police-job     product page
- *   GET api/store.php?r=seller&id=<user id>         public seller profile
  *   GET api/store.php?r=docs&type=blog[&slug=x]     blog / tutorials / tools / docs
  *
  * A product is in a category when it has a tag owned by that category
@@ -27,7 +26,6 @@ try {
     case 'home':     $data = routeHome(); break;
     case 'category': $data = routeCategory(); break;
     case 'product':  $data = routeProduct(); break;
-    case 'seller':   $data = routeSeller(); break;
     case 'docs':     $data = routeDocs(); break;
     case 'packs':    $data = routePacks(); break;
     default:
@@ -126,7 +124,6 @@ function routeHome(): array
                                GROUP BY t.id, t.name, t.slug ORDER BY cnt DESC, t.name LIMIT 6"),
     'stats'      => [
       'products' => (int)Db::value("SELECT COUNT(*) FROM products WHERE status = 'PUBLISHED'"),
-      'sellers'  => (int)Db::value("SELECT COUNT(DISTINCT user_id) FROM products WHERE status = 'PUBLISHED'"),
       'downloads' => (int)Db::value("SELECT COALESCE(SUM(downloads), 0) FROM products WHERE status = 'PUBLISHED'"),
       'reviews'  => (int)Db::value("SELECT COUNT(*) FROM reviews WHERE is_hidden = 0"),
       'rating'   => round((float)Db::value("SELECT AVG(rating) FROM reviews WHERE is_hidden = 0"), 1),
@@ -411,7 +408,7 @@ function productRows(string $whereSql, array $params, string $sort, int $limit, 
       'featured'     => (bool)$p['featured'],
       'image'        => $shots[0] ?? null,
       'version'      => $p['version'],
-      'seller'       => $p['seller_name'],
+      'seller'       => SITE_NAME,
       'rating'       => round((float)$p['rating'], 1),
       'review_count' => (int)$p['review_count'],
       'created_at'   => $p['created_at'],
@@ -443,7 +440,7 @@ function tagFilters(string $whereSql, array $params): array
 }
 
 // ============================================================
-// Product page, seller profile, docs
+// Product page, docs
 // ============================================================
 
 /** Legacy descriptions were stored HTML-escaped plain text; new ones are sanitized HTML. */
@@ -493,9 +490,6 @@ function routeProduct(): array
       "p.id <> ? AND p.id IN (SELECT product_id FROM product_tags WHERE tag_id IN (" . Db::in($tagIds) . "))",
       array_merge([$p['id']], $tagIds), 'popular', 4);
   }
-  $seller = Db::one("SELECT (SELECT bio FROM seller_profiles WHERE user_id = ?) AS bio,
-                            (SELECT COUNT(*) FROM products x WHERE x.user_id = ? AND x.status = 'PUBLISHED') AS products",
-                    [$p['user_id'], $p['user_id']]);
 
   return $card + [
     'description_html' => description_html($p['description']),
@@ -510,30 +504,12 @@ function routeProduct(): array
     'updated_at' => $p['updated_at'],
     'seo_title' => $p['seo_title'] ?? null,
     'seo_description' => $p['seo_description'] ?? null,
-    'seller_info' => [
-      'id' => $p['user_id'], 'name' => $p['seller_name'], 'official' => $p['seller_role'] === 'ADMIN',
-      'bio' => $seller['bio'] ?? null, 'products' => (int)($seller['products'] ?? 0),
-    ],
+    'seller_info' => ['id' => $p['user_id'], 'name' => SITE_NAME, 'official' => true],
     'categories' => array_map(fn($c) => ['name' => $c['name'], 'slug' => $c['slug'], 'path' => $c['path']], $cats),
     'breadcrumb' => $breadcrumb,
     'reviews' => $reviews,
     'rating_distribution' => $dist,
     'related' => $related,
-  ];
-}
-
-function routeSeller(): array
-{
-  $id = (string)($_GET['id'] ?? '');
-  $u = Db::one("SELECT u.id, u.name, u.role, u.created_at, sp.bio, sp.discord_tag FROM users u
-                LEFT JOIN seller_profiles sp ON sp.user_id = u.id WHERE u.id = ? AND u.role IN ('SELLER','ADMIN')", [$id]);
-  if (!$u) respondError(404, 'Seller not found');
-  $rating = Db::one("SELECT AVG(r.rating) a, COUNT(*) c FROM reviews r JOIN products p ON p.id = r.product_id
-                     WHERE p.user_id = ? AND r.is_hidden = 0", [$id]);
-  return [
-    'seller' => ['id' => $u['id'], 'name' => $u['name'], 'official' => $u['role'] === 'ADMIN', 'joined' => $u['created_at'],
-                 'bio' => $u['bio'], 'discord' => $u['discord_tag'], 'rating' => round((float)$rating['a'], 1), 'reviews' => (int)$rating['c']],
-    'products' => productRows('p.user_id = ?', [$id], 'popular', 60),
   ];
 }
 
@@ -571,7 +547,7 @@ function routeDocs(): array
                   FROM documentation d LEFT JOIN users u ON u.id = d.author_id WHERE d.slug = ? AND d.is_published = 1", [$slug]);
     if (!$d) respondError(404, 'Article not found');
     Db::pdo()->prepare("UPDATE documentation SET views = views + 1 WHERE id = ?")->execute([$d['id']]);
-    $d['content_html'] = description_html($d['content']);
+    $d['content_html'] = description_html(business_tokens((string)$d['content']));
     unset($d['content']);
     return ['article' => $d];
   }
@@ -585,13 +561,35 @@ function routeDocs(): array
 // Settings
 // ============================================================
 
+/** Business details from Admin → Settings, filled into the legal pages ({{legal_name}} etc.). */
+function business_details(): array
+{
+  return [
+    'legal_name' => setting('legal_name') ?: 'Tanvir Anjum Neon',
+    'business_address' => setting('business_address') ?: 'Dhaka, Bangladesh',
+    'support_email' => setting('support_email') ?: 'fivemdepot@gmail.com',
+    'site_name' => SITE_NAME,
+    'site_url' => SITE_URL,
+  ];
+}
+
+function business_tokens(string $html): string
+{
+  $map = [];
+  foreach (business_details() as $k => $v) $map['{{' . $k . '}}'] = htmlspecialchars($v, ENT_QUOTES, 'UTF-8');
+  return strtr($html, $map);
+}
+
 function publicSettings(): array
 {
-  $keys = ['site_name', 'site_tagline', 'social_discord', 'social_github', 'social_youtube', 'since_year', 'topbar_text', 'topbar_link', 'brand_color', 'discord_server_name', 'discord_widget_server_id', 'auth_video'];
+  $keys = ['legal_name', 'support_email', 'site_name', 'site_tagline', 'social_discord', 'social_github', 'social_youtube', 'since_year', 'topbar_text', 'topbar_link', 'brand_color', 'discord_server_name', 'discord_widget_server_id', 'auth_video'];
   $out = array_fill_keys($keys, '');
   foreach (Db::all("SELECT `key`, `value` FROM site_settings WHERE `key` IN (" . Db::in($keys) . ")", $keys) as $r) {
     $out[$r['key']] = (string)$r['value'];
   }
+  $biz = business_details();
+  $out['legal_name'] = $biz['legal_name'];
+  $out['support_email'] = $biz['support_email'];
   return $out;
 }
 

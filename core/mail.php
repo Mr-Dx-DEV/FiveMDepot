@@ -146,7 +146,7 @@ function mail_order_approved(string $orderId): void
   $o = order_mail_data($orderId);
   if (!$o) return;
   send_mail($o['email'], 'Your order #' . $o['short'] . ' is ready to download 🎉', mail_layout(
-    'Payment approved — your downloads are ready',
+    'Payment confirmed — your downloads are ready',
     '<p>Hi ' . htmlspecialchars($o['name']) . ',</p><p>Your payment for order <b>#' . $o['short'] . '</b> is confirmed. Log in to your account to download:</p>' . $o['list'] .
     '<p>All future updates are free and will appear in your library.</p>',
     'Download now', site_root_url() . 'dashboard/buyer.html'));

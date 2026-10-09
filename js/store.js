@@ -543,160 +543,6 @@
     });
   }
 
-  // Daily lucky wheel. The server picks the prize and issues a personal single-use code (api/v1/wheel.php).
-  var WHEEL_REOPEN = 'fdm-wheel-reopen';
-  function initWheel() {
-    if (document.getElementById('fd-wheel-launch')) return;
-    v1('GET', 'wheel/status').then(function (st) {
-      if (!st || !st.enabled || !st.prizes || !st.prizes.length) return;
-      var launch = document.createElement('button');
-      launch.id = 'fd-wheel-launch'; launch.type = 'button'; launch.className = 'fd-wheel-launch';
-      launch.innerHTML = '<span aria-hidden="true">✦</span><span>Daily spin<small>Win up to ' + Math.max.apply(null, st.prizes) + '% off</small></span>';
-      document.body.appendChild(launch);
-      launch.addEventListener('click', function () { openWheel(st); });
-      var reopen = false;
-      try { reopen = sessionStorage.getItem(WHEEL_REOPEN) === '1'; sessionStorage.removeItem(WHEEL_REOPEN); } catch (e) {}
-      if (reopen && st.signed_in) { openWheel(st); return; }
-      if (st.spin || !document.getElementById('home')) return;
-      var seen = 'fdm-wheel-seen-' + new Date().toLocaleDateString('en-CA');
-      var alreadySeen = false;
-      try { alreadySeen = sessionStorage.getItem(seen) === '1'; } catch (e) {}
-      var autoOpen = function () {
-        if (document.hidden) { document.addEventListener('visibilitychange', autoOpen, { once: true }); return; }
-        if (st.spin || document.querySelector('.fd-auth-wrap, .fd-wheel-wrap')) return;
-        try { sessionStorage.setItem(seen, '1'); } catch (e) {}
-        openWheel(st);
-      };
-      if (!alreadySeen) setTimeout(autoOpen, 1200);
-    }).catch(function () {});
-  }
-  // Wheel face: 8 slices. The best prize is gold, the next best crimson.
-  var WHEEL_SLICES = 8;
-  function wheelSvg(slices, best, second) {
-    var C = 160, R = 136, step = 360 / slices.length;
-    var pt = function (deg, r) { var a = deg * Math.PI / 180; return (C + r * Math.sin(a)).toFixed(2) + ' ' + (C - r * Math.cos(a)).toFixed(2); };
-    var paths = '', labels = '';
-    slices.forEach(function (v, i) {
-      var a0 = i * step, a1 = a0 + step, mid = a0 + step / 2;
-      var fill = v === best ? 'url(#fdwGold)' : v === second ? 'url(#fdwRed)' : (i % 2 ? '#1d191e' : '#262027');
-      var ink = v === best ? '#2a1a05' : '#fff';
-      paths += '<path d="M' + C + ' ' + C + ' L' + pt(a0, R) + ' A' + R + ' ' + R + ' 0 0 1 ' + pt(a1, R) + ' Z" fill="' + fill + '"/>';
-      labels += '<g transform="rotate(' + mid + ' ' + C + ' ' + C + ')" fill="' + ink + '"><text x="' + C + '" y="' + (C - 92) + '" text-anchor="middle" class="fdw-big">' + v + '%</text>' +
-        '<text x="' + C + '" y="' + (C - 76) + '" text-anchor="middle" class="fdw-off">OFF</text></g>';
-    });
-    var spokes = '', lights = '';
-    for (var i = 0; i < slices.length; i++) spokes += '<line x1="' + C + '" y1="' + C + '" x2="' + pt(i * step, R).replace(' ', '" y2="') + '" />';
-    for (var k = 0; k < 16; k++) { var p = pt(k * 22.5, 150).split(' '); lights += '<circle cx="' + p[0] + '" cy="' + p[1] + '" r="3.6" class="fdw-light' + (k % 2 ? ' alt' : '') + '"/>'; }
-    return '<svg viewBox="0 0 320 320" aria-hidden="true"><defs>' +
-      '<linearGradient id="fdwGold" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffe27a"/><stop offset="1" stop-color="#e9a72c"/></linearGradient>' +
-      '<linearGradient id="fdwRed" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ff4d6f"/><stop offset="1" stop-color="#b3123a"/></linearGradient>' +
-      '<linearGradient id="fdwRim" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#5a4318"/><stop offset=".5" stop-color="#2b2010"/><stop offset="1" stop-color="#4c3914"/></linearGradient></defs>' +
-      '<circle cx="160" cy="160" r="157" fill="#0d0b0d"/><circle cx="160" cy="160" r="150" fill="none" stroke="url(#fdwRim)" stroke-width="13"/>' +
-      '<g class="fdw-lights">' + lights + '</g>' +
-      '<g class="fdw-rotor">' + paths + '<g class="fdw-spokes">' + spokes + '</g>' + labels + '</g>' +
-      '<circle cx="160" cy="160" r="137" fill="none" stroke="rgba(255,255,255,.08)"/></svg>';
-  }
-  // Spread the prizes round the wheel: the smallest prize fills every other slice, the top prize appears once
-  // and the middle prizes fill the remaining slots.
-  function wheelSlices(prizes) {
-    var sorted = prizes.slice().sort(function (a, b) { return b - a; });
-    var low = sorted[sorted.length - 1], mid = sorted.slice(1, -1), out = [];
-    if (!mid.length) mid = [sorted[0]];
-    for (var i = 0; i < WHEEL_SLICES; i++) out.push(i % 2 ? low : i === 0 ? sorted[0] : mid[(i / 2 - 1) % mid.length]);
-    return out;
-  }
-  function untilText(iso) {
-    var left = Math.max(0, Math.round((new Date(iso).getTime() - Date.now()) / 60000));
-    var h = Math.floor(left / 60), m = left % 60;
-    return h ? h + 'h ' + (m < 10 ? '0' : '') + m + 'm' : m + 'm';
-  }
-
-  function openWheel(st) {
-    if (document.querySelector('.fd-wheel-wrap')) return;
-    var sorted = st.prizes.slice().sort(function (a, b) { return b - a; });
-    var best = sorted[0], second = sorted[1];
-    var slices = wheelSlices(st.prizes);
-    var wrap = document.createElement('div'); wrap.className = 'fd-wheel-wrap';
-    wrap.innerHTML = '<div class="fd-wheel-scrim" data-wheel-close></div><section class="fd-wheel" role="dialog" aria-modal="true" aria-labelledby="fdWheelTitle">' +
-      '<button type="button" class="icon-btn fd-wheel-close" data-wheel-close aria-label="Close daily lucky wheel">' + I.close + '</button>' +
-      '<span class="fd-badge fdw-tag">✦ Daily lucky wheel</span>' +
-      '<h2 id="fdWheelTitle">Spin for <span class="fdw-grad">up to ' + best + '% off</span></h2>' +
-      '<p>One free spin every ' + st.cooldown_hours + ' hours. Your code is personal, single use, and <b>expires ' + st.code_hours + ' hours</b> after you win it.</p>' +
-      '<div class="fdw-stage"><span class="fdw-pointer" aria-hidden="true"></span>' + wheelSvg(slices, best, second) +
-        '<button type="button" class="fdw-hub" id="fdWheelHub" aria-label="Spin the wheel"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">' +
-        (st.signed_in ? '<path d="M21 12a9 9 0 1 1-2.6-6.4"/><path d="M21 3v6h-6"/>' : '<path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M10 17l5-5-5-5M15 12H3"/>') + '</svg></button></div>' +
-      '<div class="fd-wheel-result" role="status" aria-live="polite"></div>' +
-      '<button type="button" class="btn btn-primary btn-lg fdw-spin" id="fdWheelSpin"></button>' +
-      '<small class="fdw-note">' + (st.signed_in ? 'The code is tied to your account, so only you can use it.' : 'Sign in to spin. The code is tied to your account, so only you can use it.') + '</small></section>';
-    document.body.appendChild(wrap); document.body.classList.add('fd-modal-lock');
-    var opener = document.activeElement;
-    var rotor = wrap.querySelector('.fdw-rotor'), btn = wrap.querySelector('#fdWheelSpin'), hub = wrap.querySelector('#fdWheelHub');
-    var box = wrap.querySelector('.fd-wheel');
-    var spinning = false, timer = null;
-    var close = function () { clearTimeout(timer); wrap.remove(); document.body.classList.remove('fd-modal-lock'); if (opener && opener.focus) opener.focus(); };
-    wrap.addEventListener('click', function (e) { if (e.target.closest('[data-wheel-close]') && !spinning) close(); });
-    wrap.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !spinning) close(); });
-    var step = 360 / WHEEL_SLICES;
-    // Rotation that puts slice j under the top pointer
-    var restAt = function (j) { return -(j * step + step / 2); };
-    var sliceFor = function (v) { var spots = []; slices.forEach(function (s, j) { if (s === v) spots.push(j); }); return spots[Math.floor(Math.random() * spots.length)] || 0; };
-    function idle() {
-      if (!st.signed_in) { btn.textContent = 'Sign in to spin'; return; }
-      if (st.spin) { btn.disabled = true; hub.disabled = true; btn.textContent = 'Next spin in ' + untilText(st.spin.next_at); return; }
-      btn.disabled = false; hub.disabled = false; btn.textContent = 'Spin the wheel';
-    }
-    function show(spin) {
-      var expired = new Date(spin.expires_at).getTime() <= Date.now();
-      wrap.querySelector('.fd-wheel-result').innerHTML = '<span class="fdw-won">You won <b>' + esc(spin.label) + '</b></span>' +
-        '<button type="button" class="fdw-code" data-wheel-copy aria-label="Copy code ' + esc(spin.code) + '"><strong>' + esc(spin.code) + '</strong><span>Copy</span></button>' +
-        '<small>' + (spin.used ? 'This code has already been used.' : expired ? 'This code has expired.' : 'Use it at checkout. Expires in ' + untilText(spin.expires_at) + '.') + '</small>';
-    }
-    rotor.style.transform = 'rotate(' + restAt(0) + 'deg)';
-    if (st.spin) { show(st.spin); rotor.style.transform = 'rotate(' + restAt(sliceFor(st.spin.value)) + 'deg)'; }
-    idle();
-    function signIn() {
-      try { sessionStorage.setItem(WHEEL_REOPEN, '1'); } catch (e) {}
-      close();
-      openAuthModal();
-    }
-    function land(spin) {
-      var calm = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
-      var dur = calm ? 600 : 5200;
-      var jitter = (Math.random() - .5) * step * .6;
-      rotor.style.transition = 'transform ' + dur + 'ms cubic-bezier(.12,.66,.12,1)';
-      rotor.style.transform = 'rotate(' + (360 * (calm ? 1 : 7) + restAt(sliceFor(spin.value)) + jitter) + 'deg)';
-      box.classList.add('is-spinning');
-      timer = setTimeout(function () {
-        spinning = false;
-        box.classList.remove('is-spinning'); box.classList.add('is-won');
-        st.spin = spin; show(spin); idle();
-        toast('You won ' + spin.label + '!', 'success');
-      }, dur + 80);
-    }
-    function spin() {
-      if (spinning) return;
-      if (!st.signed_in) { signIn(); return; }
-      if (st.spin || btn.disabled) return;
-      spinning = true; btn.disabled = true; hub.disabled = true; btn.textContent = 'Spinning…';
-      v1('POST', 'wheel/spin', {}).then(function (r) { land(r.spin); }).catch(function (err) {
-        spinning = false;
-        if (err.status === 401) { st.signed_in = false; signIn(); return; }
-        if (err.fields && err.fields.spin) { st.spin = err.fields.spin; show(st.spin); idle(); return; }
-        idle(); toast(err.message, 'error');
-      });
-    }
-    btn.addEventListener('click', spin);
-    hub.addEventListener('click', spin);
-    wrap.addEventListener('click', function (e) {
-      var c = e.target.closest('[data-wheel-copy]');
-      if (!c) return;
-      var code = c.querySelector('strong').textContent;
-      copyText(code).then(function () { c.classList.add('copied'); c.querySelector('span').textContent = 'Copied'; toast('Code ' + code + ' copied', 'success'); })
-        .catch(function () { toast('Could not copy — the code is ' + code, 'error'); });
-    });
-    (btn.disabled ? wrap.querySelector('[data-wheel-close]') : btn).focus();
-  }
-
   // ---------- Promo bar ----------
   function promoModel(data) {
     var p = Object.assign({}, PROMO), live = data.promo;
@@ -870,7 +716,6 @@
     Cart.renderCount();
     checkAuth();
     initAuthModal();
-    initWheel();
   }
 
   function initSearch() {
@@ -918,7 +763,6 @@
       ['dashboard/buyer.html', 'My library'], ['dashboard/buyer.html?tab=orders', 'Orders'],
       ['dashboard/buyer.html?tab=wishlist', 'Wishlist'], ['dashboard/buyer.html?tab=settings', 'Account settings']
     ];
-    if (user.role === 'SELLER') links.splice(0, 0, ['dashboard/seller.html', 'Seller dashboard']);
     if (user.role === 'ADMIN') links.splice(0, 0, ['admin/', 'Admin panel']);
     var items = links.map(function (l) { return '<a href="' + ROOT + l[0] + '">' + esc(l[1]) + '</a>'; }).join('');
     var initial = esc((user.name || user.email || '?').charAt(0).toUpperCase());
@@ -954,6 +798,7 @@
     if (!el) return;
     var s = data.settings || {};
     var name = s.site_name || 'FiveMDepot';
+    var email = s.support_email || 'fivemdepot@gmail.com';
     var cats = data.categories.slice(0, 6).map(function (c) {
       return '<li><a href="' + catUrl(c.slug) + '">' + esc(c.name) + '</a></li>';
     }).join('');
@@ -967,11 +812,13 @@
           '<div><h4>Resources</h4><ul><li><a href="documentation.html?type=blog">Blog</a></li><li><a href="documentation.html?type=tutorial">Tutorials</a></li><li><a href="documentation.html?type=tool">Tools</a></li><li><a href="documentation.html?type=doc">Docs</a></li><li><a href="free-assets.html">Free Assets</a></li></ul></div>' +
           '<div><h4>Support</h4><ul><li><a href="dashboard/buyer.html">My Purchases</a></li><li><a href="index.html#faq">FAQ</a></li>' +
             (s.social_discord ? '<li><a href="' + esc(s.social_discord) + '" target="_blank" rel="noopener">Discord Support</a></li>' : '') +
-            '<li><a href="auth.html?mode=register">Become a Seller</a></li></ul></div>' +
-          '<div><h4>Legal</h4><ul><li><a href="documentation.html?type=doc&amp;slug=terms">Terms of Service</a></li><li><a href="documentation.html?type=doc&amp;slug=privacy">Privacy Policy</a></li><li><a href="documentation.html?type=doc&amp;slug=refunds">Refund Policy</a></li></ul></div>' +
+            '<li><a href="documentation.html?type=doc&amp;slug=contact">Contact us</a></li></ul></div>' +
+          '<div><h4>Legal</h4><ul><li><a href="documentation.html?type=doc&amp;slug=terms">Terms of Service</a></li><li><a href="documentation.html?type=doc&amp;slug=privacy">Privacy Policy</a></li><li><a href="documentation.html?type=doc&amp;slug=refunds">Refund Policy</a></li>' +
+            '<li><a href="mailto:' + esc(email) + '">' + esc(email) + '</a></li></ul></div>' +
         '</div>' +
         '<div class="footer-badges"><span class="footer-badge">FiveM resources</span><span class="footer-badge">Scripts &amp; worlds</span><span class="footer-badge">Server packs</span></div>' +
-        '<div class="footer-bottom"><span>© ' + new Date().getFullYear() + ' ' + esc(name) + '. All rights reserved.</span><span>Not affiliated with Rockstar Games or Cfx.re.</span></div>' +
+        '<p class="small muted" style="margin:18px 0 0">Payments are processed by our online reseller Paddle.com, the Merchant of Record for all our orders.</p>' +
+        '<div class="footer-bottom"><span>© ' + new Date().getFullYear() + ' ' + esc(name) + (s.legal_name ? ' · operated by ' + esc(s.legal_name) : '') + '. All rights reserved.</span><span>Not affiliated with Rockstar Games or Cfx.re.</span></div>' +
       '</div></footer>';
   }
 
@@ -1040,10 +887,44 @@
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
 
+  // ---------- Paddle checkout ----------
+  // Loads Paddle.js once and opens the overlay checkout for a transaction created by the server.
+  // info = { transaction_id, client_token, environment, email, success_url }; onClose runs if the buyer closes it unpaid.
+  var paddleReady = null, paddleClose = null, paddlePaid = false;
+  function paddleCheckout(info, onClose) {
+    if (!paddleReady) {
+      paddleReady = new Promise(function (resolve, reject) {
+        var s = document.createElement('script');
+        s.src = 'https://cdn.paddle.com/paddle/v2/paddle.js';
+        s.onload = function () {
+          if (info.environment === 'sandbox') window.Paddle.Environment.set('sandbox');
+          window.Paddle.Initialize({
+            token: info.client_token,
+            eventCallback: function (ev) {
+              if (ev.name === 'checkout.completed') paddlePaid = true;
+              if (ev.name === 'checkout.closed' && !paddlePaid && paddleClose) paddleClose();
+            }
+          });
+          resolve(window.Paddle);
+        };
+        s.onerror = function () { paddleReady = null; reject(new Error('Could not load the secure checkout. Check your connection or disable ad blockers and try again.')); };
+        document.head.appendChild(s);
+      });
+    }
+    return paddleReady.then(function (P) {
+      paddleClose = onClose || null; paddlePaid = false;
+      P.Checkout.open({
+        transactionId: info.transaction_id,
+        customer: info.email ? { email: info.email } : undefined,
+        settings: { displayMode: 'overlay', theme: document.documentElement.getAttribute('data-theme') === 'light' ? 'light' : 'dark', successUrl: info.success_url }
+      });
+    });
+  }
+
   var Store = window.Store = {
     api: api, nav: nav, esc: esc, icon: icon, money: money, qs: qs,
     catUrl: catUrl, productUrl: productUrl, icons: I, catIcon: catIcon, catArt: catArt,
     productCard: productCard, cart: Cart, toast: toast, reveal: reveal, user: null,
-    v1: v1, me: me, loginUrl: loginUrl, syncWishlist: syncWishlist, claim: claim, drawer: Drawer, logout: logout
+    v1: v1, me: me, loginUrl: loginUrl, syncWishlist: syncWishlist, claim: claim, drawer: Drawer, logout: logout, paddleCheckout: paddleCheckout
   };
 })();

@@ -2,7 +2,7 @@
 require_once __DIR__ . '/../../core/orders.php';
 require_once __DIR__ . '/../../core/mail.php';
 /**
- * Admin — orders & payment proofs, users, sellers, withdrawals, reviews, promo codes
+ * Admin — orders, users, reviews, promo codes
  */
 
 // ============================================================
@@ -102,9 +102,8 @@ route('GET', 'admin/users', function () {
   $w = implode(' AND ', $where);
   $total = (int)Db::value("SELECT COUNT(*) FROM users u WHERE $w", $params);
   $rows = Db::all(
-    "SELECT u.id, u.name, u.email, u.role, u.is_banned, u.ban_reason, u.wallet_balance, u.created_at, u.last_login_at,
-            (SELECT COUNT(*) FROM orders o WHERE o.user_id = u.id AND o.status IN ('VERIFIED','COMPLETED')) AS orders,
-            (SELECT COUNT(*) FROM products p WHERE p.user_id = u.id) AS products
+    "SELECT u.id, u.name, u.email, u.role, u.is_banned, u.ban_reason, u.created_at, u.last_login_at,
+            (SELECT COUNT(*) FROM orders o WHERE o.user_id = u.id AND o.status IN ('VERIFIED','COMPLETED')) AS orders
      FROM users u WHERE $w ORDER BY u.created_at DESC LIMIT $per OFFSET $off",
     $params
   );
@@ -117,7 +116,7 @@ route('POST', 'admin/users/{id}', function ($p) {
   $u = Db::one("SELECT id, role FROM users WHERE id = ?", [$p['id']]);
   if (!$u) fail(404, 'User not found');
   $role = strtoupper(str_in('role', 10) ?: $u['role']);
-  if (!in_array($role, ['BUYER', 'SELLER', 'ADMIN'], true)) fail(422, 'Invalid role');
+  if (!in_array($role, ['BUYER', 'ADMIN'], true)) fail(422, 'Invalid role');
   $banned = bool_in('is_banned') ? 1 : 0;
   if ($p['id'] === $admin['id'] && ($role !== 'ADMIN' || $banned)) fail(422, 'You cannot remove your own admin access');
   if ($u['role'] === 'ADMIN' && $role !== 'ADMIN' && (int)Db::value("SELECT COUNT(*) FROM users WHERE role = 'ADMIN' AND is_banned = 0") <= 1) {
@@ -125,88 +124,8 @@ route('POST', 'admin/users/{id}', function ($p) {
   }
   Db::pdo()->prepare("UPDATE users SET role = ?, is_banned = ?, ban_reason = ? WHERE id = ?")
     ->execute([$role, $banned, $banned ? (str_in('ban_reason', 255) ?: null) : null, $p['id']]);
-  if ($role === 'SELLER') {
-    Db::pdo()->prepare("INSERT INTO seller_profiles (id, user_id, status, approved_at, approved_by) VALUES (?, ?, 'APPROVED', NOW(), ?)
-                        ON DUPLICATE KEY UPDATE status = 'APPROVED', approved_at = COALESCE(approved_at, NOW())")
-      ->execute([uuid(), $p['id'], $admin['id']]);
-  }
   audit('user_updated', 'user', $p['id'], "role=$role banned=$banned");
   ok(['id' => $p['id'], 'role' => $role, 'is_banned' => (bool)$banned]);
-});
-
-// ============================================================
-// Seller applications
-// ============================================================
-
-route('GET', 'admin/sellers', function () {
-  require_role('ADMIN');
-  $status = strtoupper((string)($_GET['status'] ?? ''));
-  $rows = Db::all(
-    "SELECT sp.id, sp.user_id, sp.status, sp.bio, sp.discord_tag, sp.rejection_reason, sp.created_at, sp.approved_at,
-            u.name, u.email, u.wallet_balance,
-            (SELECT COUNT(*) FROM products p WHERE p.user_id = u.id AND p.status = 'PUBLISHED') AS products
-     FROM seller_profiles sp JOIN users u ON u.id = sp.user_id"
-    . ($status ? " WHERE sp.status = ?" : '') . " ORDER BY sp.status = 'PENDING' DESC, sp.created_at DESC",
-    $status ? [$status] : []
-  );
-  ok($rows);
-});
-
-route('POST', 'admin/sellers/{id}/review', function ($p) {
-  $admin = require_role('ADMIN');
-  $decision = str_in('decision', 10);
-  $sp = Db::one("SELECT id, user_id FROM seller_profiles WHERE id = ?", [$p['id']]);
-  if (!$sp) fail(404, 'Application not found');
-  if ($decision === 'approve') {
-    Db::pdo()->prepare("UPDATE seller_profiles SET status = 'APPROVED', approved_at = NOW(), approved_by = ?, rejection_reason = NULL WHERE id = ?")->execute([$admin['id'], $sp['id']]);
-    Db::pdo()->prepare("UPDATE users SET role = 'SELLER' WHERE id = ? AND role = 'BUYER'")->execute([$sp['user_id']]);
-  } elseif ($decision === 'reject') {
-    $reason = str_in('reason', 500);
-    if ($reason === '') fail(422, 'Add a reason', ['reason' => 'Required']);
-    Db::pdo()->prepare("UPDATE seller_profiles SET status = 'REJECTED', rejection_reason = ? WHERE id = ?")->execute([$reason, $sp['id']]);
-  } else {
-    fail(422, 'Choose approve or reject');
-  }
-  audit('seller_' . $decision . 'd', 'seller', $sp['user_id']);
-  ok(['status' => $decision === 'approve' ? 'APPROVED' : 'REJECTED']);
-});
-
-// ============================================================
-// Withdrawals
-// ============================================================
-
-route('GET', 'admin/withdrawals', function () {
-  require_role('ADMIN');
-  $status = strtoupper((string)($_GET['status'] ?? ''));
-  ok(Db::all(
-    "SELECT w.*, u.name, u.email, u.wallet_balance FROM withdrawals w JOIN users u ON u.id = w.user_id"
-    . ($status ? " WHERE w.status = ?" : '') . " ORDER BY w.status = 'PENDING' DESC, w.created_at DESC LIMIT 200",
-    $status ? [$status] : []
-  ));
-});
-
-route('POST', 'admin/withdrawals/{id}', function ($p) {
-  $admin = require_role('ADMIN');
-  $status = strtoupper(str_in('status', 10));
-  if (!in_array($status, ['APPROVED', 'PAID', 'REJECTED'], true)) fail(422, 'Invalid status');
-  $pdo = Db::pdo();
-  $pdo->beginTransaction();
-  $w = Db::one("SELECT * FROM withdrawals WHERE id = ? FOR UPDATE", [$p['id']]);
-  if (!$w) { $pdo->rollBack(); fail(404, 'Withdrawal not found'); }
-  if (in_array($w['status'], ['PAID', 'REJECTED'], true)) { $pdo->rollBack(); fail(409, 'This request is already closed'); }
-  if ($status === 'REJECTED') {
-    $reason = str_in('reason', 500);
-    if ($reason === '') { $pdo->rollBack(); fail(422, 'Add a reason', ['reason' => 'Required']); }
-    // money was reserved when the seller requested it → give it back
-    $pdo->prepare("UPDATE users SET wallet_balance = wallet_balance + ? WHERE id = ?")->execute([$w['amount'], $w['user_id']]);
-    $pdo->prepare("UPDATE withdrawals SET status = 'REJECTED', rejected_reason = ? WHERE id = ?")->execute([$reason, $w['id']]);
-  } else {
-    $pdo->prepare("UPDATE withdrawals SET status = ?, approved_by = ?, approved_at = COALESCE(approved_at, NOW()), paid_at = IF(? = 'PAID', NOW(), paid_at) WHERE id = ?")
-      ->execute([$status, $admin['id'], $status, $w['id']]);
-  }
-  $pdo->commit();
-  audit('withdrawal_' . strtolower($status), 'withdrawal', $w['id']);
-  ok(['status' => $status]);
 });
 
 // ============================================================

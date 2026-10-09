@@ -11,6 +11,8 @@
    6. `migrations/006_brand.sql` (crimson brand colour, new hero, “Everything you need” features)
    7. `migrations/007_support.sql` (Buy Me a Coffee payments, support tickets, email settings)
    8. `migrations/008_discord.sql` (Discord sign-in: stores the Discord handle)
+   9. `migrations/009_paddle.sql` (Paddle-only checkout, business details, Paddle-ready Terms / Privacy /
+      Refund / Contact pages; switches off the old payment methods, the lucky wheel and the seller program)
 
    Both are safe to run more than once and delete nothing.
 3. **Upload** all files. Make sure `config.local.php` is uploaded next to `config.php`
@@ -20,7 +22,7 @@
    `uploads/proofs` (payment screenshots) private.
 5. **Log in** at `/auth.html` → you are sent to `/admin/`.
    - Change the admin password (Account settings) if it is still the default.
-   - Settings → fill payment numbers, social links, platform fee.
+   - Settings → check Business details (legal name, address, support email) and social links.
    - Categories → check each category owns the right tags.
 6. **Google login (optional)** — in Google Cloud Console → APIs & Services → Credentials, create an
    *OAuth client ID* (type: Web application). Add the authorized redirect URI
@@ -32,28 +34,25 @@
    and secret in `config.local.php` (`DISCORD_CLIENT_ID`, `DISCORD_CLIENT_SECRET`). The "Continue
    with Discord" button appears automatically, and users can link/unlink Discord from
    Account settings → Connected accounts.
-7. **Payments** — run `migrations/005_payments.sql`, then add your keys to `config.local.php`
-   (template in `config.local.example.php`). Each method appears at checkout automatically once its
-   keys are set and its switch is on (Admin → Settings → Payment methods, which also shows the
-   webhook URLs). Test with sandbox/test keys first.
-   - **Stripe (cards):** API key `sk_live_…` + webhook secret `whsec_…`. In Stripe → Developers →
-     Webhooks add `https://YOUR-DOMAIN/api/pay/stripe-webhook.php` with events
-     `checkout.session.completed` and `checkout.session.async_payment_succeeded`.
-   - **NOWPayments (crypto):** API key + IPN secret (Settings → Payments). The IPN URL is sent
-     automatically with every invoice. Set `NOWPAYMENTS_SANDBOX` to `true` while testing.
-   - **SSLCommerz:** store ID + store password. Keep `SSLCZ_SANDBOX = true` until SSLCommerz approves
-     your live account; callback URLs are sent automatically.
-   - **bKash / Nagad / bank:** only shown when a real number/account is filled in Settings.
-   - **Buy Me a Coffee (manual check, no keys needed):** on by default after `007_support.sql`
-     (Settings → Buy Me a Coffee). Buyers pay on your BMC page, then submit the transaction ID,
-     the email they paid with and the amount. Check each one against your BMC dashboard in
-     **Admin → Pay panel** and approve or reject. On approval the buyer is emailed and the files appear in
-     their library. Turn off Stripe / crypto / SSLCommerz in Settings if you only want BMC.
-   - **Email:** set *Settings → Email → Your email* to get alerts for new orders and tickets.
+7. **Payments (Paddle)** — Paddle is the only payment processor and the Merchant of Record (it charges
+   the buyer, adds sales tax/VAT, sends receipts and handles refunds and chargebacks).
+   1. Check *Admin → Settings → Business details* (legal name, address, support email). They are filled
+      into the Terms, Privacy, Refund and Contact pages automatically.
+   2. Sign up at paddle.com and submit `https://YOUR-DOMAIN` for domain review (see `docs/PADDLE.md`).
+   3. Paddle → Developer tools → Authentication: create an **API key** and a **client-side token**.
+   4. Paddle → Developer tools → Notifications → New destination: URL
+      `https://YOUR-DOMAIN/api/pay/paddle-webhook.php`, events `transaction.completed`,
+      `adjustment.created`, `adjustment.updated`. Copy its **secret key**.
+   5. Paddle → Checkout → Checkout settings: set the **default payment link** to
+      `https://YOUR-DOMAIN/checkout.html`.
+   6. Put the three values in `config.local.php` (`PADDLE_API_KEY`, `PADDLE_CLIENT_TOKEN`,
+      `PADDLE_WEBHOOK_SECRET`). Checkout appears automatically; *Admin → Settings → Payments* shows the status.
+   Test everything with a **sandbox** account (sandbox-vendors.paddle.com) first, then swap in the live keys.
+   - **Email:** set *Settings → Email → Your email* to get alerts for new tickets.
      PHP `mail()` is used by default; for reliable delivery create a mailbox in Plesk (e.g.
      `noreply@your-domain`) and put its SMTP login in `config.local.php` (see the example file).
    - **Support tickets:** buyers open them from *My account → Support*; you answer in
-     **Admin → Support tickets** (replies are emailed). The Discord link comes from Settings → Social links.
+     **Admin → Support tickets** (replies are emailed).
 8. **Login page video (optional)** — Admin → Settings → Login page: paste a YouTube link (it is embedded,
    muted and looped — the owner must allow embedding), or *Upload video* (MP4/WebM,
    10–20 s, max 40 MB). Use footage you own, e.g. a clip of your own server recorded with Rockstar

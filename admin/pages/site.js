@@ -180,15 +180,11 @@
     ['Login page', [['auth_video', 'Background video — paste a YouTube link, or upload an MP4/WebM (10–20 s, max 40 MB). Plays muted on a loop.', 'video']]],
     ['Announcement bar', [['topbar_text', 'Text (leave empty to hide)'], ['topbar_link', 'Link']]],
     ['Promo bar', [['promo_headline', 'Headline, e.g. 30% off all scripts (empty uses the announcement bar instead)'], ['promo_code', 'Coupon code to show (only shown while the code is active in Promos)'], ['promo_ends_at', 'Ends at, e.g. 2026-10-31 23:59 (server time; shows a countdown and hides the bar when it ends)'], ['promo_free_install', 'Show a Free installation badge', 'bool'], ['promo_link', 'Shop Now link (default: all products)']]],
-    ['Daily lucky wheel', [['wheel_enabled', 'Daily lucky wheel on the homepage', 'select', [['1', 'On: signed-in users spin once every 24 hours for a personal single-use code (10/15/20/25% off, valid 48 hours)'], ['0', 'Off']]]]],
     ['Social links', [['social_discord', 'Discord invite (https://…)'], ['social_github', 'GitHub (https://…)'], ['social_youtube', 'YouTube (https://…)'], ['discord_widget_server_id', 'Discord server ID (for the live online count — enable Server Settings → Widget)'], ['discord_server_name', 'Discord card title (optional)']]],
-    ['Buy Me a Coffee', [['pay_bmc_enabled', 'Accept payments through Buy Me a Coffee (buyers submit transaction ID, email and amount; you approve in Pay panel)', 'bool'],
-      ['bmc_link', 'Buy Me a Coffee page (https://…)'], ['verify_hours', 'Verification time shown to buyers (e.g. 2–3 hours)']]],
     ['Email', [['admin_notify_email', 'Your email — alerts for new orders to verify and new tickets'], ['mail_from', 'Send emails from (empty = info@ your domain; SMTP login goes in config.local.php)']]],
-    ['Payment methods', [['pay_stripe_enabled', 'Card payments (Stripe)', 'bool'], ['pay_crypto_enabled', 'Crypto (NOWPayments)', 'bool'],
-      ['pay_sslcommerz_enabled', 'SSLCommerz (cards, bKash, Nagad)', 'bool'], ['pay_manual_enabled', 'Manual bKash / Nagad / bank transfer with screenshot', 'bool']]],
-    ['Manual transfer details', [['bkash_number', 'bKash number'], ['nagad_number', 'Nagad number'], ['bank_name', 'Bank name'], ['bank_account', 'Bank account'], ['bank_branch', 'Bank branch'], ['download_expiry_days', 'Download link valid for (days)']]],
-    ['Features', [['seller_auto_approve', 'Auto-approve new sellers', 'bool'], ['platform_fee_percent', 'Platform fee on seller sales (%) — sellers get the rest in their wallet'], ['newsletter_enabled', 'Newsletter signup', 'bool'], ['free_assets_enabled', 'Free assets section', 'bool'], ['cookie_consent_text', 'Cookie banner text', 'area']]]
+    ['Business details', [['legal_name', 'Legal name — shown in the Terms, Privacy and Refund policy (Paddle checks this)'], ['business_address', 'Business address (city, country)'], ['support_email', 'Support email — shown in the footer and legal pages']]],
+    ['Payments (Paddle)', [['pay_paddle_enabled', 'Paddle checkout — cards, PayPal, Apple Pay, Google Pay (keys go in config.local.php)', 'bool'], ['download_expiry_days', 'Download link valid for (days)']]],
+    ['Features', [['newsletter_enabled', 'Newsletter signup', 'bool'], ['free_assets_enabled', 'Free assets section', 'bool'], ['cookie_consent_text', 'Cookie banner text', 'area']]]
   ];
   A.page('/settings', function (el) {
     var dirty = false;
@@ -219,7 +215,7 @@
             return '<option value="' + o[0] + '"' + ((s[f[0]] || f[3][0][0]) === o[0] ? ' selected' : '') + '>' + o[1] + '</option>';
           }).join('') + '</select></label>';
           return '<label class="field"><span>' + f[1] + '</span><input class="input" name="' + f[0] + '" value="' + h(s[f[0]]) + '"></label>';
-        }).join('') + (g[0] === 'Payment methods' ? payStatus(gw) : '') + '</div></div>';
+        }).join('') + (g[0] === 'Payments (Paddle)' ? payStatus(gw) : '') + '</div></div>';
       }).join('');
       // Login page video: upload, preview, clear
       var vin = form.querySelector('[name=auth_video]'), prev = form.querySelector('.vid-prev');
@@ -246,7 +242,7 @@
 
   // Shows whether each gateway's keys are in config.local.php + the webhook URL to paste in the gateway dashboard
   function payStatus(gw) {
-    var names = { STRIPE: 'Stripe', CRYPTO: 'NOWPayments', SSLCOMMERZ: 'SSLCommerz' };
+    var names = { PADDLE: 'Paddle' };
     return '<div class="pay-status">' + Object.keys(names).map(function (k) {
       var g = gw[k] || {};
       var st = g.live ? '<span class="st st-ok">active' + (g.test_mode ? ' · test mode' : '') + '</span>'

@@ -1,4 +1,4 @@
-/* Admin — Orders, Users, Sellers, Withdrawals, Reviews, Promo codes */
+/* Admin — Orders, Users, Reviews, Promo codes */
 (function () {
   'use strict';
   var A = window.Admin, h = A.h;
@@ -186,8 +186,8 @@
     var rows = [];
     el.innerHTML = A.head('Users', 'Change roles or suspend accounts.') +
       '<div class="panel"><div class="tools"><input class="input grow" id="uq" type="search" placeholder="Search name or email…" value="' + h(state.q) + '">' +
-      '<select class="input" id="ur"><option value="">All roles</option><option value="BUYER">Buyers</option><option value="SELLER">Sellers</option><option value="ADMIN">Admins</option></select></div>' +
-      '<div class="tbl-wrap"><table class="tbl"><thead><tr><th>User</th><th>Role</th><th class="num">Orders</th><th class="num">Products</th><th class="num">Wallet</th><th>Joined</th><th>Last login</th><th></th></tr></thead><tbody id="rows"></tbody></table></div><div id="pager"></div></div>';
+      '<select class="input" id="ur"><option value="">All roles</option><option value="BUYER">Buyers</option><option value="ADMIN">Admins</option></select></div>' +
+      '<div class="tbl-wrap"><table class="tbl"><thead><tr><th>User</th><th>Role</th><th class="num">Orders</th><th>Joined</th><th>Last login</th><th></th></tr></thead><tbody id="rows"></tbody></table></div><div id="pager"></div></div>';
     el.querySelector('#ur').value = state.role;
     function load() {
       var qs = '&page=' + state.page + (state.role ? '&role=' + state.role : '') + (state.q ? '&q=' + encodeURIComponent(state.q) : '');
@@ -195,7 +195,7 @@
         rows = b.data;
         el.querySelector('#rows').innerHTML = rows.length ? rows.map(function (u) {
           return '<tr data-id="' + h(u.id) + '"><td><b>' + h(u.name) + '</b><span class="cell-sub">' + h(u.email) + '</span></td><td>' + A.badge(u.role) + (u.is_banned ? ' ' + A.badge('banned') : '') + '</td>' +
-            '<td class="num">' + u.orders + '</td><td class="num">' + u.products + '</td><td class="num">' + A.money(u.wallet_balance) + '</td><td class="small muted">' + A.date(u.created_at) + '</td><td class="small muted">' + A.ago(u.last_login_at) + '</td>' +
+            '<td class="num">' + u.orders + '</td><td class="small muted">' + A.date(u.created_at) + '</td><td class="small muted">' + A.ago(u.last_login_at) + '</td>' +
             '<td class="num"><button class="btn btn-sm btn-ghost" data-edit>Edit</button></td></tr>';
         }).join('') : '<tr><td colspan="8">' + A.empty('No users found', '') + '</td></tr>';
         var pg = el.querySelector('#pager'); pg.innerHTML = '';
@@ -208,7 +208,7 @@
       A.modal({
         title: 'Edit ' + u.name,
         body: '<form class="form-grid"><p class="muted small">' + h(u.email) + '</p>' +
-          '<label class="field"><span>Role</span><select class="input" name="role">' + ['BUYER', 'SELLER', 'ADMIN'].map(function (r) { return '<option' + (u.role === r ? ' selected' : '') + '>' + r + '</option>'; }).join('') + '</select></label>' +
+          '<label class="field"><span>Role</span><select class="input" name="role">' + ['BUYER', 'ADMIN'].map(function (r) { return '<option' + (u.role === r ? ' selected' : '') + '>' + r + '</option>'; }).join('') + '</select></label>' +
           '<label class="switch"><span>Suspended<small>Suspended users are logged out and cannot log in</small></span><input type="checkbox" name="is_banned"' + (u.is_banned ? ' checked' : '') + '></label>' +
           '<label class="field"><span>Reason</span><input class="input" name="ban_reason" maxlength="255" value="' + h(u.ban_reason || '') + '"></label></form>',
         actions: [{ label: 'Cancel' }, { label: 'Save', kind: 'primary', onClick: function (c) {
@@ -219,62 +219,6 @@
     el.querySelector('#ur').addEventListener('change', function (e) { state.role = e.target.value; state.page = 1; load(); });
     var deb;
     el.querySelector('#uq').addEventListener('input', function (e) { clearTimeout(deb); deb = setTimeout(function () { state.q = e.target.value.trim(); state.page = 1; load(); }, 300); });
-    return load();
-  });
-
-  // ============================================================
-  // Sellers
-  // ============================================================
-  A.page('/sellers', function (el) {
-    el.innerHTML = A.head('Sellers', 'Approve seller applications. Approved sellers can upload products for review.') + '<div class="panel" id="box"></div>';
-    var box = el.querySelector('#box');
-    function load() {
-      return A.get('admin/sellers').then(function (b) {
-        box.innerHTML = b.data.length ? '<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Seller</th><th>Status</th><th>Discord</th><th class="num">Live products</th><th class="num">Wallet</th><th>Applied</th><th></th></tr></thead><tbody>' +
-          b.data.map(function (s) {
-            return '<tr data-id="' + h(s.id) + '"><td><b>' + h(s.name) + '</b><span class="cell-sub">' + h(s.email) + '</span>' + (s.bio ? '<span class="cell-sub">' + h(s.bio.slice(0, 120)) + '</span>' : '') + '</td>' +
-              '<td>' + A.badge(s.status) + (s.rejection_reason ? '<span class="cell-sub">' + h(s.rejection_reason) + '</span>' : '') + '</td><td>' + h(s.discord_tag || '—') + '</td>' +
-              '<td class="num">' + s.products + '</td><td class="num">' + A.money(s.wallet_balance) + '</td><td class="small muted">' + A.date(s.created_at) + '</td>' +
-              '<td class="num">' + (s.status !== 'APPROVED' ? '<button class="btn btn-sm btn-primary" data-ok>Approve</button> ' : '') + (s.status !== 'REJECTED' ? '<button class="btn btn-sm btn-ghost" data-no>Reject</button>' : '') + '</td></tr>';
-          }).join('') + '</tbody></table></div>' : A.empty('No seller applications', 'Buyers can apply when they register.');
-      }).catch(A.fail);
-    }
-    box.addEventListener('click', function (e) {
-      var tr = e.target.closest('tr[data-id]');
-      if (!tr) return;
-      var send = function (body) { return A.post('admin/sellers/' + tr.dataset.id + '/review', body).then(function () { A.toast('Saved'); A.refreshCounts(); load(); }).catch(A.fail); };
-      if (e.target.closest('[data-ok]')) send({ decision: 'approve' });
-      if (e.target.closest('[data-no]')) A.ask({ title: 'Reject seller', label: 'Reason', required: true, danger: true, ok: 'Reject' }).then(function (r) { if (r) send({ decision: 'reject', reason: r }); });
-    });
-    return load();
-  });
-
-  // ============================================================
-  // Withdrawals
-  // ============================================================
-  A.page('/withdrawals', function (el) {
-    el.innerHTML = A.head('Withdrawals', 'Seller payout requests. Rejecting returns the money to the seller’s wallet.') + '<div class="panel" id="box"></div>';
-    var box = el.querySelector('#box');
-    function load() {
-      return A.get('admin/withdrawals').then(function (b) {
-        box.innerHTML = b.data.length ? '<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Seller</th><th class="num">Amount</th><th>Method</th><th>Account</th><th>Status</th><th>Requested</th><th></th></tr></thead><tbody>' +
-          b.data.map(function (w) {
-            var open = w.status === 'PENDING' || w.status === 'APPROVED';
-            return '<tr data-id="' + h(w.id) + '"><td><b>' + h(w.name) + '</b><span class="cell-sub">' + h(w.email) + '</span></td><td class="num"><b>' + A.money(w.amount) + '</b></td><td>' + h(w.method) + '</td>' +
-              '<td class="mono small">' + h(w.account_info) + '</td><td>' + A.badge(w.status) + (w.rejected_reason ? '<span class="cell-sub">' + h(w.rejected_reason) + '</span>' : '') + '</td><td class="small muted">' + A.ago(w.created_at) + '</td>' +
-              '<td class="num">' + (open ? (w.status === 'PENDING' ? '<button class="btn btn-sm btn-ghost" data-s="APPROVED">Approve</button> ' : '') + '<button class="btn btn-sm btn-primary" data-s="PAID">Mark paid</button> <button class="btn btn-sm btn-ghost" data-s="REJECTED">Reject</button>' : '') + '</td></tr>';
-          }).join('') + '</tbody></table></div>' : A.empty('No withdrawal requests', '');
-      }).catch(A.fail);
-    }
-    box.addEventListener('click', function (e) {
-      var b = e.target.closest('[data-s]');
-      if (!b) return;
-      var id = b.closest('tr').dataset.id, s = b.dataset.s;
-      var send = function (extra) { return A.post('admin/withdrawals/' + id, Object.assign({ status: s }, extra || {})).then(function () { A.toast('Saved'); A.refreshCounts(); load(); }).catch(A.fail); };
-      if (s === 'REJECTED') A.ask({ title: 'Reject withdrawal', label: 'Reason (the amount returns to the wallet)', required: true, danger: true, ok: 'Reject' }).then(function (r) { if (r) send({ reason: r }); });
-      else if (s === 'PAID') A.confirm('Confirm you have sent this payment?', { ok: 'Mark paid' }).then(function (y) { if (y) send(); });
-      else send();
-    });
     return load();
   });
 

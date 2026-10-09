@@ -32,8 +32,8 @@
       { key: 'community', content: { heading: 'Join the FiveMDepot community', text: 'Get support, early access to new releases, giveaways and help from other server owners.', button: 'Join our Discord' } }
     ],
     faqs: [
-      { question: 'How do I receive my purchase?', answer: 'After your payment is verified, the download becomes available in your dashboard under My Purchases.' },
-      { question: 'Which payment methods do you accept?', answer: 'bKash, Nagad and bank transfer. Upload your payment proof at checkout and we verify it quickly.' },
+      { question: 'How do I receive my purchase?', answer: 'As soon as your payment is confirmed, the download appears in your dashboard under My library.' },
+      { question: 'Which payment methods do you accept?', answer: 'Card (Visa, Mastercard, Amex), PayPal, Apple Pay and Google Pay through Paddle, our Merchant of Record. Prices are in USD; tax is added where required.' },
       { question: 'Do resources work with QBCore and ESX?', answer: 'Each product lists its supported frameworks (QBCore, ESX, QBox or standalone) on the product page.' },
       { question: 'Do I get updates?', answer: 'Yes. Updates for purchased resources are free and appear in your dashboard.' }
     ],
@@ -70,7 +70,7 @@
         '<div class="container hx-inner"><div class="hx-copy">' +
           '<div class="hx-badges reveal">' +
             '<span class="hx-b green"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2 4 5v6c0 5 3.4 9.4 8 11 4.6-1.6 8-6 8-11V5z"/><path d="m9 12 2 2 4-4"/></svg>✓ Official Store</span>' +
-            '<span class="hx-b blue"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="m8.5 12 2.5 2.5 4.5-5"/></svg>✓ Verified Sellers</span>' +
+            '<span class="hx-b blue"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="m8.5 12 2.5 2.5 4.5-5"/></svg>✓ Made In-House</span>' +
             '<span class="hx-b yellow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="6"/><path d="M8.2 13.5 7 22l5-3 5 3-1.2-8.5"/></svg>✓ Since ' + esc(since) + '</span>' +
           '</div>' +
           (c.badge ? '<span class="hx-live reveal"><i></i>' + esc(c.badge) + '</span>' : '') +
@@ -143,7 +143,7 @@
         items = [
           { value: st.products ? String(st.products) : 'Browse', label: st.products ? 'Published resources' : 'FiveM resources' },
           { value: st.products && nav.categories.length ? String(nav.categories.length) : 'Explore', label: 'Resource categories' },
-          { value: st.sellers ? String(st.sellers) : 'Compare', label: st.sellers ? 'Active creators' : 'Framework compatibility' },
+          { value: 'QB · ESX', label: 'Framework compatibility' },
           { value: st.reviews >= 5 ? st.rating + '/5' : 'Discover', label: st.reviews >= 5 ? 'Buyer rating (' + st.reviews + ' reviews)' : 'Scripts, maps and more' }
         ];
       }
@@ -239,7 +239,7 @@
       }).join('');
       return '<section class="section section-alt"><div class="container about">' +
         '<div class="reveal"><span class="eyebrow">About</span><h2 class="section-title" style="margin-bottom:16px">' + esc(c.heading || 'About') + '</h2><p>' + esc(c.body || '') + '</p>' +
-          '<div style="margin-top:24px;display:flex;gap:12px;flex-wrap:wrap"><a class="btn btn-primary" href="category.html?c=all">Browse the store</a><a class="btn btn-ghost" href="auth.html?mode=register">Become a seller</a></div></div>' +
+          '<div style="margin-top:24px;display:flex;gap:12px;flex-wrap:wrap"><a class="btn btn-primary" href="category.html?c=all">Browse the store</a><a class="btn btn-ghost" href="documentation.html?type=doc">Read the docs</a></div></div>' +
         '<div class="about-points reveal">' + points + '</div>' +
       '</div></section>';
     },
@@ -400,7 +400,7 @@
     return '<section class="section" style="padding-top:20px"><div class="container"><div class="cta-band reveal">' +
       '<h2>Find the next piece of your server.</h2><p>Browse resources by category, framework and price, then choose what fits your build.</p>' +
       '<div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap"><a class="btn btn-lg" href="category.html?c=all">Start shopping</a>' +
-      '<a class="btn btn-lg btn-ghost" href="auth.html?mode=register">Sell your resources</a></div></div></div></section>';
+      '<a class="btn btn-lg btn-ghost" href="server-packs.html">Server packs</a></div></div></div></section>';
   }
 
   function render(data, nav) {

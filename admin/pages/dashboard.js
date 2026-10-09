@@ -61,8 +61,6 @@
       var alerts = [];
       if (s.orders_pending) alerts.push(['#/orders?status=PENDING', s.orders_pending, 'orders waiting for payment check']);
       if (s.products_pending) alerts.push(['#/review', s.products_pending, 'products waiting for review']);
-      if (s.sellers_pending) alerts.push(['#/sellers', s.sellers_pending, 'seller applications']);
-      if (s.withdrawals_pending) alerts.push(['#/withdrawals', s.withdrawals_pending, 'withdrawal requests']);
       if (s.untagged_products) alerts.push(['#/products?untagged=1', s.untagged_products, 'products without tags (not in any category)']);
 
       var maxCat = Math.max.apply(null, d.category_revenue.map(function (c) { return c.revenue; }).concat([1]));

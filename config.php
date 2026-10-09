@@ -20,18 +20,11 @@ define('DB_CHARSET', 'utf8mb4');
 // === Site ===
 define('SITE_NAME', 'FiveMDepot');
 define('SITE_URL', 'https://fivemdepot.com');
-define('SITE_EMAIL', 'info@fivemdepot.com');
+define('SITE_EMAIL', 'fivemdepot@gmail.com');
 
 // === Session ===
 define('SESSION_LIFETIME', 86400); // 24 hours in seconds
 define('SESSION_NAME', 'fivemdepot_session');
-
-// === Payment Settings (configurable via admin panel later) ===
-define('PAYMENT_BKASH_NUMBER', '01XXXXXXXXX');
-define('PAYMENT_NAGAD_NUMBER', '01XXXXXXXXX');
-define('PAYMENT_BANK_NAME', 'DBBL');
-define('PAYMENT_BANK_ACCOUNT', '0000000000000');
-define('PAYMENT_BANK_BRANCH', 'Dhaka');
 
 // === Upload Limits ===
 define('MAX_UPLOAD_SIZE', 5242880); // 5MB

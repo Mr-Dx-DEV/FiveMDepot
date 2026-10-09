@@ -91,9 +91,9 @@
       '<div class="facts"><div><small>Version</small><b>' + esc(p.version) + '</b></div><div><small>Updated</small><b>' + date(p.updated_at) + '</b></div>' +
         '<div><small>Category</small><b>' + (p.categories[0] ? '<a href="' + S.catUrl(p.categories[0].slug) + '">' + esc(p.categories[0].name) + '</a>' : '—') + '</b></div>' +
         '<div><small>Type</small><b>' + (p.type === 'server_pack' ? 'Server pack' : esc((p.badge && p.badge.name) || 'Resource')) + '</b></div></div>' +
-      '<div class="trustlist"><span>' + check + 'Instant download after payment check</span><span>' + check + 'Free lifetime updates</span><span>' + check + 'Support on Discord</span></div>' +
-      '<a class="seller-card" href="seller-profile.html?id=' + encodeURIComponent(p.seller_info.id) + '"><span class="av">' + esc(p.seller_info.name.charAt(0).toUpperCase()) + '</span>' +
-        '<span><b>' + esc(p.seller_info.name) + '</b><span class="' + (p.seller_info.official ? 'verified' : 'muted small') + '">' + (p.seller_info.official ? '✓ Official FiveMDepot' : p.seller_info.products + ' products') + '</span></span></a>' +
+      '<div class="trustlist"><span>' + check + 'Instant download after payment</span><span>' + check + 'Free lifetime updates</span><span>' + check + 'Support on Discord</span></div>' +
+      '<div class="seller-card"><span class="av">' + 'F' + '</span>' +
+        '<span><b>' + 'FiveMDepot' + '</b><span class="verified">✓ Made by us</span></span></div>' +
     '</aside>';
   }
 
