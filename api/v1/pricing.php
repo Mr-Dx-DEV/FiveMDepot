@@ -19,15 +19,6 @@ function visitor_country(): ?string
   return null;
 }
 
-/** Signed-in user's Paddle customer ID (ctm_…) for Paddle Retain, or null. Never the email or our own ID. */
-function paddle_customer_id_for(?array $user): ?string
-{
-  if (!$user) return null;
-  $c = Db::one("SELECT customer_id FROM paddle_customers WHERE user_id = ? OR LOWER(email) = LOWER(?) ORDER BY updated_at DESC LIMIT 1",
-    [$user['id'], $user['email']]);
-  return $c['customer_id'] ?? null;
-}
-
 route('GET', 'pricing/config', function () {
   $user = current_user();
   ok([

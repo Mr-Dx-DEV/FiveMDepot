@@ -28,6 +28,15 @@ function order_for_payment(string $orderId): ?array
   return $o;
 }
 
+/** Signed-in user's Paddle customer ID (ctm_…) for Paddle Retain, or null. Never the email or our own ID. */
+function paddle_customer_id_for(?array $user): ?string
+{
+  if (!$user) return null;
+  $c = Db::one("SELECT customer_id FROM paddle_customers WHERE user_id = ? OR LOWER(email) = LOWER(?) ORDER BY updated_at DESC LIMIT 1",
+    [$user['id'], $user['email']]);
+  return $c['customer_id'] ?? null;
+}
+
 /**
  * Everything the browser needs to open Paddle checkout for an order.
  * Reuses the order's open Paddle transaction, so "Pay now" never creates duplicates.
@@ -45,6 +54,7 @@ function start_gateway_payment(array $o): array
     'client_token' => PADDLE_CLIENT_TOKEN,
     'environment' => paddle_sandbox() ? 'sandbox' : 'production',
     'email' => $o['email'],
+    'paddle_customer_id' => paddle_customer_id_for(['id' => $o['user_id'], 'email' => $o['email']]),
     'success_url' => site_root_url() . 'checkout.html?order=' . rawurlencode($o['id']) . '&paid=1',
   ]];
 }

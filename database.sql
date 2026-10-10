@@ -1,6 +1,8 @@
 -- ============================================
 -- FiveMDepot — MariaDB Database Schema
--- Import this into your MariaDB/MySQL database
+-- FRESH INSTALL ONLY: import this into an EMPTY database, once.
+-- Already running? Do NOT import this file (it stops with "#1050 Table 'users' already exists").
+-- Run only the new files in migrations/ instead, in order (see docs/DEPLOY.md).
 -- ============================================
 
 -- Create database
