@@ -59,7 +59,8 @@
       product/price IDs for **both** sandbox and production. The site uses the set matching
       `PADDLE_ENVIRONMENT`, so going live is a config change. After checkout, Paddle sends buyers to `/welcome`.
    8. **Subscriptions:** run `migrations/014`, `015` and `016` (016 adds the subscription section to the
-      Refund Policy). The webhook destination must also send `subscription.*` and `customer.*` events.
+      Refund Policy), then `017` (footer tagline without "marketplace" — Paddle's domain review rejects
+      marketplaces). The webhook destination must also send `subscription.*` and `customer.*` events.
       Buyers see their plan and a *Manage subscription* button (Paddle customer portal) under
       *My account → Subscription*; that needs `PADDLE_API_KEY`. Access rule (`core/subscriptions.php`):
       active, trialing and past_due grant access; subscribers can download every published product in their

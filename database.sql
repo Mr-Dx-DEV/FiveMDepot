@@ -307,7 +307,7 @@ INSERT INTO `categories` (`id`, `name`, `slug`, `icon`, `order`) VALUES
 -- ============================================
 INSERT INTO `site_settings` (`id`, `key`, `value`, `description`) VALUES
 ('s0000000-0000-0000-0000-000000000001', 'site_name', 'FiveMDepot', 'Website name'),
-('s0000000-0000-0000-0000-000000000002', 'site_tagline', 'Premium FiveM Marketplace', 'Website tagline'),
+('s0000000-0000-0000-0000-000000000002', 'site_tagline', 'Premium FiveM scripts, MLOs, vehicles, clothing and complete server packs.', 'Website tagline'),
 ('s0000000-0000-0000-0000-000000000003', 'bkash_number', '01XXXXXXXXX', 'bKash payment number'),
 ('s0000000-0000-0000-0000-000000000004', 'nagad_number', '01XXXXXXXXX', 'Nagad payment number'),
 ('s0000000-0000-0000-0000-000000000005', 'bank_name', 'DBBL', 'Bank name'),
