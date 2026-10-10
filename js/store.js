@@ -843,8 +843,8 @@
           '<div><h4>Resources</h4><ul><li><a href="documentation.html?type=blog">Blog</a></li><li><a href="documentation.html?type=tutorial">Tutorials</a></li><li><a href="documentation.html?type=tool">Tools</a></li><li><a href="documentation.html?type=doc">Docs</a></li><li><a href="free-assets.html">Free Assets</a></li></ul></div>' +
           '<div><h4>Support</h4><ul><li><a href="dashboard/buyer.html">My Purchases</a></li><li><a href="index.html#faq">FAQ</a></li>' +
             (s.social_discord ? '<li><a href="' + esc(s.social_discord) + '" target="_blank" rel="noopener">Discord Support</a></li>' : '') +
-            '<li><a href="documentation.html?type=doc&amp;slug=contact">Contact us</a></li></ul></div>' +
-          '<div><h4>Legal</h4><ul><li><a href="documentation.html?type=doc&amp;slug=terms">Terms of Service</a></li><li><a href="documentation.html?type=doc&amp;slug=privacy">Privacy Policy</a></li><li><a href="documentation.html?type=doc&amp;slug=refunds">Refund Policy</a></li>' +
+            '<li><a href="contact">Contact us</a></li></ul></div>' +
+          '<div><h4>Legal</h4><ul><li><a href="terms">Terms of Service</a></li><li><a href="privacy">Privacy Policy</a></li><li><a href="refunds">Refund Policy</a></li>' +
             '<li><a href="mailto:' + esc(email) + '">' + esc(email) + '</a></li></ul></div>' +
         '</div>' +
         '<div class="footer-badges"><span class="footer-badge">FiveM resources</span><span class="footer-badge">Scripts &amp; worlds</span><span class="footer-badge">Server packs</span></div>' +

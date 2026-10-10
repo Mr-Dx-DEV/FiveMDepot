@@ -76,7 +76,7 @@
       (state.error ? '<div class="notice bad" role="alert">' + esc(state.error) + '</div>' : '') +
       '<div class="pr-grid">' + cards + '</div>' +
       '<p class="pay-secure">🔒 Our order process is conducted by our online reseller <b>Paddle.com</b>. Paddle.com is the Merchant of Record for all our orders and handles order inquiries and returns. ' +
-      'See our <a href="documentation.html?type=doc&slug=refunds">Refund &amp; Cancellation Policy</a>.</p>';
+      'See our <a href="refunds">Refund &amp; Cancellation Policy</a>.</p>';
   }
 
   box.addEventListener('click', function (e) {

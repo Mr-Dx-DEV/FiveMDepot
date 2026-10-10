@@ -458,17 +458,6 @@ function tagFilters(string $whereSql, array $params): array
 // Product page, docs
 // ============================================================
 
-/** Legacy descriptions were stored HTML-escaped plain text; new ones are sanitized HTML. */
-function description_html(?string $d): string
-{
-  $d = (string)$d;
-  if ($d === '') return '';
-  if (!preg_match('/<[a-z][\s\S]*>/i', $d)) {
-    return nl2br(htmlspecialchars(html_entity_decode($d, ENT_QUOTES, 'UTF-8'), ENT_QUOTES, 'UTF-8'));
-  }
-  return clean_html($d);
-}
-
 function video_embed(?string $url): ?string
 {
   $url = (string)$url;
@@ -575,27 +564,6 @@ function routeDocs(): array
 // ============================================================
 // Settings
 // ============================================================
-
-/** Business details from Admin → Settings, filled into the legal pages ({{legal_name}} etc.). */
-function business_details(): array
-{
-  $keys = ['legal_name', 'business_address', 'support_email'];
-  $v = array_column(Db::all("SELECT `key`, `value` FROM site_settings WHERE `key` IN (" . Db::in($keys) . ")", $keys), 'value', 'key');
-  return [
-    'legal_name' => trim((string)($v['legal_name'] ?? '')) ?: 'Tanvir Anjum Neon',
-    'business_address' => trim((string)($v['business_address'] ?? '')) ?: 'Dhaka, Bangladesh',
-    'support_email' => trim((string)($v['support_email'] ?? '')) ?: 'fivemdepot@gmail.com',
-    'site_name' => SITE_NAME,
-    'site_url' => SITE_URL,
-  ];
-}
-
-function business_tokens(string $html): string
-{
-  $map = [];
-  foreach (business_details() as $k => $v) $map['{{' . $k . '}}'] = htmlspecialchars($v, ENT_QUOTES, 'UTF-8');
-  return strtr($html, $map);
-}
 
 function publicSettings(): array
 {

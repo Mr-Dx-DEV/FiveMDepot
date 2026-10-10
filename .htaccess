@@ -11,7 +11,12 @@ RedirectMatch 404 ^/(migrations|tools|docs|core)/
 <IfModule mod_rewrite.c>
   RewriteEngine On
   RewriteRule ^(pricing|welcome)$ $1.html [L]
+  # Legal pages, rendered on the server so they read without JavaScript (legal.php)
+  RewriteRule ^(terms|privacy|refunds|refund-policy|contact)/?$ legal.php?slug=$1 [L,QSA]
 </IfModule>
+
+# Missing pages: a real 404 (not the host's error page)
+ErrorDocument 404 /404.html
 
 <IfModule mod_headers.c>
   # HTML pages: always check for a new version (CSS/JS links carry ?v= so updates load instantly)

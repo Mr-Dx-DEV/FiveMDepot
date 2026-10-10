@@ -12,19 +12,43 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Lexend:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/store.css?v=202610100142">
-  <link rel="stylesheet" href="css/pages.css?v=202610100142">
-  <link rel="stylesheet" href="css/modern.css?v=202610100142">
-  <link rel="stylesheet" href="css/design-system.css?v=202610100142">
-  <link rel="stylesheet" href="css/pricing.css?v=202610100142">
+  <link rel="stylesheet" href="css/store.css?v=202610100936">
+  <link rel="stylesheet" href="css/pages.css?v=202610100936">
+  <link rel="stylesheet" href="css/modern.css?v=202610100936">
+  <link rel="stylesheet" href="css/design-system.css?v=202610100936">
+  <link rel="stylesheet" href="css/pricing.css?v=202610100936">
 </head>
 <body>
   <div id="site-header"></div>
   <main class="container page-wrap" id="pricing">
-    <div class="skeleton" style="height:420px"></div>
+    <!-- Shown until js/pricing.js loads localized prices from Paddle. Keep in step with core/plans.php and the live Paddle catalog (USD). -->
+    <header class="pr-head"><h1 class="section-title">Plans and pricing</h1>
+      <p class="muted">Unlimited downloads from the store while you’re subscribed — every plan starts with a 7-day free trial. Cancel anytime. Prices in USD; tax is added at checkout where it applies.</p></header>
+    <div class="pr-grid">
+      <article class="panel pr-card"><h2 class="pr-name">Starter</h2><p class="muted pr-desc">Every FiveM script in the store.</p>
+        <p class="pr-price"><span class="pr-amount">$10</span><span class="muted">/month</span> <span class="muted">or $100/year</span></p>
+        <ul class="pr-features"><li>Download all Scripts</li><li>New scripts as soon as they’re released</li><li>Updates while subscribed</li><li>Cancel anytime</li></ul></article>
+      <article class="panel pr-card is-featured"><h2 class="pr-name">Pro</h2><p class="muted pr-desc">Scripts plus vehicles, clothes and maps.</p>
+        <p class="pr-price"><span class="pr-amount">$40</span><span class="muted">/month</span> <span class="muted">or $400/year</span></p>
+        <ul class="pr-features"><li>Everything in Starter</li><li>All Vehicles</li><li>All Clothes</li><li>All Maps &amp; MLOs</li></ul></article>
+      <article class="panel pr-card"><h2 class="pr-name">Advanced</h2><p class="muted pr-desc">The whole store, including server packs.</p>
+        <p class="pr-price"><span class="pr-amount">$120</span><span class="muted">/month</span> <span class="muted">or $1,200/year</span></p>
+        <ul class="pr-features"><li>Everything in Pro</li><li>Complete Server Packs</li><li>UI Packs and every other category</li><li>Every new release, all categories</li></ul></article>
+    </div>
+    <p class="pay-secure">Our order process is conducted by our online reseller <b>Paddle.com</b>. Paddle.com is the Merchant of Record for all our orders and handles order inquiries and returns. See our <a href="refunds">Refund &amp; Cancellation Policy</a>.</p>
   </main>
-  <div id="site-footer"></div>
-  <script src="js/store.js?v=202610100142"></script>
-  <script src="js/pricing.js?v=202610100142"></script>
+  <div id="site-footer"><footer class="footer"><div class="container">
+    <div class="footer-grid">
+      <div class="footer-brand"><a class="logo" href="index.html"><span class="logo-text">FiveMDepot</span></a>
+        <p>Our own FiveM scripts, MLOs, vehicles, clothing and complete server packs for QBCore, ESX and QBox — sold as instant downloads and subscription plans.</p></div>
+      <div><h4>Store</h4><ul><li><a href="category.html?c=all">All Products</a></li><li><a href="server-packs.html">Server Packs</a></li><li><a href="pricing">Plans &amp; Pricing</a></li></ul></div>
+      <div><h4>Support</h4><ul><li><a href="contact">Contact us</a></li><li><a href="mailto:fivemdepot@gmail.com">fivemdepot@gmail.com</a></li></ul></div>
+      <div><h4>Legal</h4><ul><li><a href="terms">Terms of Service</a></li><li><a href="privacy">Privacy Policy</a></li><li><a href="refunds">Refund Policy</a></li></ul></div>
+    </div>
+    <p class="small muted" style="margin:18px 0 0">Payments are processed by our online reseller Paddle.com, the Merchant of Record for all our orders.</p>
+    <div class="footer-bottom"><span>© FiveMDepot · operated by Tanvir Anjum Neon. All rights reserved.</span><span>Not affiliated with Rockstar Games or Cfx.re.</span></div>
+  </div></footer></div>
+  <script src="js/store.js?v=202610100936"></script>
+  <script src="js/pricing.js?v=202610100936"></script>
 </body>
 </html>
