@@ -22,7 +22,7 @@ const PLANS = [
     'categories' => ['scripts'],
     'featured' => false,
     'price' => ['month' => 10, 'year' => 100], // USD
-    'test' => ['month' => '', 'year' => ''],   // Lemon Squeezy variant IDs (test mode)
+    'test' => ['month' => '2240878', 'year' => '2240881'],   // Lemon Squeezy variant IDs (test mode)
     'live' => ['month' => '', 'year' => ''],   // Lemon Squeezy variant IDs (live mode)
   ],
   'pro' => [
@@ -32,7 +32,7 @@ const PLANS = [
     'categories' => ['scripts', 'vehicles', 'clothing', 'mlos-maps', 'maps'],
     'featured' => true,
     'price' => ['month' => 40, 'year' => 400],
-    'test' => ['month' => '', 'year' => ''],
+    'test' => ['month' => '2240889', 'year' => '2240890'],
     'live' => ['month' => '', 'year' => ''],
   ],
   'advanced' => [
@@ -42,7 +42,7 @@ const PLANS = [
     'categories' => ['*'],
     'featured' => false,
     'price' => ['month' => 120, 'year' => 1200],
-    'test' => ['month' => '', 'year' => ''],
+    'test' => ['month' => '2240894', 'year' => '2240895'],
     'live' => ['month' => '', 'year' => ''],
   ],
 ];
