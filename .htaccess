@@ -15,6 +15,8 @@ RedirectMatch 404 ^/(migrations|tools|docs|core)/
   RewriteRule ^(terms|privacy|refunds|refund-policy|contact)/?$ legal.php?slug=$1 [L,QSA]
   RewriteRule ^refund/?$ legal.php?slug=refunds [L,QSA]
   RewriteRule ^sitemap\.xml$ sitemap.php [L]
+  # Short dashboard address: open the buyer dashboard (it sends logged-out visitors to sign in)
+  RewriteRule ^dashboard/?$ /dashboard/buyer.html [R=302,L]
   # Anything that is not a real file, folder or clean .html page: a real 404 (404.php)
   RewriteCond %{REQUEST_FILENAME} !-f
   RewriteCond %{REQUEST_FILENAME} !-d
