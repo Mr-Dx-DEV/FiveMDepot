@@ -939,8 +939,9 @@
               if (ev.name === 'checkout.closed' && !paddlePaid && paddleClose) paddleClose();
             }
           };
-          // Paddle Retain: the signed-in buyer's Paddle customer ID (ctm_…), never our user ID or email
-          if (info.paddle_customer_id) init.pwCustomer = { id: info.paddle_customer_id };
+          // Paddle Retain (only when enabled on the account, or Paddle.js logs a 401): the signed-in
+          // buyer's Paddle customer ID (ctm_…), never our user ID or email
+          if (info.retain === true && info.paddle_customer_id) init.pwCustomer = { id: info.paddle_customer_id };
           window.Paddle.Initialize(init);
           resolve(window.Paddle);
         };

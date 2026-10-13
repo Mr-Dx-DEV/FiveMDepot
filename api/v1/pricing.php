@@ -26,6 +26,7 @@ route('GET', 'pricing/config', function () {
     'client_token' => PADDLE_CLIENT_TOKEN,
     'country' => visitor_country(),
     'email' => $user['email'] ?? null,
+    'retain' => PADDLE_RETAIN,
     'paddle_customer_id' => PADDLE_RETAIN ? paddle_customer_id_for($user) : null,
     'trial_days' => PLAN_TRIAL_DAYS,
     'tiers' => plans_public(),

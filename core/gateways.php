@@ -54,6 +54,7 @@ function start_gateway_payment(array $o): array
     'client_token' => PADDLE_CLIENT_TOKEN,
     'environment' => paddle_sandbox() ? 'sandbox' : 'production',
     'email' => $o['email'],
+    'retain' => PADDLE_RETAIN,
     'paddle_customer_id' => PADDLE_RETAIN ? paddle_customer_id_for(['id' => $o['user_id'], 'email' => $o['email']]) : null,
     'success_url' => site_root_url() . 'checkout.html?order=' . rawurlencode($o['id']) . '&paid=1',
   ]];
