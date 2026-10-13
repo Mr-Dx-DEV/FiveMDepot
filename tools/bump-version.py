@@ -10,7 +10,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 stamp = time.strftime('%Y%m%d%H%M')
 pat = re.compile(r'((?:href|src)="(?!https?:|//)[^"?#]+\.(?:css|js))(?:\?v=[\w.-]*)?"')
 changed = 0
-for f in glob.glob(os.path.join(ROOT, '*.html')) + glob.glob(os.path.join(ROOT, 'dashboard', '*.html')) + glob.glob(os.path.join(ROOT, 'admin', '*.html')):
+for f in glob.glob(os.path.join(ROOT, '*.html')) + glob.glob(os.path.join(ROOT, 'dashboard', '*.html')) + glob.glob(os.path.join(ROOT, 'admin', '*.html')) + [os.path.join(ROOT, 'legal.php')]:
     s = open(f, encoding='utf-8').read()
     n = pat.sub(lambda m: m.group(1) + '?v=' + stamp + '"', s)
     if n != s:
