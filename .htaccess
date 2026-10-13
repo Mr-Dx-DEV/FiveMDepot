@@ -13,6 +13,13 @@ RedirectMatch 404 ^/(migrations|tools|docs|core)/
   RewriteRule ^(pricing|welcome)$ $1.html [L]
   # Legal pages, rendered on the server so they read without JavaScript (legal.php)
   RewriteRule ^(terms|privacy|refunds|refund-policy|contact)/?$ legal.php?slug=$1 [L,QSA]
+  RewriteRule ^refund/?$ legal.php?slug=refunds [L,QSA]
+  RewriteRule ^sitemap\.xml$ sitemap.php [L]
+  # Anything that is not a real file, folder or clean .html page: a real 404 (404.php)
+  RewriteCond %{REQUEST_FILENAME} !-f
+  RewriteCond %{REQUEST_FILENAME} !-d
+  RewriteCond %{REQUEST_FILENAME}.html !-f
+  RewriteRule ^ 404.php [L]
 </IfModule>
 
 # Missing pages: a real 404 (not the host's error page)
