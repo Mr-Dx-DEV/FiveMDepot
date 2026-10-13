@@ -27,6 +27,10 @@ if (!defined('DB_PASS')) {
 }
 define('DB_CHARSET', 'utf8mb4');
 
+// === Paddle Retain ===
+// Only turn on once Retain is enabled in Paddle (Retain > Settings); otherwise Paddle.js logs a 401.
+defined('PADDLE_RETAIN') || define('PADDLE_RETAIN', false);
+
 // === Site ===
 define('SITE_NAME', 'FiveMDepot');
 define('SITE_URL', 'https://fivemdepot.com');
