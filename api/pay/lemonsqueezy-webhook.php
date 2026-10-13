@@ -28,8 +28,9 @@ $a = $data['attributes'] ?? [];
 // Lemon Squeezy has no event id: the resource id + event + update time identifies one delivery
 $eventId = 'ls_' . $type . '_' . ($data['id'] ?? '') . '_' . ($a['updated_at'] ?? '');
 
-// Test-mode events never touch a live site (and live events never touch a test-mode site)
-if ((bool)($meta['test_mode'] ?? false) !== ls_test_mode()) {
+// Test-mode events never touch a live site (and live events never touch a test-mode site).
+// Orders and subscriptions carry test_mode in their attributes; meta.test_mode is the fallback.
+if ((bool)($a['test_mode'] ?? $meta['test_mode'] ?? false) !== ls_test_mode()) {
   error_log("[lemonsqueezy] ignored $type: test_mode mismatch");
   exit('ignored');
 }
