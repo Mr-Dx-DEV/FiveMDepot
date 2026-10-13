@@ -1,7 +1,7 @@
 <?php
 /**
- * Subscription (pricing page plans) for the signed-in buyer: current plan + Paddle customer portal.
- * The Paddle customer is always resolved server-side from the session — never taken from the client.
+ * Subscription (pricing page plans) for the signed-in buyer: current plan + Lemon Squeezy customer portal.
+ * The subscription is always resolved server-side from the session — never taken from the client.
  */
 require_once __DIR__ . '/../../core/subscriptions.php';
 require_once __DIR__ . '/../../core/plans.php';
@@ -11,31 +11,26 @@ route('GET', 'account/subscription', function () {
   $subs = user_subscriptions($u);
   foreach ($subs as &$s) {
     $s['has_access'] = subscription_grants_access($s);
-    $plan = plan_for_price((string)$s['price_id']);
+    $plan = plan_for_variant((string)$s['variant_id']);
     $s['plan_name'] = $plan ? $plan['name'] . ' · ' . ($plan['interval'] === 'year' ? 'Yearly' : 'Monthly') : 'Subscription';
   }
   ok(['subscriptions' => $subs, 'pricing_url' => 'pricing']);
 });
 
-// Mint a Paddle customer portal session (update card, cancel, invoices) and return its URL
+// Customer portal (update card, cancel, invoices): a fresh signed URL from the subscription (valid 24 hours)
 route('POST', 'account/subscription/portal', function () {
   $u = require_user();
   rate_limit('billing_portal', 10, 300);
   $subs = user_subscriptions($u);
   if (!$subs) fail(404, 'You have no subscription yet.');
-  if (!defined('PADDLE_API_KEY') || PADDLE_API_KEY === '') {
-    error_log('[paddle] PADDLE_API_KEY missing: customer portal unavailable');
+  if (!ls_configured()) {
+    error_log('[lemonsqueezy] not configured: customer portal unavailable');
     fail(503, 'Subscription management is unavailable right now. Please contact support.');
   }
-  $customerId = $subs[0]['customer_id'];
-  $subIds = array_values(array_map(fn($s) => $s['subscription_id'],
-    array_filter($subs, fn($s) => $s['customer_id'] === $customerId && $s['status'] !== 'canceled')));
-  [$status, $res] = http_request('POST', paddle_base() . '/customers/' . rawurlencode($customerId) . '/portal-sessions', [],
-    ['Authorization: Bearer ' . PADDLE_API_KEY, 'Content-Type: application/json', 'Paddle-Version: 1'],
-    json_encode(['subscription_ids' => $subIds]));
-  $url = $res['data']['urls']['general']['overview'] ?? '';
-  if (($status !== 201 && $status !== 200) || $url === '') {
-    error_log('[paddle] portal session failed: ' . $status . ' ' . json_encode($res['error'] ?? $res));
+  [$status, $res] = ls_api('GET', 'subscriptions/' . rawurlencode((string)$subs[0]['subscription_id']));
+  $url = (string)($res['data']['attributes']['urls']['customer_portal'] ?? '');
+  if ($status !== 200 || $url === '') {
+    error_log('[lemonsqueezy] portal url failed: ' . $status . ' ' . json_encode($res['errors'] ?? $res));
     fail(502, 'Could not open subscription management. Please try again in a minute.');
   }
   ok(['url' => $url]);

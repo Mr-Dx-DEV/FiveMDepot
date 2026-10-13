@@ -1,4 +1,4 @@
-/* FiveMDepot — Checkout: Paddle overlay checkout (Paddle is the Merchant of Record) and free orders */
+/* FiveMDepot — Checkout: Lemon Squeezy overlay checkout (Lemon Squeezy is the Merchant of Record) and free orders */
 (function () {
   'use strict';
   var S = window.Store, esc = S.esc;
@@ -25,11 +25,11 @@
         : !ready
           ? '<div class="notice bad">Checkout is not available right now. Please contact us at <a href="mailto:' + esc(quote.support.email) + '">' + esc(quote.support.email) + '</a>.</div>'
           : '<h2 style="font-size:20px;margin-bottom:10px">Payment</h2>' +
-            '<div class="pay-info pay-online"><span>Pay <b>' + S.money(quote.total) + ' USD</b> with card, PayPal, Apple Pay or Google Pay in Paddle’s secure checkout.</span>' +
+            '<div class="pay-info pay-online"><span>Pay <b>' + S.money(quote.total) + ' USD</b> with card, PayPal, Apple Pay or Google Pay in Lemon Squeezy’s secure checkout.</span>' +
             '<span class="small muted">Sales tax or VAT is added where your country requires it. Your download unlocks automatically as soon as the payment is confirmed.</span></div>') +
       '<div class="form-msg notice bad" hidden></div>' +
       '<button class="btn btn-primary btn-lg btn-block" type="submit"' + (ready ? '' : ' disabled') + '>' + (free ? 'Get it free' : 'Continue to secure payment · ' + S.money(quote.total)) + '</button>' +
-      (free ? '' : '<p class="pay-secure">🔒 Our order process is conducted by our online reseller <b>Paddle.com</b>. Paddle.com is the Merchant of Record for all our orders and handles order inquiries and returns.</p>') +
+      (free ? '' : '<p class="pay-secure">🔒 Our order process is conducted by <b>Lemon Squeezy</b>, the Merchant of Record for all our orders. It handles payment, tax and billing questions.</p>') +
       '<p class="pay-secure">By continuing you agree to our <a href="' + DOC + 'terms">Terms</a>, <a href="' + DOC + 'privacy">Privacy Policy</a> and <a href="' + DOC + 'refunds">Refund Policy</a>.</p></form>' +
       '<aside class="panel panel-pad summary"><h2 style="font-size:18px;margin-bottom:12px">' + buyable.length + ' item' + (buyable.length === 1 ? '' : 's') + '</h2>' +
         buyable.map(function (i) {
@@ -51,13 +51,13 @@
     try { localStorage.removeItem('fivemdepot-promo'); } catch (x) {}
     box.innerHTML = steps(2) + '<div class="success panel panel-pad"><div class="ok-ico">✓</div>' +
       '<h1 class="section-title">Payment received — thank you!</h1><p class="muted" style="margin:10px 0 22px">Order <b class="mono">#' + esc(String(orderId).slice(0, 8).toUpperCase()) +
-      '</b> is in your library and ready to download. Paddle has emailed you a receipt.</p>' +
+      '</b> is in your library and ready to download. Lemon Squeezy has emailed you a receipt.</p>' +
       '<div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap"><a class="btn btn-primary" href="dashboard/buyer.html">⬇ Go to my downloads</a>' +
       '<a class="btn btn-ghost" href="category.html?c=all">Keep shopping</a></div></div>';
     window.scrollTo(0, 0);
   }
 
-  // ---------- Back from Paddle (successUrl) or opened from My account ----------
+  // ---------- Back from Lemon Squeezy (redirect / success) or opened from My account ----------
   function afterPayment(orderId) {
     box.innerHTML = steps(1) + '<div class="success panel panel-pad"><div class="spin-lg"></div><h1 class="section-title">Confirming your payment…</h1>' +
       '<p class="muted" style="margin-top:10px">This usually takes a few seconds.</p></div>';
@@ -85,8 +85,8 @@
       if (!b) return;
       b.disabled = true;
       S.v1('POST', 'account/orders/' + encodeURIComponent(orderId) + '/pay', {}).then(function (r) {
-        return S.paddleCheckout(r.paddle, function () { b.disabled = false; });
-      }).catch(function (err) { S.toast(err.message, 'error'); b.disabled = false; });
+        return S.openCheckout(r.checkout);
+      }).catch(function (err) { S.toast(err.message, 'error'); }).then(function () { b.disabled = false; });
     });
   }
 
@@ -96,10 +96,11 @@
     btn.disabled = true; btn.textContent = quote.total > 0 ? 'Opening secure checkout…' : 'Submitting…';
     var ids = quote.items.filter(function (i) { return !i.owned; }).map(function (i) { return i.id; });
     S.v1('POST', 'checkout/order', { ids: ids, promo_code: promo }).then(function (r) {
-      if (!r.paddle) { done(r.order_id); return; }
-      // The order now exists: retrying uses "Pay now" so the same Paddle transaction is reused
+      if (!r.checkout) { done(r.order_id); return; }
+      // The order now exists: if the buyer closes the overlay, "Pay now" reopens the same checkout
       history.replaceState(null, '', 'checkout.html?order=' + encodeURIComponent(r.order_id));
-      return S.paddleCheckout(r.paddle, function () { afterPayment(r.order_id); });
+      afterPayment(r.order_id);
+      return S.openCheckout(r.checkout);
     }).catch(function (err) {
       showError(f, err.message);
       btn.disabled = false; btn.textContent = label;

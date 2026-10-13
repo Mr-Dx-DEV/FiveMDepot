@@ -6,11 +6,13 @@
  * Secrets go in config.local.php (not in Git) — copy config.local.example.php to create it.
  */
 
-// === Paddle settings from environment variables (see .env.example) — these win over config.local.php ===
-foreach (['PADDLE_ENVIRONMENT', 'PADDLE_CLIENT_TOKEN', 'PADDLE_API_KEY', 'PADDLE_WEBHOOK_SECRET'] as $k) {
+// === Lemon Squeezy settings from environment variables (see .env.example) — these win over config.local.php ===
+foreach (['LEMONSQUEEZY_API_KEY', 'LEMONSQUEEZY_STORE_ID', 'LEMONSQUEEZY_WEBHOOK_SECRET', 'LEMONSQUEEZY_ORDER_VARIANT_ID'] as $k) {
   $v = getenv($k);
   if ($v !== false && $v !== '' && !defined($k)) define($k, $v);
 }
+$v = getenv('LEMONSQUEEZY_TEST_MODE');
+if ($v !== false && $v !== '' && !defined('LEMONSQUEEZY_TEST_MODE')) define('LEMONSQUEEZY_TEST_MODE', filter_var($v, FILTER_VALIDATE_BOOLEAN));
 
 // === Database (MariaDB) ===
 // Real credentials live in config.local.php (not in git). Copy config.local.example.php to create it.
@@ -26,10 +28,6 @@ if (!defined('DB_PASS')) {
   define('DB_PASS', '');
 }
 define('DB_CHARSET', 'utf8mb4');
-
-// === Paddle Retain ===
-// Only turn on once Retain is enabled in Paddle (Retain > Settings); otherwise Paddle.js logs a 401.
-defined('PADDLE_RETAIN') || define('PADDLE_RETAIN', false);
 
 // === Site ===
 define('SITE_NAME', 'FiveMDepot');

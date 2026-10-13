@@ -105,7 +105,7 @@
   function orders() {
     S.v1('GET', 'account/orders').then(function (rows) {
       page.innerHTML = '<h1>Orders</h1>' + (rows.length ? rows.map(function (o) {
-        return '<div class="panel order"><div class="order-head"><span><b class="mono">#' + esc(o.id.slice(0, 8)) + '</b> · ' + date(o.created_at) + ' · ' + esc(o.payment_method === 'PADDLE' ? 'Paddle' : (o.payment_method || 'Free')) +
+        return '<div class="panel order"><div class="order-head"><span><b class="mono">#' + esc(o.id.slice(0, 8)) + '</b> · ' + date(o.created_at) + ' · ' + esc(o.payment_method === 'LEMONSQUEEZY' ? 'Lemon Squeezy' : (o.payment_method || 'Free')) +
           (o.transaction_id ? ' · <span class="mono">' + esc(o.transaction_id) + '</span>' : '') + '</span>' + badge(o.status) + '</div>' +
           o.items.map(function (i) {
             return '<div class="order-line"><span>' + (i.slug ? '<a href="' + S.productUrl(i.slug) + '">' + esc(i.title) + '</a>' : '<span class="muted">Removed product</span>') + '</span><span>' + S.money(i.price_paid) + '</span></div>';
@@ -118,9 +118,7 @@
             '<button class="btn btn-ghost btn-sm" data-cancel="' + esc(o.id) + '">Cancel order</button></div></div>' : '') +
           (o.status === 'REJECTED' && o.admin_note ? '<div class="order-note down">Reason: ' + esc(o.admin_note) + '. <a class="link" href="dashboard/buyer.html?tab=support&new=1&order=' + encodeURIComponent(o.id) + '">Open a ticket</a> if you think this is a mistake.</div>' : '') +
           ((o.status === 'VERIFIED' || o.status === 'COMPLETED') && o.total_amount > 0 ? '<div style="padding:0 18px 14px;text-align:right">' +
-            (o.payment_method === 'PADDLE'
-              ? '<a class="btn btn-ghost btn-sm" href="https://paddle.net" target="_blank" rel="noopener">Request refund at paddle.net ↗</a>'
-              : '<button class="btn btn-ghost btn-sm" data-refund="' + esc(o.id) + '">Request refund</button>') + '</div>' : '') +
+            '<button class="btn btn-ghost btn-sm" data-refund="' + esc(o.id) + '">Request refund</button></div>' : '') +
           (o.status === 'REFUNDED' ? '<div class="order-note">This order was refunded. The licence has ended and the download was removed from your library.</div>' : '') +
           '</div>';
       }).join('') : '<div class="empty"><b>No orders yet</b><a class="link-more" href="category.html?c=all">Start shopping →</a></div>');
@@ -129,8 +127,8 @@
         if (pay) {
           pay.disabled = true;
           S.v1('POST', 'account/orders/' + encodeURIComponent(pay.dataset.pay) + '/pay', {}).then(function (r) {
-            return S.paddleCheckout(r.paddle, function () { pay.disabled = false; });
-          }).catch(function (err) { pay.disabled = false; fail(err); });
+            return S.openCheckout(r.checkout);
+          }).catch(fail).then(function () { pay.disabled = false; });
           return;
         }
         if (cancel) {
@@ -242,7 +240,7 @@
   }
 
   // ---------- Subscription (pricing page plans) ----------
-  var SUB_STATUS = { active: ['st-ok', 'Active'], trialing: ['st-ok', 'Free trial'], past_due: ['st-warn', 'Payment due'], paused: ['st-muted', 'Paused'], canceled: ['st-muted', 'Canceled'] };
+  var SUB_STATUS = { active: ['st-ok', 'Active'], on_trial: ['st-ok', 'Free trial'], past_due: ['st-warn', 'Payment due'], unpaid: ['st-warn', 'Unpaid'], paused: ['st-muted', 'Paused'], cancelled: ['st-muted', 'Cancelled'], expired: ['st-muted', 'Ended'] };
   function subscription() {
     page.innerHTML = '<h1>Subscription</h1><div class="skeleton" style="height:160px"></div>';
     S.v1('GET', 'account/subscription').then(function (r) {
@@ -253,13 +251,14 @@
       }
       page.innerHTML = '<h1>Subscription</h1>' + r.subscriptions.map(function (s) {
         var st = SUB_STATUS[s.status] || ['st-muted', s.status];
-        var when = s.scheduled_change_action === 'cancel' ? 'Ends on ' + date(s.scheduled_change_at)
-          : s.scheduled_change_action === 'pause' ? 'Pauses on ' + date(s.scheduled_change_at)
-          : s.status === 'canceled' ? '' : (s.status === 'trialing' ? 'First payment on ' : 'Renews on ') + date(s.current_period_end);
+        var when = s.status === 'cancelled' && s.scheduled_change_at ? 'Access until ' + date(s.scheduled_change_at)
+          : s.status === 'expired' ? (s.scheduled_change_at ? 'Ended on ' + date(s.scheduled_change_at) : '')
+          : s.status === 'paused' || s.status === 'unpaid' || !s.current_period_end ? ''
+          : (s.status === 'on_trial' ? 'First payment on ' : 'Renews on ') + date(s.current_period_end);
         return '<div class="panel panel-pad" style="max-width:560px;margin-bottom:14px"><h2 style="font-size:18px">' + esc(s.plan_name) +
           ' <span class="st ' + st[0] + '">' + st[1] + '</span></h2>' + (when ? '<p class="muted" style="margin-top:6px">' + esc(when) + '</p>' : '') + '</div>';
       }).join('') +
-        '<p class="muted small" style="max-width:560px;margin-bottom:14px">Change your card, cancel, or download invoices in Paddle’s secure portal.</p>' +
+        '<p class="muted small" style="max-width:560px;margin-bottom:14px">Change your card, cancel, or download invoices in Lemon Squeezy’s secure portal.</p>' +
         '<button class="btn btn-primary" id="portalBtn">Manage subscription</button>';
       document.getElementById('portalBtn').onclick = function () {
         var b = this; b.disabled = true;

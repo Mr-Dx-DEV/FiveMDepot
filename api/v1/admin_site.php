@@ -127,7 +127,7 @@ const SETTING_KEYS = [
   'brand_color', 'discord_server_name', 'site_name', 'site_tagline', 'since_year', 'currency_symbol', 'topbar_text', 'topbar_link',
   'promo_headline', 'promo_code', 'promo_ends_at', 'promo_free_install', 'promo_link',
   'social_discord', 'social_github', 'social_youtube', 'discord_widget_server_id',
-  'legal_name', 'business_address', 'support_email', 'pay_paddle_enabled', 'auth_video', 'verify_hours', 'mail_from', 'admin_notify_email', 'newsletter_enabled', 'free_assets_enabled', 'cookie_consent_text', 'download_expiry_days',
+  'legal_name', 'business_address', 'support_email', 'pay_lemonsqueezy_enabled', 'auth_video', 'verify_hours', 'mail_from', 'admin_notify_email', 'newsletter_enabled', 'free_assets_enabled', 'cookie_consent_text', 'download_expiry_days',
 ];
 
 route('GET', 'admin/settings', function () {
@@ -201,22 +201,22 @@ route('GET', 'admin/payments/status', function () {
   require_role('ADMIN');
   require_once __DIR__ . '/../../core/gateways.php';
   // Per-setting diagnosis: missing / empty / wrong format / ok — never the value itself
-  $sandbox = defined('PADDLE_ENVIRONMENT') && PADDLE_ENVIRONMENT === 'sandbox';
   $check = function (string $k, callable $valid, string $hint) {
     if (!defined($k)) return ['key' => $k, 'state' => 'missing', 'hint' => 'Not set in config.local.php'];
     $v = (string)constant($k);
     if ($v === '') return ['key' => $k, 'state' => 'empty', 'hint' => 'Defined but empty: an earlier empty line in config.local.php wins — delete it'];
     return $valid($v) ? ['key' => $k, 'state' => 'ok', 'hint' => ''] : ['key' => $k, 'state' => 'wrong format', 'hint' => $hint];
   };
+  $digits = fn($v) => ctype_digit($v);
   $keys = [
-    $check('PADDLE_ENVIRONMENT', fn($v) => in_array($v, ['sandbox', 'production'], true), 'Must be sandbox or production'),
-    $check('PADDLE_CLIENT_TOKEN', fn($v) => strpos($v, $sandbox ? 'test_' : 'live_') === 0, 'Should start with ' . ($sandbox ? 'test_' : 'live_')),
-    $check('PADDLE_API_KEY', fn($v) => strpos($v, 'pdl_') === 0 && (strpos($v, '_sdbx_') !== false) === $sandbox,
-      'Should start with ' . ($sandbox ? 'pdl_sdbx_' : 'pdl_live_') . ' to match PADDLE_ENVIRONMENT'),
-    $check('PADDLE_WEBHOOK_SECRET', fn($v) => strpos($v, 'pdl_ntfset_') === 0, 'Should start with pdl_ntfset_'),
+    $check('LEMONSQUEEZY_API_KEY', fn($v) => strlen($v) > 40, 'Paste the full API key (Settings → API)'),
+    $check('LEMONSQUEEZY_STORE_ID', $digits, 'The store number only (Settings → Stores)'),
+    $check('LEMONSQUEEZY_WEBHOOK_SECRET', fn($v) => strlen($v) >= 16, 'Use a long random string (16+ characters), the same as in the webhook'),
+    $check('LEMONSQUEEZY_ORDER_VARIANT_ID', $digits, 'The variant number of the "FiveMDepot order" product'),
   ];
+  require_once __DIR__ . '/../../core/plans.php';
   ok([
-    'PADDLE' => ['configured' => paddle_configured(), 'live' => gateway_ready('PADDLE'),
-                 'test_mode' => paddle_sandbox(), 'webhook' => site_root_url() . 'api/pay/paddle-webhook.php', 'keys' => $keys],
+    'LEMONSQUEEZY' => ['configured' => ls_configured(), 'live' => gateway_ready('LEMONSQUEEZY'), 'plans_ready' => plans_ready(),
+                       'test_mode' => ls_test_mode(), 'webhook' => site_root_url() . 'api/pay/lemonsqueezy-webhook.php', 'keys' => $keys],
   ]);
 });

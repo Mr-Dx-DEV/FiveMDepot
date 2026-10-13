@@ -244,7 +244,7 @@ route('POST', 'checkout/order', function () {
   if (!$lines) fail(422, 'You already own everything in your cart');
 
   $free = $total <= 0;
-  if (!$free && !gateway_ready('PADDLE')) fail(422, 'Checkout is not available right now. Please contact support.');
+  if (!$free && !gateway_ready('LEMONSQUEEZY')) fail(422, 'Checkout is not available right now. Please contact support.');
 
   // Spread the discount over the items so price_paid adds up to the total
   $remaining = $discount;
@@ -260,7 +260,7 @@ route('POST', 'checkout/order', function () {
   $orderId = uuid();
   $status = $free ? 'PENDING' : 'AWAITING_PAYMENT';
   $pdo->prepare("INSERT INTO orders (id, user_id, product_ids, total_amount, status, payment_method, promo_id) VALUES (?, ?, ?, ?, ?, ?, ?)")
-    ->execute([$orderId, $u['id'], json_encode(array_column($lines, 'id')), $total, $status, $free ? 'FREE' : 'PADDLE', $promo['id'] ?? null]);
+    ->execute([$orderId, $u['id'], json_encode(array_column($lines, 'id')), $total, $status, $free ? 'FREE' : 'LEMONSQUEEZY', $promo['id'] ?? null]);
   $ins = $pdo->prepare("INSERT INTO order_products (id, order_id, product_id, price_paid) VALUES (?, ?, ?, ?)");
   foreach ($lines as $l) $ins->execute([uuid(), $orderId, $l['id'], $l['paid']]);
   if ($free) {
@@ -268,10 +268,10 @@ route('POST', 'checkout/order', function () {
     $status = 'VERIFIED';
   }
   $pdo->commit();
-  audit('order_placed', 'order', $orderId, ($free ? 'free' : 'paddle') . ' ' . $total);
+  audit('order_placed', 'order', $orderId, ($free ? 'free' : 'lemonsqueezy') . ' ' . $total);
 
   if ($free) ok(['order_id' => $orderId, 'status' => $status, 'total' => $total], [], 201);
-  // Paid: the browser opens Paddle checkout for this order's transaction
+  // Paid: the browser opens Lemon Squeezy checkout for this order
   ok(['order_id' => $orderId, 'status' => $status, 'total' => $total] + start_gateway_payment(order_for_payment($orderId)), [], 201);
 });
 
@@ -290,10 +290,10 @@ route('POST', 'account/orders/{id}/pay', function ($p) {
   $o = order_for_payment($p['id']);
   if (!$o || $o['user_id'] !== $u['id']) fail(404, 'Order not found');
   if ($o['status'] !== 'AWAITING_PAYMENT') fail(409, 'This order does not need payment');
-  if (!gateway_ready('PADDLE')) fail(422, 'Checkout is not available right now. Please contact support.');
-  if ($o['payment_method'] !== 'PADDLE') {
-    Db::pdo()->prepare("UPDATE orders SET payment_method = 'PADDLE', gateway_ref = NULL WHERE id = ?")->execute([$o['id']]);
-    $o['payment_method'] = 'PADDLE'; $o['gateway_ref'] = null;
+  if (!gateway_ready('LEMONSQUEEZY')) fail(422, 'Checkout is not available right now. Please contact support.');
+  if ($o['payment_method'] !== 'LEMONSQUEEZY') {
+    Db::pdo()->prepare("UPDATE orders SET payment_method = 'LEMONSQUEEZY', gateway_ref = NULL WHERE id = ?")->execute([$o['id']]);
+    $o['payment_method'] = 'LEMONSQUEEZY'; $o['gateway_ref'] = null;
   }
   ok(start_gateway_payment($o));
 });

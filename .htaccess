@@ -7,7 +7,7 @@
 </FilesMatch>
 RedirectMatch 404 ^/(migrations|tools|docs|core)/
 
-# Clean URLs for the pricing page and the post-checkout page (Paddle successUrl = /welcome)
+# Clean URLs for the pricing page and the post-checkout page (plan checkout redirect = /welcome)
 <IfModule mod_rewrite.c>
   RewriteEngine On
   RewriteRule ^(pricing|welcome)$ $1.html [L]

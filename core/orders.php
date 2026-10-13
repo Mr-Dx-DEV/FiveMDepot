@@ -1,6 +1,6 @@
 <?php
 /**
- * Orders: completing paid orders (shared by admin approval and the Paddle webhook),
+ * Orders: completing paid orders (shared by admin approval and the Lemon Squeezy webhook),
  * and the list of payment methods available at checkout.
  */
 
@@ -43,21 +43,21 @@ function fulfil_order(string $orderId, ?string $actorId = null, ?string $note = 
 /** Gateway is switched on in Settings AND its keys exist in config.local.php. */
 function gateway_ready(string $id): bool
 {
-  if ($id !== 'PADDLE') return false;
+  if ($id !== 'LEMONSQUEEZY') return false;
   require_once __DIR__ . '/gateways.php';
-  if (setting('pay_paddle_enabled', '1') !== '1' || !paddle_configured()) return false;
-  // Sandbox payments are fake (test cards): never let the public buy store products with them —
+  if (setting('pay_lemonsqueezy_enabled', '1') !== '1' || !ls_configured()) return false;
+  // Test-mode payments are fake (test cards): never let the public buy store products with them —
   // that would hand out real downloads for free. Admins can still test the store checkout.
-  if (paddle_sandbox()) {
+  if (ls_test_mode()) {
     $u = current_user();
     return $u !== null && $u['role'] === 'ADMIN';
   }
   return true;
 }
 
-/** Payment methods shown at checkout. Paddle is the only processor (Merchant of Record). */
+/** Payment methods shown at checkout. Lemon Squeezy is the only processor (Merchant of Record). */
 function payment_methods(): array
 {
-  if (!gateway_ready('PADDLE')) return [];
-  return [['id' => 'PADDLE', 'type' => 'online', 'name' => 'Card, PayPal, Apple Pay, Google Pay', 'desc' => 'Secure checkout by Paddle · tax included where required']];
+  if (!gateway_ready('LEMONSQUEEZY')) return [];
+  return [['id' => 'LEMONSQUEEZY', 'type' => 'online', 'name' => 'Card, PayPal, Apple Pay, Google Pay', 'desc' => 'Secure checkout by Lemon Squeezy · tax included where required']];
 }

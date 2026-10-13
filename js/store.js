@@ -848,7 +848,7 @@
             '<li><a href="mailto:' + esc(email) + '">' + esc(email) + '</a></li></ul></div>' +
         '</div>' +
         '<div class="footer-badges"><span class="footer-badge">FiveM resources</span><span class="footer-badge">Scripts &amp; worlds</span><span class="footer-badge">Server packs</span></div>' +
-        '<p class="small muted" style="margin:18px 0 0">Payments are processed by our online reseller Paddle.com, the Merchant of Record for all our orders.</p>' +
+        '<p class="small muted" style="margin:18px 0 0">Payments are processed by Lemon Squeezy, the Merchant of Record for all our orders.</p>' +
         '<div class="footer-bottom"><span>© ' + new Date().getFullYear() + ' ' + esc(name) + (s.legal_name ? ' · operated by ' + esc(s.legal_name) : '') + '. All rights reserved.</span><span>Not affiliated with Rockstar Games or Cfx.re.</span></div>' +
       '</div></footer>';
   }
@@ -918,57 +918,44 @@
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
 
-  // ---------- Paddle checkout ----------
-  // Loads and initializes Paddle.js once per page (it refuses a second Initialize).
-  // info = { client_token, environment: 'sandbox' | 'production' } — anything else throws, so we never hit the wrong account.
-  var paddleReady = null, paddleClose = null, paddlePaid = false;
-  function loadPaddle(info) {
-    if (!paddleReady) {
-      if (info.environment !== 'sandbox' && info.environment !== 'production') {
-        return Promise.reject(new Error('Paddle environment is not configured (got ' + JSON.stringify(info.environment) + ').'));
-      }
-      paddleReady = new Promise(function (resolve, reject) {
+  // ---------- Lemon Squeezy checkout ----------
+  // Loads Lemon.js once per page. Checkouts are always created by the server (price, variant, order id);
+  // the browser only opens the returned URL in the overlay.
+  var lemonReady = null, lemonSuccess = null;
+  function loadLemon() {
+    if (!lemonReady) {
+      lemonReady = new Promise(function (resolve, reject) {
         var s = document.createElement('script');
-        s.src = 'https://cdn.paddle.com/paddle/v2/paddle.js';
+        s.src = 'https://app.lemonsqueezy.com/js/lemon.js';
+        s.defer = true;
         s.onload = function () {
-          if (info.environment === 'sandbox') window.Paddle.Environment.set('sandbox');
-          var init = {
-            token: info.client_token,
-            eventCallback: function (ev) {
-              if (ev.name === 'checkout.completed') paddlePaid = true;
-              if (ev.name === 'checkout.closed' && !paddlePaid && paddleClose) paddleClose();
-            }
-          };
-          // Paddle Retain (only when enabled on the account, or Paddle.js logs a 401): the signed-in
-          // buyer's Paddle customer ID (ctm_…), never our user ID or email
-          if (info.retain === true && info.paddle_customer_id) init.pwCustomer = { id: info.paddle_customer_id };
-          window.Paddle.Initialize(init);
-          resolve(window.Paddle);
+          if (typeof window.createLemonSqueezy === 'function') window.createLemonSqueezy();
+          if (!window.LemonSqueezy) { lemonReady = null; reject(new Error('Could not load the secure checkout.')); return; }
+          window.LemonSqueezy.Setup({
+            eventHandler: function (ev) { if (ev && ev.event === 'Checkout.Success' && lemonSuccess) lemonSuccess(ev.data); }
+          });
+          resolve(window.LemonSqueezy);
         };
-        s.onerror = function () { paddleReady = null; reject(new Error('Could not load the secure checkout. Check your connection or disable ad blockers and try again.')); };
+        s.onerror = function () { lemonReady = null; reject(new Error('Could not load the secure checkout. Check your connection or disable ad blockers and try again.')); };
         document.head.appendChild(s);
       });
     }
-    return paddleReady;
+    return lemonReady;
   }
 
-  // Opens the overlay checkout for a transaction created by the server.
-  // info = { transaction_id, client_token, environment, email, success_url }; onClose runs if the buyer closes it unpaid.
-  function paddleCheckout(info, onClose) {
-    return loadPaddle(info).then(function (P) {
-      paddleClose = onClose || null; paddlePaid = false;
-      P.Checkout.open({
-        transactionId: info.transaction_id,
-        customer: info.email ? { email: info.email } : undefined,
-        settings: { displayMode: 'overlay', theme: document.documentElement.getAttribute('data-theme') === 'light' ? 'light' : 'dark', successUrl: info.success_url }
-      });
-    });
+  // Opens the overlay checkout. info = { url, success_url }. After a successful payment the buyer is sent to
+  // success_url (Lemon Squeezy also redirects there by itself). If the overlay can't load, the checkout opens as a page.
+  function openCheckout(info) {
+    return loadLemon().then(function (L) {
+      lemonSuccess = function () { setTimeout(function () { location.href = info.success_url; }, 1200); };
+      L.Url.Open(info.url);
+    }, function () { location.href = info.url; });
   }
 
   var Store = window.Store = {
     api: api, nav: nav, esc: esc, icon: icon, money: money, qs: qs,
     catUrl: catUrl, productUrl: productUrl, icons: I, catIcon: catIcon, catArt: catArt,
     productCard: productCard, cart: Cart, toast: toast, reveal: reveal, user: null,
-    v1: v1, me: me, loginUrl: loginUrl, syncWishlist: syncWishlist, claim: claim, drawer: Drawer, logout: logout, loadPaddle: loadPaddle, paddleCheckout: paddleCheckout
+    v1: v1, me: me, loginUrl: loginUrl, syncWishlist: syncWishlist, claim: claim, drawer: Drawer, logout: logout, openCheckout: openCheckout
   };
 })();

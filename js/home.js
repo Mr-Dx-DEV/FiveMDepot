@@ -33,7 +33,7 @@
     ],
     faqs: [
       { question: 'How do I receive my purchase?', answer: 'As soon as your payment is confirmed, the download appears in your dashboard under My library.' },
-      { question: 'Which payment methods do you accept?', answer: 'Card (Visa, Mastercard, Amex), PayPal, Apple Pay and Google Pay through Paddle, our Merchant of Record. Prices are in USD; tax is added where required.' },
+      { question: 'Which payment methods do you accept?', answer: 'Card (Visa, Mastercard, Amex), PayPal, Apple Pay and Google Pay through Lemon Squeezy, our Merchant of Record. Prices are in USD; tax is added where required.' },
       { question: 'Do resources work with QBCore and ESX?', answer: 'Each product lists its supported frameworks (QBCore, ESX, QBox or standalone) on the product page.' },
       { question: 'Do I get updates?', answer: 'Yes. Updates for purchased resources are free and appear in your dashboard.' }
     ],

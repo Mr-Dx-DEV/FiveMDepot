@@ -182,8 +182,8 @@
     ['Promo bar', [['promo_headline', 'Headline, e.g. 30% off all scripts (empty uses the announcement bar instead)'], ['promo_code', 'Coupon code to show (only shown while the code is active in Promos)'], ['promo_ends_at', 'Ends at, e.g. 2026-10-31 23:59 (server time; shows a countdown and hides the bar when it ends)'], ['promo_free_install', 'Show a Free installation badge', 'bool'], ['promo_link', 'Shop Now link (default: all products)']]],
     ['Social links', [['social_discord', 'Discord invite (https://…)'], ['social_github', 'GitHub (https://…)'], ['social_youtube', 'YouTube (https://…)'], ['discord_widget_server_id', 'Discord server ID (for the live online count — enable Server Settings → Widget)'], ['discord_server_name', 'Discord card title (optional)']]],
     ['Email', [['admin_notify_email', 'Your email — alerts for new orders to verify and new tickets'], ['mail_from', 'Send emails from (empty = info@ your domain; SMTP login goes in config.local.php)']]],
-    ['Business details', [['legal_name', 'Legal name — shown in the Terms, Privacy and Refund policy (Paddle checks this)'], ['business_address', 'Business address (city, country)'], ['support_email', 'Support email — shown in the footer and legal pages']]],
-    ['Payments (Paddle)', [['pay_paddle_enabled', 'Paddle checkout — cards, PayPal, Apple Pay, Google Pay (keys go in config.local.php)', 'bool'], ['download_expiry_days', 'Download link valid for (days)']]],
+    ['Business details', [['legal_name', 'Legal name — shown in the Terms, Privacy and Refund policy (Lemon Squeezy checks this)'], ['business_address', 'Business address (city, country)'], ['support_email', 'Support email — shown in the footer and legal pages']]],
+    ['Payments (Lemon Squeezy)', [['pay_lemonsqueezy_enabled', 'Lemon Squeezy checkout — cards, PayPal, Apple Pay, Google Pay (keys go in config.local.php)', 'bool'], ['download_expiry_days', 'Download link valid for (days)']]],
     ['Features', [['newsletter_enabled', 'Newsletter signup', 'bool'], ['free_assets_enabled', 'Free assets section', 'bool'], ['cookie_consent_text', 'Cookie banner text', 'area']]]
   ];
   A.page('/settings', function (el) {
@@ -215,7 +215,7 @@
             return '<option value="' + o[0] + '"' + ((s[f[0]] || f[3][0][0]) === o[0] ? ' selected' : '') + '>' + o[1] + '</option>';
           }).join('') + '</select></label>';
           return '<label class="field"><span>' + f[1] + '</span><input class="input" name="' + f[0] + '" value="' + h(s[f[0]]) + '"></label>';
-        }).join('') + (g[0] === 'Payments (Paddle)' ? payStatus(gw) : '') + '</div></div>';
+        }).join('') + (g[0] === 'Payments (Lemon Squeezy)' ? payStatus(gw) : '') + '</div></div>';
       }).join('');
       // Login page video: upload, preview, clear
       var vin = form.querySelector('[name=auth_video]'), prev = form.querySelector('.vid-prev');
@@ -242,11 +242,12 @@
 
   // Shows whether each gateway's keys are in config.local.php + the webhook URL to paste in the gateway dashboard
   function payStatus(gw) {
-    var names = { PADDLE: 'Paddle' };
+    var names = { LEMONSQUEEZY: 'Lemon Squeezy' };
     return '<div class="pay-status">' + Object.keys(names).map(function (k) {
       var g = gw[k] || {};
       var st = g.live ? '<span class="st st-ok">active' + (g.test_mode ? ' · test mode' : '') + '</span>'
         : g.configured ? '<span class="st st-muted">keys set · switched off</span>' : '<span class="st st-warn">keys missing in config.local.php</span>';
+      if (g.configured && !g.plans_ready) st += ' <span class="st st-warn">plan variant IDs missing in core/plans.php</span>';
       var keys = (g.keys || []).map(function (x) {
         var cls = x.state === 'ok' ? 'st-ok' : 'st-warn';
         return '<div class="pay-row small"><span class="mono">' + h(x.key) + '</span><span class="st ' + cls + '">' + h(x.state) + '</span>' +
